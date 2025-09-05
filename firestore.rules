@@ -1,0 +1,184 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Tournament rules
+    match /tournaments/{tournamentId} {
+      // Allow all authenticated users to read tournaments
+      allow read: if request.auth != null;
+      
+      // Allow creating tournaments if user is authenticated and is the creator
+      allow create: if request.auth != null &&
+                   request.auth.uid == request.resource.data.createdBy &&
+                   isValidTournamentData(request.resource.data);
+      
+      // Allow updating/deleting only by the tournament creator
+      allow update, delete: if request.auth != null &&
+                           request.auth.uid == resource.data.createdBy &&
+                           isValidTournamentData(request.resource.data);
+    }
+    
+    // Function to validate tournament data structure
+    function isValidTournamentData(data) {
+      return data.keys().hasAll(['name', 'description', 'rules', 'prizeMoney', 'startDate', 'endDate', 'categories', 'createdBy']) &&
+             data.name is string &&
+             data.description is string &&
+             data.rules is string &&
+             data.prizeMoney is number &&
+             data.startDate is timestamp &&
+             data.endDate is timestamp &&
+             data.categories is map &&
+             data.categories.keys().hasAll(['mensSingles', 'mensDoubles', 'womensSingles', 'womensDoubles', 'mixedDoubles']) &&
+             data.categories.mensSingles is bool &&
+             data.categories.mensDoubles is bool &&
+             data.categories.womensSingles is bool &&
+             data.categories.womensDoubles is bool &&
+             data.categories.mixedDoubles is bool &&
+             data.createdBy is string;
+    }
+    
+    // Players collection rules
+    match /players/{playerId} {
+      // Allow all authenticated users to read players
+      allow read: if request.auth != null;
+      
+      // Allow creating players if user is authenticated and is the creator
+      allow create: if request.auth != null &&
+                   request.auth.uid == request.resource.data.createdBy &&
+                   isValidPlayerData(request.resource.data);
+      
+      // Allow updating/deleting only by the player creator
+      allow update, delete: if request.auth != null &&
+                            request.auth.uid == resource.data.createdBy &&
+                            isValidPlayerData(request.resource.data);
+    }
+    
+    // Teams collection rules
+    match /teams/{teamId} {
+      // Allow all authenticated users to read teams
+      allow read: if request.auth != null;
+      
+      // Allow creating teams if user is authenticated and is the creator
+      allow create: if request.auth != null &&
+                   request.auth.uid == request.resource.data.createdBy &&
+                   isValidTeamData(request.resource.data);
+      
+      // Allow updating/deleting only by the team creator
+      allow update, delete: if request.auth != null &&
+                            request.auth.uid == resource.data.createdBy &&
+                            isValidTeamData(request.resource.data);
+    }
+    
+    // Fixtures collection rules
+    match /fixtures/{fixtureId} {
+      // Allow all authenticated users to read fixtures
+      // Also allow unauthenticated read for umpire scoring
+      allow read: if true;
+      
+      // Allow creating fixtures if user is authenticated and is the creator
+      allow create: if request.auth != null &&
+                   request.auth.uid == request.resource.data.createdBy;
+      
+      // Allow updating by:
+      // 1. Fixture creator or tournament owner (authenticated)
+      // 2. Umpire scoring updates (unauthenticated but only specific fields)
+      allow update: if (request.auth != null &&
+                       (request.auth.uid == resource.data.createdBy ||
+                        isTournamentOwner(resource.data.tournamentId))) ||
+                       isUmpireScoringUpdate(request.resource.data, resource.data);
+      
+      // Allow deleting only by the fixture creator or tournament owner
+      allow delete: if request.auth != null &&
+                    (request.auth.uid == resource.data.createdBy ||
+                     isTournamentOwner(resource.data.tournamentId));
+    }
+    
+    // Users can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Function to validate player data structure
+    function isValidPlayerData(data) {
+      return data.keys().hasAll(['name', 'tournamentId', 'createdBy']) &&
+             data.name is string &&
+             data.tournamentId is string &&
+             data.createdBy is string &&
+             (data.age == null || data.age is number) &&
+             (data.gender == null || data.gender is string) &&
+             (data.duprId == null || data.duprId is string) &&
+             (data.photo == null || (data.photo is map &&
+              data.photo.keys().hasAll(['url', 'publicId']) &&
+              data.photo.url is string &&
+              data.photo.publicId is string));
+    }
+    
+    // Function to validate team data structure
+    function isValidTeamData(data) {
+      return data.keys().hasAll(['name', 'playerIds', 'tournamentId', 'createdBy']) &&
+             data.name is string &&
+             data.playerIds is list &&
+             data.tournamentId is string &&
+             data.createdBy is string &&
+             (data.description == null || data.description is string);
+    }
+    
+    // Function to validate fixture data structure
+    function isValidFixtureData(data) {
+      return data.tournamentId is string &&
+             data.date is timestamp &&
+             (data.time == null || data.time is string) &&
+             data.matchType is string &&
+             data.matchTypeLabel is string &&
+             data.team1 is string &&
+             data.team2 is string &&
+             data.team1Name is string &&
+             data.team2Name is string &&
+             data.status is string &&
+             data.createdBy is string &&
+             (data.fixtureGroupId == null || data.fixtureGroupId is string) &&
+             (data.matchNumber == null || data.matchNumber is number) &&
+             (data.player1Team1 == null || data.player1Team1 is string) &&
+             (data.player2Team1 == null || data.player2Team1 is string) &&
+             (data.player1Team2 == null || data.player1Team2 is string) &&
+             (data.player2Team2 == null || data.player2Team2 is string) &&
+             (data.youtubeLink == null || data.youtubeLink is string) &&
+             (data.score == null || data.score is map) &&
+             (data.createdAt == null || data.createdAt is timestamp) &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
+    }
+    
+    // Function to check if this is a valid umpire scoring update
+    function isUmpireScoringUpdate(newData, existingData) {
+      // Allow updates to scoring-related fields only
+      let allowedFields = ['scores', 'gamesCount', 'pointsPerGame', 'lastUpdated', 'status', 'completedAt'];
+      let changedFields = newData.diff(existingData).changedKeys();
+      
+      // Check that only allowed fields are being changed
+      return changedFields.hasOnly(allowedFields) &&
+             // Ensure core match data remains unchanged
+             newData.tournamentId == existingData.tournamentId &&
+             newData.team1 == existingData.team1 &&
+             newData.team2 == existingData.team2 &&
+             newData.createdBy == existingData.createdBy &&
+             // Validate scoring data structure if present
+             (newData.scores == null || isValidScoringData(newData.scores)) &&
+             (newData.gamesCount == null || newData.gamesCount is number) &&
+             (newData.pointsPerGame == null || newData.pointsPerGame is list);
+    }
+    
+    // Function to validate scoring data structure
+    function isValidScoringData(scores) {
+      return scores is map &&
+             scores.keys().hasAll(['player1', 'player2']) &&
+             scores.player1 is map &&
+             scores.player2 is map;
+    }
+    
+    // Function to check if user is tournament owner
+    function isTournamentOwner(tournamentId) {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/tournaments/$(tournamentId)) &&
+             get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.createdBy == request.auth.uid;
+    }
+  }
+}

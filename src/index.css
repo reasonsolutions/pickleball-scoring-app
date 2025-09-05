@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom form styling for Create Tournament page */
+.form-section {
+  @apply mb-8;
+}
+
+.form-section:last-child {
+  @apply mb-0;
+}
+
+/* Enhanced checkbox styling */
+.checkbox:checked {
+  @apply bg-primary border-primary;
+}
+
+/* Form input focus states */
+.input:focus,
+.textarea:focus {
+  @apply ring-2 ring-primary ring-opacity-20;
+}
+
+/* Section headers */
+.form-section h3 {
+  @apply text-base-content opacity-90;
+}
+
+/* Improved button spacing and styling */
+.btn-lg {
+  @apply px-8 py-3 text-base;
+}
+
+/* Custom styles can be added here */
