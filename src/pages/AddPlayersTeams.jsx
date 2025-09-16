@@ -512,7 +512,7 @@ export default function AddPlayersTeams() {
           <div className="mt-6">
             <button 
               className="btn btn-outline"
-              onClick={() => navigate(`/tournaments/${id}`)}
+              onClick={() => navigate(`/admin/tournaments/${id}`)}
             >
               Back to Tournament
             </button>
@@ -530,7 +530,7 @@ export default function AddPlayersTeams() {
           <div className="flex items-center gap-4 mb-4">
             <button 
               className="btn btn-ghost btn-sm"
-              onClick={() => navigate(`/tournaments/${id}`)}
+              onClick={() => navigate(`/admin/tournaments/${id}`)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />

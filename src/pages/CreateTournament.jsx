@@ -126,7 +126,7 @@ export default function CreateTournament() {
       };
 
       await addDoc(collection(db, 'tournaments'), tournamentData);
-      navigate('/tournaments');
+      navigate('/admin/tournaments');
     } catch (error) {
       console.error('Error creating tournament:', error);
       setError('Failed to create tournament. Please try again.');
@@ -379,7 +379,7 @@ export default function CreateTournament() {
                   <button
                     type="button"
                     className="btn btn-outline btn-lg"
-                    onClick={() => navigate('/tournaments')}
+                    onClick={() => navigate('/admin/tournaments')}
                     disabled={loading}
                   >
                     Cancel

@@ -25,12 +25,12 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
-      <div className="card w-96 bg-base-100 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-main)' }}>
+      <div className="card w-96 shadow-xl card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
         <div className="card-body">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-primary">Pickleball Tourny</h1>
-            <p className="text-base-content/70 mt-2">Sign in to your account</p>
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--primary-green)' }}>Pickleball Tourny</h1>
+            <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>Sign in to your account</p>
           </div>
 
           {error && (
@@ -45,12 +45,17 @@ export default function Login() {
           <form onSubmit={handleSubmit}>
             <div className="form-control w-full mb-4">
               <label className="label">
-                <span className="label-text">Email</span>
+                <span className="label-text" style={{ color: 'var(--text-primary)' }}>Email</span>
               </label>
               <input
                 type="email"
                 placeholder="Enter your email"
                 className="input input-bordered w-full"
+                style={{
+                  borderColor: 'var(--border-light)',
+                  backgroundColor: 'var(--bg-card)',
+                  color: 'var(--text-primary)'
+                }}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -59,12 +64,17 @@ export default function Login() {
 
             <div className="form-control w-full mb-6">
               <label className="label">
-                <span className="label-text">Password</span>
+                <span className="label-text" style={{ color: 'var(--text-primary)' }}>Password</span>
               </label>
               <input
                 type="password"
                 placeholder="Enter your password"
                 className="input input-bordered w-full"
+                style={{
+                  borderColor: 'var(--border-light)',
+                  backgroundColor: 'var(--bg-card)',
+                  color: 'var(--text-primary)'
+                }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -73,19 +83,24 @@ export default function Login() {
 
             <button
               type="submit"
-              className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
+              className={`btn w-full ${loading ? 'loading' : ''}`}
+              style={{
+                backgroundColor: 'var(--primary-green)',
+                color: 'var(--text-primary)',
+                border: 'none'
+              }}
               disabled={loading}
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
-          <div className="divider">OR</div>
+          <div className="divider" style={{ color: 'var(--text-muted)' }}>OR</div>
 
           <div className="text-center">
-            <p className="text-base-content/70">
+            <p style={{ color: 'var(--text-secondary)' }}>
               Don't have an account?{' '}
-              <Link to="/register" className="link link-primary">
+              <Link to="/register" className="link" style={{ color: 'var(--primary-blue)' }}>
                 Sign up
               </Link>
             </p>

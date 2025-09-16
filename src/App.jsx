@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
+import AdminDashboard from './pages/AdminDashboard';
 import MyTournaments from './pages/MyTournaments';
 import CreateTournament from './pages/CreateTournament';
 import TournamentDetails from './pages/TournamentDetails';
@@ -13,6 +14,7 @@ import AddFixtures from './pages/AddFixtures';
 import FixtureList from './pages/FixtureList';
 import AdminCleanup from './pages/AdminCleanup';
 import UmpireScoring from './pages/UmpireScoring';
+import MatchDetails from './pages/MatchDetails';
 
 function App() {
   return (
@@ -23,45 +25,46 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/" element={<Home />} />
             
-            {/* Protected Routes */}
-            <Route path="/" element={
+            {/* Admin Dashboard - Protected Routes */}
+            <Route path="/admin" element={
               <ProtectedRoute>
-                <Home />
+                <AdminDashboard />
               </ProtectedRoute>
             } />
             
-            <Route path="/tournaments" element={
+            <Route path="/admin/tournaments" element={
               <ProtectedRoute>
                 <MyTournaments />
               </ProtectedRoute>
             } />
             
-            <Route path="/tournaments/create" element={
+            <Route path="/admin/tournaments/create" element={
               <ProtectedRoute>
                 <CreateTournament />
               </ProtectedRoute>
             } />
             
-            <Route path="/tournaments/:id" element={
+            <Route path="/admin/tournaments/:id" element={
               <ProtectedRoute>
                 <TournamentDetails />
               </ProtectedRoute>
             } />
             
-            <Route path="/tournaments/:id/players-teams" element={
+            <Route path="/admin/tournaments/:id/players-teams" element={
               <ProtectedRoute>
                 <AddPlayersTeams />
               </ProtectedRoute>
             } />
             
-            <Route path="/tournaments/:id/fixtures" element={
+            <Route path="/admin/tournaments/:id/fixtures" element={
               <ProtectedRoute>
                 <AddFixtures />
               </ProtectedRoute>
             } />
             
-            <Route path="/tournaments/:id/fixtures/:fixtureId" element={
+            <Route path="/admin/tournaments/:id/fixtures/:fixtureId" element={
               <ProtectedRoute>
                 <FixtureList />
               </ProtectedRoute>
@@ -75,6 +78,9 @@ function App() {
             
             {/* Umpire Scoring Route - Public access for umpires */}
             <Route path="/umpire/:matchId" element={<UmpireScoring />} />
+            
+            {/* Match Details Route - Public access for viewers */}
+            <Route path="/match/:matchId" element={<MatchDetails />} />
             
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import SwipeToEndMatch from '../components/SwipeToEndMatch';
+import YouTubeUrlManager from '../components/YouTubeUrlManager';
 
 export default function UmpireScoring() {
   const { matchId } = useParams();
@@ -19,6 +21,10 @@ export default function UmpireScoring() {
   const [scores, setScores] = useState({});
   const [currentGame, setCurrentGame] = useState(0);
   const [matchEnded, setMatchEnded] = useState(false);
+  
+  // Serve states
+  const [servingPlayer, setServingPlayer] = useState('player1'); // 'player1' or 'player2'
+  const [serveSequence, setServeSequence] = useState(0); // 0 = first serve, 1 = second serve (for doubles)
 
   useEffect(() => {
     const fetchMatch = async () => {
@@ -34,6 +40,8 @@ export default function UmpireScoring() {
             setSetupStep('scoring');
             setGamesCount(matchData.gamesCount || 3);
             setPointsPerGame(matchData.pointsPerGame || [11, 11, 11]);
+            setServingPlayer(matchData.servingPlayer || 'player1');
+            setServeSequence(matchData.serveSequence || 0);
           } else {
             // Initialize empty scores structure
             initializeScores(gamesCount, pointsPerGame);
@@ -92,9 +100,23 @@ export default function UmpireScoring() {
     setPointsPerGame(newPoints);
   };
 
-  const handleSetupComplete = () => {
+  const handleSetupComplete = async () => {
     initializeScores(gamesCount, pointsPerGame);
     setSetupStep('scoring');
+    
+    // Set match status to 'live' when scoring starts
+    try {
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        status: 'live',
+        gamesCount,
+        pointsPerGame,
+        servingPlayer,
+        serveSequence,
+        startedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error setting match to live:', error);
+    }
   };
 
   const updateScore = async (player, gameIndex, increment) => {
@@ -112,12 +134,15 @@ export default function UmpireScoring() {
     
     setScores(newScores);
     
-    // Save to Firebase
+    // Save to Firebase with live status
     try {
       await updateDoc(doc(db, 'fixtures', matchId), {
         scores: newScores,
         gamesCount,
         pointsPerGame,
+        servingPlayer,
+        serveSequence,
+        status: 'live',
         lastUpdated: serverTimestamp()
       });
     } catch (error) {
@@ -141,6 +166,13 @@ export default function UmpireScoring() {
     return null;
   };
 
+  const handleServeChange = () => {
+    // Toggle serve between players
+    const newServingPlayer = servingPlayer === 'player1' ? 'player2' : 'player1';
+    setServingPlayer(newServingPlayer);
+    setServeSequence(0); // Reset serve sequence when serve changes
+  };
+
   const handleEndMatch = async () => {
     try {
       await updateDoc(doc(db, 'fixtures', matchId), {
@@ -148,7 +180,10 @@ export default function UmpireScoring() {
         scores,
         gamesCount,
         pointsPerGame,
-        completedAt: serverTimestamp()
+        servingPlayer,
+        serveSequence,
+        completedAt: serverTimestamp(),
+        endedAt: serverTimestamp()
       });
       setMatchEnded(true);
     } catch (error) {
@@ -277,7 +312,7 @@ export default function UmpireScoring() {
                 >
                   Back
                 </button>
-                <button 
+                <button
                   className="btn btn-primary flex-1"
                   onClick={handleSetupComplete}
                 >
@@ -332,89 +367,129 @@ export default function UmpireScoring() {
         </div>
       </div>
 
+      {/* Serve Change Button - Positioned between player sections */}
+      <div className="relative flex justify-center items-center py-4 bg-base-200">
+        <button
+          className="w-20 h-20 bg-yellow-400 hover:bg-yellow-500 rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 z-10"
+          onClick={handleServeChange}
+          title="Change Serve"
+        >
+          {/* Paddle Icon */}
+          <svg
+            className="w-10 h-10 text-black"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1s1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+            <rect x="10.5" y="16" width="3" height="6" rx="1.5"/>
+          </svg>
+        </button>
+      </div>
+
       {/* Player 1 Scoring */}
-      <div className="bg-purple-200 p-6">
+      <div className={`p-6 ${servingPlayer === 'player1' ? 'bg-green-200' : 'bg-purple-200'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center relative ${
+              servingPlayer === 'player1' ? 'bg-green-500' : 'bg-red-500'
+            }`}>
               {getPlayerImage('player1') ? (
-                <img 
-                  src={getPlayerImage('player1')} 
-                  alt="Player 1" 
+                <img
+                  src={getPlayerImage('player1')}
+                  alt="Player 1"
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <span className="text-white font-bold text-xl">P1</span>
               )}
+              {servingPlayer === 'player1' && (
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                  </svg>
+                </div>
+              )}
             </div>
             <div className="text-xl font-bold text-black">
               {getPlayerName('player1')}
+              {servingPlayer === 'player1' && (
+                <span className="ml-2 text-sm text-green-700 font-normal">(Serving)</span>
+              )}
             </div>
           </div>
           
-          <div className="flex flex-col gap-2">
-            <button
-              className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
-              onClick={() => updateScore('player1', currentGame, 1)}
-            >
-              <span className="text-2xl">+</span>
-            </button>
-            <button
-              className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
-              onClick={() => updateScore('player1', currentGame, -1)}
-            >
-              <span className="text-2xl">-</span>
-            </button>
-          </div>
+          {servingPlayer === 'player1' && (
+            <div className="flex flex-col gap-2">
+              <button
+                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                onClick={() => updateScore('player1', currentGame, 1)}
+              >
+                <span className="text-2xl">+</span>
+              </button>
+              <button
+                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                onClick={() => updateScore('player1', currentGame, -1)}
+              >
+                <span className="text-2xl">-</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Player 2 Scoring */}
-      <div className="bg-gray-300 p-6">
+      <div className={`p-6 ${servingPlayer === 'player2' ? 'bg-green-200' : 'bg-gray-300'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center relative ${
+              servingPlayer === 'player2' ? 'bg-green-500' : 'bg-red-500'
+            }`}>
               {getPlayerImage('player2') ? (
-                <img 
-                  src={getPlayerImage('player2')} 
-                  alt="Player 2" 
+                <img
+                  src={getPlayerImage('player2')}
+                  alt="Player 2"
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <span className="text-white font-bold text-xl">P2</span>
               )}
+              {servingPlayer === 'player2' && (
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                  </svg>
+                </div>
+              )}
             </div>
             <div className="text-xl font-bold text-black">
               {getPlayerName('player2')}
+              {servingPlayer === 'player2' && (
+                <span className="ml-2 text-sm text-green-700 font-normal">(Serving)</span>
+              )}
             </div>
           </div>
           
-          <div className="flex flex-col gap-2">
-            <button
-              className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
-              onClick={() => updateScore('player2', currentGame, 1)}
-            >
-              <span className="text-2xl">+</span>
-            </button>
-            <button
-              className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
-              onClick={() => updateScore('player2', currentGame, -1)}
-            >
-              <span className="text-2xl">-</span>
-            </button>
-          </div>
+          {servingPlayer === 'player2' && (
+            <div className="flex flex-col gap-2">
+              <button
+                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                onClick={() => updateScore('player2', currentGame, 1)}
+              >
+                <span className="text-2xl">+</span>
+              </button>
+              <button
+                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                onClick={() => updateScore('player2', currentGame, -1)}
+              >
+                <span className="text-2xl">-</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* End Match Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-400 p-4">
-        <button
-          className="w-full py-4 text-2xl font-bold text-black bg-transparent border-none"
-          onClick={handleEndMatch}
-        >
-          SWIPE TO END MATCH
-        </button>
-      </div>
+      {/* Swipe to End Match */}
+      <SwipeToEndMatch onEndMatch={handleEndMatch} />
 
       {/* Error Display */}
       {error && (

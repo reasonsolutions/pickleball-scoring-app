@@ -35,7 +35,7 @@ export default function TournamentCard({ tournament }) {
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+    <div className="card shadow-xl hover:shadow-2xl transition-shadow card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
       {tournament.coverImageUrl && (
         <figure className="h-48 overflow-hidden">
           <img
@@ -48,48 +48,57 @@ export default function TournamentCard({ tournament }) {
       
       <div className="card-body">
         <div className="flex justify-between items-start mb-2">
-          <h2 className="card-title text-lg">{tournament.name}</h2>
+          <h2 className="card-title text-lg" style={{ color: 'var(--text-primary)' }}>{tournament.name}</h2>
           {getStatusBadge(tournament)}
         </div>
 
-        <p className="text-base-content/70 text-sm mb-4 line-clamp-2">
+        <p className="text-sm mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
           {tournament.description}
         </p>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <div className="text-xs text-base-content/60 uppercase tracking-wide">Start Date</div>
-            <div className="font-semibold">{formatDate(tournament.startDate)}</div>
+            <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Start Date</div>
+            <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatDate(tournament.startDate)}</div>
           </div>
           <div>
-            <div className="text-xs text-base-content/60 uppercase tracking-wide">End Date</div>
-            <div className="font-semibold">{formatDate(tournament.endDate)}</div>
+            <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>End Date</div>
+            <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatDate(tournament.endDate)}</div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <div className="text-xs text-base-content/60 uppercase tracking-wide">Prize Money</div>
-            <div className="font-semibold text-success">{formatCurrency(tournament.prizeMoney)}</div>
+            <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Prize Money</div>
+            <div className="font-semibold" style={{ color: 'var(--success-green)' }}>{formatCurrency(tournament.prizeMoney)}</div>
           </div>
           {tournament.registrationFee && (
             <div>
-              <div className="text-xs text-base-content/60 uppercase tracking-wide">Entry Fee</div>
-              <div className="font-semibold">{formatCurrency(tournament.registrationFee)}</div>
+              <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Entry Fee</div>
+              <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(tournament.registrationFee)}</div>
             </div>
           )}
         </div>
 
         <div className="card-actions justify-end">
           <button
-            className="btn btn-primary btn-sm"
-            onClick={() => navigate(`/tournaments/${tournament.id}`)}
+            className="btn btn-sm"
+            style={{
+              backgroundColor: 'var(--primary-green)',
+              color: 'var(--text-primary)',
+              border: 'none'
+            }}
+            onClick={() => navigate(`/admin/tournaments/${tournament.id}`)}
           >
             View Details
           </button>
           <button
             className="btn btn-outline btn-sm"
-            onClick={() => navigate(`/tournaments/${tournament.id}/edit`)}
+            style={{
+              borderColor: 'var(--primary-blue)',
+              color: 'var(--primary-blue)'
+            }}
+            onClick={() => navigate(`/admin/tournaments/${tournament.id}/edit`)}
           >
             Edit
           </button>

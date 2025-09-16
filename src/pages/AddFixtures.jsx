@@ -537,7 +537,7 @@ export default function AddFixtures() {
           <div className="mt-6">
             <button 
               className="btn btn-outline"
-              onClick={() => navigate(`/tournaments/${id}`)}
+              onClick={() => navigate(`/admin/tournaments/${id}`)}
             >
               Back to Tournament
             </button>
@@ -551,33 +551,35 @@ export default function AddFixtures() {
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto px-2 sm:px-4 lg:max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
             <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => navigate(`/tournaments/${id}`)}
+              className="btn btn-ghost btn-sm flex-shrink-0 self-start"
+              onClick={() => navigate(`/admin/tournaments/${id}`)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
-              Back to Tournament
+              <span className="hidden sm:inline">Back to Tournament</span>
+              <span className="sm:hidden">Back</span>
             </button>
             
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-sm sm:btn-md flex-shrink-0"
               onClick={() => setShowBulkModal(true)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
               </svg>
-              Create Fixture
+              <span className="hidden sm:inline">Create Fixture</span>
+              <span className="sm:hidden">Create</span>
             </button>
           </div>
           
-          <h1 className="text-4xl font-bold mb-2">Add Fixtures</h1>
-          <p className="text-base-content/70 text-lg">{tournament?.name}</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">Add Fixtures</h1>
+          <p className="text-base-content/70 text-sm sm:text-base lg:text-lg break-words">{tournament?.name}</p>
         </div>
 
         {error && (
@@ -590,37 +592,37 @@ export default function AddFixtures() {
         )}
 
         {/* Date Calendar */}
-        <div className="card bg-base-100 shadow-xl mb-8">
-          <div className="card-body">
-            <h2 className="card-title text-2xl mb-6">Tournament Schedule</h2>
+        <div className="card bg-base-100 shadow-xl mb-8 w-full overflow-hidden">
+          <div className="card-body p-4 sm:p-6">
+            <h2 className="card-title text-xl sm:text-2xl mb-4 sm:mb-6 break-words">Tournament Schedule</h2>
             
-            <div className="overflow-x-auto">
-              <div className="flex gap-4 pb-4" style={{ minWidth: `${dateRange.length * 200}px` }}>
+            <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100">
+              <div className="flex gap-3 sm:gap-4 pb-4 min-w-max">
                 {dateRange.map((date, index) => {
                   const dateKey = date.toDateString();
                   const dayFixtures = fixtures[dateKey] || [];
                   
                   return (
-                    <div key={index} className="flex-shrink-0 w-48">
-                      <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow">
-                        <div className="card-body p-4">
-                          <div className="text-center mb-3">
-                            <div className="text-lg font-bold">{formatDate(date)}</div>
-                            <div className="text-sm text-base-content/60">
+                    <div key={index} className="flex-shrink-0 w-40 sm:w-48">
+                      <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow h-full">
+                        <div className="card-body p-3 sm:p-4">
+                          <div className="text-center mb-2 sm:mb-3">
+                            <div className="text-sm sm:text-lg font-bold break-words">{formatDate(date)}</div>
+                            <div className="text-xs sm:text-sm text-base-content/60">
                               {date.toLocaleDateString('en-US', { year: 'numeric' })}
                             </div>
                           </div>
                           
                           {/* Show fixture count for this date */}
-                          <div className="mb-3 min-h-[60px] flex items-center justify-center">
+                          <div className="mb-2 sm:mb-3 min-h-[50px] sm:min-h-[60px] flex items-center justify-center">
                             {dayFixtures.length > 0 ? (
                               <div className="text-center">
-                                <div className="badge badge-primary badge-lg">
+                                <div className="badge badge-primary badge-sm sm:badge-lg">
                                   {dayFixtures.length} fixture{dayFixtures.length !== 1 ? 's' : ''}
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-center text-base-content/50 text-sm">
+                              <div className="text-center text-base-content/50 text-xs sm:text-sm">
                                 No fixtures
                               </div>
                             )}
@@ -628,7 +630,7 @@ export default function AddFixtures() {
                           
                           <div className="space-y-2">
                             <button
-                              className="btn btn-outline btn-sm w-full"
+                              className="btn btn-outline btn-xs sm:btn-sm w-full text-xs sm:text-sm"
                               onClick={() => {
                                 setSelectedDateForView(date);
                               }}
@@ -647,10 +649,10 @@ export default function AddFixtures() {
         </div>
 
         {/* Fixtures List */}
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="card-title text-2xl">
+        <div className="card bg-base-100 shadow-xl w-full overflow-hidden">
+          <div className="card-body p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <h2 className="card-title text-lg sm:text-xl lg:text-2xl break-words min-w-0">
                 {selectedDateForView
                   ? `Fixtures for ${selectedDateForView.toLocaleDateString('en-US', {
                       weekday: 'long',
@@ -663,10 +665,11 @@ export default function AddFixtures() {
               </h2>
               {selectedDateForView && (
                 <button
-                  className="btn btn-ghost btn-sm"
+                  className="btn btn-ghost btn-sm flex-shrink-0 self-start sm:self-center"
                   onClick={() => setSelectedDateForView(null)}
                 >
-                  Show All Fixtures
+                  <span className="hidden sm:inline">Show All Fixtures</span>
+                  <span className="sm:hidden">Show All</span>
                 </button>
               )}
             </div>
@@ -686,57 +689,58 @@ export default function AddFixtures() {
                   })
                   .sort(([, a], [, b]) => {
                     // Sort by date
-                    return new Date(a.date) - new Date(b.date);
+                    return a.date.toDate() - b.date.toDate();
                   })
                   .map(([groupKey, group]) => (
                     <div
                       key={groupKey}
-                      className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => navigate(`/tournaments/${id}/fixtures/${group.id}`)}
+                      className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow cursor-pointer w-full overflow-hidden"
+                      onClick={() => navigate(`/admin/tournaments/${id}/fixtures/${group.id}`)}
                     >
-                      <div className="card-body p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-4">
-                            <div className="text-lg font-bold">
-                              {new Date(group.date).toLocaleDateString('en-US', {
+                      <div className="card-body p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-4">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+                            <div className="text-base sm:text-lg font-bold flex-shrink-0">
+                              {group.date.toDate().toLocaleDateString('en-US', {
                                 weekday: 'short',
                                 month: 'short',
                                 day: 'numeric'
                               })}
                             </div>
-                            <div className="badge badge-secondary badge-lg">
+                            <div className="badge badge-secondary badge-sm sm:badge-lg">
                               {group.matches.length} matches
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-shrink-0">
                             <button
-                              className="btn btn-ghost btn-sm"
+                              className="btn btn-ghost btn-xs sm:btn-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 // Handle edit fixture group
                               }}
                             >
-                              Edit
+                              <span className="hidden sm:inline">Edit</span>
+                              <span className="sm:hidden">✏️</span>
                             </button>
                           </div>
                         </div>
                         
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="text-2xl font-bold text-primary">{group.team1Name}</div>
-                          <div className="text-xl font-medium text-base-content/60">VS</div>
-                          <div className="text-2xl font-bold text-secondary">{group.team2Name}</div>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-3">
+                          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary break-words min-w-0">{group.team1Name}</div>
+                          <div className="text-base sm:text-lg lg:text-xl font-medium text-base-content/60 flex-shrink-0 self-center">VS</div>
+                          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-secondary break-words min-w-0 sm:text-right">{group.team2Name}</div>
                         </div>
                         
                         {/* Show match types */}
-                        <div className="flex flex-wrap gap-2 mt-4">
+                        <div className="flex flex-wrap gap-1 sm:gap-2 mt-4">
                           {group.matches.map((match, index) => (
-                            <div key={index} className="badge badge-outline">
+                            <div key={index} className="badge badge-outline badge-sm sm:badge-md break-words">
                               {match.matchTypeLabel}
                             </div>
                           ))}
                         </div>
                         
-                        <div className="text-center mt-4 text-sm text-base-content/60">
+                        <div className="text-center mt-4 text-xs sm:text-sm text-base-content/60">
                           Click to view all matches
                         </div>
                       </div>
@@ -772,7 +776,7 @@ export default function AddFixtures() {
         {/* Create Fixture Modal */}
         {showModal && (
           <div className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-2xl">
+            <div className="modal-box w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
               <h3 className="font-bold text-lg mb-4">
                 Create Fixture for {selectedDate?.toLocaleDateString()}
               </h3>
@@ -981,7 +985,7 @@ export default function AddFixtures() {
         {/* Bulk Fixture Creation Modal */}
         {showBulkModal && (
           <div className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-2xl">
+            <div className="modal-box w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
               <h3 className="font-bold text-lg mb-4">
                 Create Fixture
               </h3>
@@ -1101,7 +1105,7 @@ export default function AddFixtures() {
         {/* Edit Fixture Modal */}
         {showEditModal && editingFixture && (
           <div className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-2xl">
+            <div className="modal-box w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
               <h3 className="font-bold text-lg mb-4">
                 Edit Fixture
               </h3>

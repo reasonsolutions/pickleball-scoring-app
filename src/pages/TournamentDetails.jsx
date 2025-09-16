@@ -107,7 +107,7 @@ export default function TournamentDetails() {
           <div className="mt-6">
             <button 
               className="btn btn-outline"
-              onClick={() => navigate('/tournaments')}
+              onClick={() => navigate('/admin/tournaments')}
             >
               Back to Tournaments
             </button>
@@ -127,7 +127,7 @@ export default function TournamentDetails() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <button 
               className="btn btn-ghost btn-sm self-start"
-              onClick={() => navigate('/tournaments')}
+              onClick={() => navigate('/admin/tournaments')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -191,7 +191,7 @@ export default function TournamentDetails() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       className="btn btn-primary btn-lg flex-1"
-                      onClick={() => navigate(`/tournaments/${id}/players-teams`)}
+                      onClick={() => navigate(`/admin/tournaments/${id}/players-teams`)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -200,7 +200,7 @@ export default function TournamentDetails() {
                     </button>
                     <button
                       className="btn btn-secondary btn-lg flex-1"
-                      onClick={() => navigate(`/tournaments/${id}/fixtures`)}
+                      onClick={() => navigate(`/admin/tournaments/${id}/fixtures`)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -255,7 +255,7 @@ export default function TournamentDetails() {
                     <>
                       <button 
                         className="btn btn-outline w-full"
-                        onClick={() => navigate(`/tournaments/${id}/edit`)}
+                        onClick={() => navigate(`/admin/tournaments/${id}/edit`)}
                       >
                         Edit Tournament
                       </button>

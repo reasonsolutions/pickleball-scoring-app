@@ -16,7 +16,7 @@ export default function Navbar() {
   }
 
   return (
-    <div className="navbar bg-base-100 shadow-lg">
+    <div className="navbar bg-base-100 shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
       <div className="navbar-start">
         <div className="dropdown">
           <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -25,19 +25,19 @@ export default function Navbar() {
             </svg>
           </div>
           <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-            <li><a href="/">Home</a></li>
-            <li><a href="/tournaments">My Tournaments</a></li>
+            <li><a href="/admin">Dashboard</a></li>
+            <li><a href="/admin/tournaments">My Tournaments</a></li>
           </ul>
         </div>
-        <a className="btn btn-ghost text-xl font-bold text-primary" href="/">
+        <a className="btn btn-ghost text-xl font-bold text-primary" href="/admin" style={{ color: 'var(--primary-green)' }}>
           🏓 Pickleball Tourny
         </a>
       </div>
 
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">
-          <li><a href="/" className="btn btn-ghost">Home</a></li>
-          <li><a href="/tournaments" className="btn btn-ghost">My Tournaments</a></li>
+          <li><a href="/admin" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">Dashboard</a></li>
+          <li><a href="/admin/tournaments" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">My Tournaments</a></li>
         </ul>
       </div>
 
@@ -49,7 +49,10 @@ export default function Navbar() {
                 {currentUser.photoURL ? (
                   <img alt="Profile" src={currentUser.photoURL} />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: 'var(--primary-green)', color: 'var(--text-primary)' }}
+                  >
                     {currentUser.displayName?.charAt(0) || currentUser.email?.charAt(0) || 'U'}
                   </div>
                 )}
@@ -57,11 +60,11 @@ export default function Navbar() {
             </div>
             <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
               <li className="menu-title">
-                <span>{currentUser.displayName || 'User'}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{currentUser.displayName || 'User'}</span>
               </li>
-              <li><a>{currentUser.email}</a></li>
+              <li><a style={{ color: 'var(--text-secondary)' }}>{currentUser.email}</a></li>
               <li><hr /></li>
-              <li><a onClick={handleLogout}>Logout</a></li>
+              <li><a onClick={handleLogout} className="hover:bg-primary hover:bg-opacity-10">Logout</a></li>
             </ul>
           </div>
         )}

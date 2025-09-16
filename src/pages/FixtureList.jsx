@@ -118,7 +118,7 @@ export default function FixtureList() {
   const handleEditMatch = (match) => {
     setEditingMatch(match);
     setEditForm({
-      date: match.date.toDate().toISOString().split('T')[0],
+      date: match.date && match.date.toDate ? match.date.toDate().toISOString().split('T')[0] : '',
       time: match.time || '',
       player1Team1: match.player1Team1 || '',
       player2Team1: match.player2Team1 || '',
@@ -224,7 +224,7 @@ export default function FixtureList() {
           <div className="mt-6">
             <button
               className="btn btn-outline"
-              onClick={() => navigate(`/tournaments/${tournamentId}/fixtures`)}
+              onClick={() => navigate(`/admin/tournaments/${tournamentId}/fixtures`)}
             >
               Back to Fixtures
             </button>
@@ -236,36 +236,41 @@ export default function FixtureList() {
 
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-full mx-auto px-2 sm:px-4 lg:max-w-6xl">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4 mb-4">
             <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => navigate(`/tournaments/${tournamentId}/fixtures`)}
+              className="btn btn-ghost btn-sm flex-shrink-0"
+              onClick={() => navigate(`/admin/tournaments/${tournamentId}/fixtures`)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
-              Back to Fixtures
+              <span className="hidden sm:inline">Back to Fixtures</span>
+              <span className="sm:hidden">Back</span>
             </button>
           </div>
           
-          <h1 className="text-4xl font-bold mb-2">Fixture Matches</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">Fixture Matches</h1>
           {fixtureInfo && (
-            <div className="flex items-center gap-4 text-lg">
-              <span className="text-primary font-bold">{fixtureInfo.team1Name}</span>
-              <span className="text-base-content/60">VS</span>
-              <span className="text-secondary font-bold">{fixtureInfo.team2Name}</span>
-              <span className="text-base-content/60">•</span>
-              <span className="text-base-content/70">
-                {fixtureInfo.date.toDate().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm sm:text-base lg:text-lg">
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                <span className="text-primary font-bold break-words">{fixtureInfo.team1Name}</span>
+                <span className="text-base-content/60 flex-shrink-0">VS</span>
+                <span className="text-secondary font-bold break-words">{fixtureInfo.team2Name}</span>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <span className="text-base-content/60 hidden sm:inline">•</span>
+                <span className="text-base-content/70 break-words">
+                  {fixtureInfo.date && fixtureInfo.date.toDate ? fixtureInfo.date.toDate().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : 'Invalid Date'}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -282,19 +287,19 @@ export default function FixtureList() {
         {/* Matches List */}
         <div className="space-y-4">
           {matches.map((match, index) => (
-            <div key={match.id} className="card bg-base-100 shadow-lg">
-              <div className="card-body p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="text-lg font-bold">Match {index + 1}</div>
-                    <div className="badge badge-primary badge-lg">
+            <div key={match.id} className="card bg-base-100 shadow-lg overflow-hidden">
+              <div className="card-body p-3 sm:p-4 lg:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
+                    <div className="text-base sm:text-lg font-bold flex-shrink-0">Match {index + 1}</div>
+                    <div className="badge badge-primary badge-sm sm:badge-lg break-words">
                       {match.matchTypeLabel}
                     </div>
                     {match.time && (
-                      <div className="text-lg font-bold">{match.time}</div>
+                      <div className="text-base sm:text-lg font-bold flex-shrink-0">{match.time}</div>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     {/* Live Video Icon */}
                     {match.youtubeLink && (
                       <div className="tooltip" data-tip="Live Stream Available">
@@ -302,9 +307,9 @@ export default function FixtureList() {
                           href={match.youtubeLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-10 h-10 bg-base-300 rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-content transition-colors"
+                          className="w-8 h-8 sm:w-10 sm:h-10 bg-base-300 rounded-full flex items-center justify-center hover:bg-primary hover:text-primary-content transition-colors"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                           </svg>
                         </a>
@@ -314,65 +319,66 @@ export default function FixtureList() {
                     {/* Umpire Icon */}
                     <div className="tooltip" data-tip="Open Umpire Scoring">
                       <button
-                        className="w-10 h-10 bg-base-300 rounded-full flex items-center justify-center hover:bg-secondary hover:text-secondary-content transition-colors"
+                        className="w-8 h-8 sm:w-10 sm:h-10 bg-base-300 rounded-full flex items-center justify-center hover:bg-secondary hover:text-secondary-content transition-colors"
                         onClick={() => {
                           const umpireUrl = `${window.location.origin}/umpire/${match.id}`;
                           window.open(umpireUrl, '_blank');
                         }}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                       </button>
                     </div>
                     
                     <button
-                      className="btn btn-ghost btn-sm"
+                      className="btn btn-ghost btn-xs sm:btn-sm"
                       onClick={() => handleEditMatch(match)}
                     >
-                      Edit
+                      <span className="hidden sm:inline">Edit</span>
+                      <span className="sm:hidden">✏️</span>
                     </button>
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center mb-3">
-                  <div className="text-xl font-bold">{match.team1Name}</div>
-                  <div className="text-lg font-medium text-base-content/60">VS</div>
-                  <div className="text-xl font-bold">{match.team2Name}</div>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-3">
+                  <div className="text-lg sm:text-xl font-bold break-words min-w-0">{match.team1Name}</div>
+                  <div className="text-base sm:text-lg font-medium text-base-content/60 flex-shrink-0 self-center">VS</div>
+                  <div className="text-lg sm:text-xl font-bold break-words min-w-0 sm:text-right">{match.team2Name}</div>
                 </div>
                 
                 {/* Show assigned players if any */}
                 {(match.player1Team1 || match.player1Team2) ? (
-                  <div className="grid grid-cols-2 gap-6 mt-4 pt-4 border-t border-base-300">
-                    <div>
-                      <div className="font-semibold text-sm text-base-content/70 mb-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-4 pt-4 border-t border-base-300">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm text-base-content/70 mb-2 break-words">
                         {match.team1Name} Players:
                       </div>
                       <div className="space-y-1">
                         {match.player1Team1 && (
-                          <div className="text-sm">• {match.player1Team1}</div>
+                          <div className="text-sm break-words">• {match.player1Team1}</div>
                         )}
                         {match.player2Team1 && (
-                          <div className="text-sm">• {match.player2Team1}</div>
+                          <div className="text-sm break-words">• {match.player2Team1}</div>
                         )}
                       </div>
                     </div>
-                    <div>
-                      <div className="font-semibold text-sm text-base-content/70 mb-2">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm text-base-content/70 mb-2 break-words">
                         {match.team2Name} Players:
                       </div>
                       <div className="space-y-1">
                         {match.player1Team2 && (
-                          <div className="text-sm">• {match.player1Team2}</div>
+                          <div className="text-sm break-words">• {match.player1Team2}</div>
                         )}
                         {match.player2Team2 && (
-                          <div className="text-sm">• {match.player2Team2}</div>
+                          <div className="text-sm break-words">• {match.player2Team2}</div>
                         )}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-base-content/50 border-t border-base-300 mt-4">
+                  <div className="text-center py-4 text-base-content/50 border-t border-base-300 mt-4 text-sm sm:text-base">
                     Players not assigned yet - Click Edit to assign players
                   </div>
                 )}
@@ -384,14 +390,14 @@ export default function FixtureList() {
         {/* Edit Match Modal */}
         {showEditModal && editingMatch && (
           <div className="modal modal-open">
-            <div className="modal-box w-11/12 max-w-2xl">
-              <h3 className="font-bold text-lg mb-4">
+            <div className="modal-box w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="font-bold text-base sm:text-lg mb-4 break-words">
                 Edit Match - {editingMatch.matchTypeLabel}
               </h3>
               
               <form onSubmit={handleUpdateMatch} className="space-y-4">
                 {/* Date and Time */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text font-medium">Date *</span>
@@ -399,7 +405,7 @@ export default function FixtureList() {
                     <input
                       type="date"
                       name="date"
-                      className="input input-bordered w-full"
+                      className="input input-bordered w-full input-sm sm:input-md"
                       value={editForm.date}
                       onChange={handleEditFormChange}
                       required
@@ -413,7 +419,7 @@ export default function FixtureList() {
                     <input
                       type="time"
                       name="time"
-                      className="input input-bordered w-full"
+                      className="input input-bordered w-full input-sm sm:input-md"
                       value={editForm.time}
                       onChange={handleEditFormChange}
                     />
@@ -429,7 +435,7 @@ export default function FixtureList() {
                     type="url"
                     name="youtubeLink"
                     placeholder="https://youtube.com/watch?v=..."
-                    className="input input-bordered w-full"
+                    className="input input-bordered w-full input-sm sm:input-md break-all"
                     value={editForm.youtubeLink}
                     onChange={handleEditFormChange}
                   />
@@ -437,13 +443,13 @@ export default function FixtureList() {
 
                 {/* Player Selection */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold">Player Assignment</h4>
+                  <h4 className="font-semibold text-sm sm:text-base">Player Assignment</h4>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Team 1 Players */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <label className="label">
-                        <span className="label-text font-medium">
+                        <span className="label-text font-medium text-sm break-words">
                           {editingMatch.team1Name} Players
                         </span>
                       </label>
@@ -480,9 +486,9 @@ export default function FixtureList() {
                     </div>
 
                     {/* Team 2 Players */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <label className="label">
-                        <span className="label-text font-medium">
+                        <span className="label-text font-medium text-sm break-words">
                           {editingMatch.team2Name} Players
                         </span>
                       </label>
@@ -520,10 +526,10 @@ export default function FixtureList() {
                   </div>
                 </div>
 
-                <div className="modal-action">
+                <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-0">
                   <button
                     type="button"
-                    className="btn btn-outline"
+                    className="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto"
                     onClick={() => {
                       setShowEditModal(false);
                       setEditingMatch(null);
@@ -531,7 +537,7 @@ export default function FixtureList() {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary">
+                  <button type="submit" className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
                     Update Match
                   </button>
                 </div>

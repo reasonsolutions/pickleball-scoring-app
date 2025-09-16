@@ -53,6 +53,21 @@ export default function MyTournaments() {
   const currentTournaments = filterTournaments(tournaments, 'current');
   const pastTournaments = filterTournaments(tournaments, 'past');
 
+  // Scroll functions for tournament cards
+  const scrollLeft = () => {
+    const container = document.querySelector('.tournaments-container');
+    if (container) {
+      container.scrollBy({ left: -320, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    const container = document.querySelector('.tournaments-container');
+    if (container) {
+      container.scrollBy({ left: 320, behavior: 'smooth' });
+    }
+  };
+
   const renderTournaments = (tournamentList, emptyMessage) => {
     if (loading) {
       return (
@@ -66,15 +81,19 @@ export default function MyTournaments() {
       return (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🏓</div>
-          <h3 className="text-xl font-semibold mb-2">{emptyMessage}</h3>
-          <p className="text-base-content/70 mb-6">
-            {activeTab === 'current' 
+          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{emptyMessage}</h3>
+          <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+            {activeTab === 'current'
               ? "Create your first tournament to get started!"
               : "Your completed tournaments will appear here."
             }
           </p>
           {activeTab === 'current' && (
-            <Link to="/tournaments/create" className="btn btn-primary">
+            <Link to="/admin/tournaments/create" className="btn" style={{
+              backgroundColor: 'var(--primary-green)',
+              color: 'var(--text-primary)',
+              border: 'none'
+            }}>
               Create Tournament
             </Link>
           )}
@@ -82,8 +101,51 @@ export default function MyTournaments() {
       );
     }
 
+    // Use horizontal scrolling layout when there are more than 4 tournaments
+    if (tournamentList.length > 4) {
+      return (
+        <div className="relative">
+          <div className="flex items-center">
+            {/* Left Arrow */}
+            <button
+              onClick={scrollLeft}
+              className="flex-shrink-0 p-2 rounded-full bg-white shadow-md hover:bg-gray-50 transition-colors mr-4 z-10"
+              style={{ backgroundColor: 'var(--bg-card)' }}
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Tournaments Container */}
+            <div className="tournaments-container flex-1 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
+                {tournamentList.map(tournament => (
+                  <div key={tournament.id} className="flex-shrink-0" style={{ width: '300px' }}>
+                    <TournamentCard tournament={tournament} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Arrow */}
+            <button
+              onClick={scrollRight}
+              className="flex-shrink-0 p-2 rounded-full bg-white shadow-md hover:bg-gray-50 transition-colors ml-4 z-10"
+              style={{ backgroundColor: 'var(--bg-card)' }}
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Use grid layout for 4 or fewer tournaments
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {tournamentList.map(tournament => (
           <TournamentCard key={tournament.id} tournament={tournament} />
         ))}
@@ -97,12 +159,16 @@ export default function MyTournaments() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">My Tournaments</h1>
-            <p className="text-base-content/70 mt-1">
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>My Tournaments</h1>
+            <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
               Manage and track your pickleball tournaments
             </p>
           </div>
-          <Link to="/tournaments/create" className="btn btn-primary">
+          <Link to="/admin/tournaments/create" className="btn" style={{
+            backgroundColor: 'var(--primary-green)',
+            color: 'var(--text-primary)',
+            border: 'none'
+          }}>
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
@@ -112,30 +178,42 @@ export default function MyTournaments() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="stat bg-base-200 rounded-lg">
-            <div className="stat-title">Total Tournaments</div>
-            <div className="stat-value text-primary">{tournaments.length}</div>
+          <div className="stat rounded-lg card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="stat-title" style={{ color: 'var(--text-secondary)' }}>Total Tournaments</div>
+            <div className="stat-value" style={{ color: 'var(--primary-blue)' }}>{tournaments.length}</div>
           </div>
-          <div className="stat bg-base-200 rounded-lg">
-            <div className="stat-title">Active Tournaments</div>
-            <div className="stat-value text-success">{currentTournaments.length}</div>
+          <div className="stat rounded-lg card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="stat-title" style={{ color: 'var(--text-secondary)' }}>Active Tournaments</div>
+            <div className="stat-value" style={{ color: 'var(--success-green)' }}>{currentTournaments.length}</div>
           </div>
-          <div className="stat bg-base-200 rounded-lg">
-            <div className="stat-title">Completed Tournaments</div>
-            <div className="stat-value text-neutral">{pastTournaments.length}</div>
+          <div className="stat rounded-lg card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="stat-title" style={{ color: 'var(--text-secondary)' }}>Completed Tournaments</div>
+            <div className="stat-value" style={{ color: 'var(--text-secondary)' }}>{pastTournaments.length}</div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="tabs tabs-boxed mb-6">
+        <div className="tabs tabs-boxed mb-6" style={{ backgroundColor: 'var(--bg-card)' }}>
           <button
             className={`tab ${activeTab === 'current' ? 'tab-active' : ''}`}
+            style={activeTab === 'current' ? {
+              backgroundColor: 'var(--primary-green)',
+              color: 'var(--text-primary)'
+            } : {
+              color: 'var(--text-secondary)'
+            }}
             onClick={() => setActiveTab('current')}
           >
             Current Tournaments ({currentTournaments.length})
           </button>
           <button
             className={`tab ${activeTab === 'past' ? 'tab-active' : ''}`}
+            style={activeTab === 'past' ? {
+              backgroundColor: 'var(--primary-green)',
+              color: 'var(--text-primary)'
+            } : {
+              color: 'var(--text-secondary)'
+            }}
             onClick={() => setActiveTab('past')}
           >
             Past Tournaments ({pastTournaments.length})
