@@ -578,7 +578,7 @@ export default function AddFixtures() {
             </button>
           </div>
           
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">Add Fixtures</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">Fixtures</h1>
           <p className="text-base-content/70 text-sm sm:text-base lg:text-lg break-words">{tournament?.name}</p>
         </div>
 

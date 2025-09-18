@@ -35,7 +35,8 @@ export default function AddPlayersTeams() {
   const [teamForm, setTeamForm] = useState({
     name: '',
     description: '',
-    selectedPlayers: []
+    selectedPlayers: [],
+    logo: null
   });
   const [playerSearch, setPlayerSearch] = useState('');
   
@@ -45,7 +46,8 @@ export default function AddPlayersTeams() {
   const [editTeamForm, setEditTeamForm] = useState({
     name: '',
     description: '',
-    selectedPlayers: []
+    selectedPlayers: [],
+    logo: null
   });
 
   // Edit player modal state
@@ -276,6 +278,20 @@ export default function AddPlayersTeams() {
     }));
   };
 
+  const handleTeamLogoUpload = (logoData) => {
+    setTeamForm(prev => ({
+      ...prev,
+      logo: logoData
+    }));
+  };
+
+  const handleEditTeamLogoUpload = (logoData) => {
+    setEditTeamForm(prev => ({
+      ...prev,
+      logo: logoData
+    }));
+  };
+
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     if (!teamForm.name.trim()) {
@@ -293,6 +309,10 @@ export default function AddPlayersTeams() {
         name: teamForm.name.trim(),
         description: teamForm.description.trim(),
         playerIds: teamForm.selectedPlayers,
+        logo: teamForm.logo ? {
+          url: teamForm.logo.url,
+          publicId: teamForm.logo.publicId
+        } : null,
         tournamentId: id,
         createdBy: currentUser.uid,
         createdAt: serverTimestamp()
@@ -304,7 +324,8 @@ export default function AddPlayersTeams() {
       setTeamForm({
         name: '',
         description: '',
-        selectedPlayers: []
+        selectedPlayers: [],
+        logo: null
       });
       setShowTeamModal(false);
       
@@ -324,7 +345,8 @@ export default function AddPlayersTeams() {
     setEditTeamForm({
       name: team.name,
       description: team.description || '',
-      selectedPlayers: team.playerIds || []
+      selectedPlayers: team.playerIds || [],
+      logo: team.logo || null
     });
     setShowEditTeamModal(true);
   };
@@ -363,6 +385,10 @@ export default function AddPlayersTeams() {
         name: editTeamForm.name.trim(),
         description: editTeamForm.description.trim(),
         playerIds: editTeamForm.selectedPlayers,
+        logo: editTeamForm.logo ? {
+          url: editTeamForm.logo.url,
+          publicId: editTeamForm.logo.publicId
+        } : null,
         updatedAt: serverTimestamp()
       };
 
@@ -372,7 +398,8 @@ export default function AddPlayersTeams() {
       setEditTeamForm({
         name: '',
         description: '',
-        selectedPlayers: []
+        selectedPlayers: [],
+        logo: null
       });
       setShowEditTeamModal(false);
       setEditingTeam(null);
@@ -1074,6 +1101,14 @@ export default function AddPlayersTeams() {
                   />
                 </div>
 
+                <CloudinaryImageUpload
+                  onImageUpload={handleTeamLogoUpload}
+                  currentImage={teamForm.logo?.url}
+                  label="Team Logo"
+                  uploadType="team"
+                  className="mb-4"
+                />
+
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">Select Players *</span>
@@ -1136,7 +1171,8 @@ export default function AddPlayersTeams() {
                       setTeamForm({
                         name: '',
                         description: '',
-                        selectedPlayers: []
+                        selectedPlayers: [],
+                        logo: null
                       });
                       setPlayerSearch('');
                     }}
@@ -1190,6 +1226,14 @@ export default function AddPlayersTeams() {
                     onChange={handleEditTeamFormChange}
                   />
                 </div>
+
+                <CloudinaryImageUpload
+                  onImageUpload={handleEditTeamLogoUpload}
+                  currentImage={editTeamForm.logo?.url}
+                  label="Team Logo"
+                  uploadType="team"
+                  className="mb-4"
+                />
 
                 <div className="form-control">
                   <label className="label">

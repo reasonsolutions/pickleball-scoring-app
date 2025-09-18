@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { uploadPlayerPhoto } from '../utils/cloudinary';
+import { uploadPlayerPhoto, uploadTeamLogo } from '../utils/cloudinary';
 
-export default function CloudinaryImageUpload({ onImageUpload, currentImage, className = "", label = "Player Photo" }) {
+export default function CloudinaryImageUpload({ onImageUpload, currentImage, className = "", label = "Player Photo", uploadType = "player" }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImage || null);
 
@@ -28,9 +28,10 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
       const previewUrl = URL.createObjectURL(file);
       setPreview(previewUrl);
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary using appropriate function
       try {
-        const result = await uploadPlayerPhoto(file);
+        const uploadFunction = uploadType === 'team' ? uploadTeamLogo : uploadPlayerPhoto;
+        const result = await uploadFunction(file);
         
         // Call parent callback with the result
         onImageUpload({
@@ -44,12 +45,13 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
         console.error('Cloudinary upload failed:', uploadError);
         
         // Show more specific error message
+        const imageType = uploadType === 'team' ? 'team logo' : 'player photo';
         if (uploadError.message.includes('Invalid upload preset')) {
-          alert('Cloudinary upload preset not configured. Please set up an unsigned upload preset named "player_photos" in your Cloudinary dashboard.');
+          alert(`Cloudinary upload preset not configured. Please set up an unsigned upload preset named "player_photos" in your Cloudinary dashboard.`);
         } else if (uploadError.message.includes('Upload failed')) {
-          alert('Upload failed. Please check your Cloudinary configuration and try again.');
+          alert(`${imageType} upload failed. Please check your Cloudinary configuration and try again.`);
         } else {
-          alert(`Upload failed: ${uploadError.message}`);
+          alert(`${imageType} upload failed: ${uploadError.message}`);
         }
         
         // Reset preview to previous state
@@ -82,8 +84,8 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
           <div className="w-32 h-32 mx-auto">
             <img
               src={preview}
-              alt="Player photo preview"
-              className="w-full h-full object-cover rounded-full border-4 border-base-300"
+              alt={`${uploadType === 'team' ? 'Team logo' : 'Player photo'} preview`}
+              className={`w-full h-full object-cover border-4 border-base-300 ${uploadType === 'team' ? 'rounded-lg' : 'rounded-full'}`}
             />
           </div>
           <div className="flex justify-center gap-2 mt-3">
@@ -120,10 +122,16 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
         </div>
       ) : (
         <div className="flex flex-col items-center">
-          <label className="w-32 h-32 border-2 border-dashed border-base-300 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors">
-            <svg className="w-8 h-8 text-base-content/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+          <label className={`w-32 h-32 border-2 border-dashed border-base-300 ${uploadType === 'team' ? 'rounded-lg' : 'rounded-full'} flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors`}>
+            {uploadType === 'team' ? (
+              <svg className="w-8 h-8 text-base-content/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            ) : (
+              <svg className="w-8 h-8 text-base-content/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            )}
             <p className="text-xs text-center text-base-content/60">Click to upload</p>
             <input
               type="file"

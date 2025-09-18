@@ -14,6 +14,8 @@ import AddFixtures from './pages/AddFixtures';
 import FixtureList from './pages/FixtureList';
 import AdminCleanup from './pages/AdminCleanup';
 import UmpireScoring from './pages/UmpireScoring';
+import TVDisplay from './pages/TVDisplay';
+import BasicScore from './pages/BasicScore';
 import MatchDetails from './pages/MatchDetails';
 
 function App() {
@@ -78,6 +80,12 @@ function App() {
             
             {/* Umpire Scoring Route - Public access for umpires */}
             <Route path="/umpire/:matchId" element={<UmpireScoring />} />
+            
+            {/* TV Display Route - Public access for TV display */}
+            <Route path="/tv/:matchId" element={<TVDisplay />} />
+            
+            {/* Basic Score Display Route - Public access for basic score display */}
+            <Route path="/basic-score/:matchId" element={<BasicScore />} />
             
             {/* Match Details Route - Public access for viewers */}
             <Route path="/match/:matchId" element={<MatchDetails />} />

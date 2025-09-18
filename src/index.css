@@ -298,6 +298,368 @@ body {
 }
 
 /* Utility class for hiding scrollbars */
+
+/* TV Display Styles - Optimized for 1470mm x 830mm (65-inch TV) */
+.tv-display-container {
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  font-family: 'Manrope', sans-serif;
+  color: white;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.tv-header {
+  text-align: center;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.tv-tournament-name {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tv-match-info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.tv-match-type {
+  background: var(--league-orange);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.tv-match-time {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.tv-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 2px solid #ef4444;
+  font-weight: 700;
+  animation: pulse-glow 2s infinite;
+}
+
+.tv-live-dot {
+  width: 15px;
+  height: 15px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+  }
+}
+
+.tv-score-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  padding: 30px;
+  width: 100%;
+  max-width: 1200px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tv-team-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.tv-team-row:last-child {
+  border-bottom: none;
+}
+
+.tv-team-info {
+  flex: 1;
+}
+
+.tv-players {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tv-player-name {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.1;
+}
+
+.tv-team-name {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  opacity: 0.9;
+  margin-top: 5px;
+}
+
+.tv-scores {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.tv-score-box {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+  font-size: 4rem;
+  font-weight: 900;
+  padding: 20px 30px;
+  border-radius: 15px;
+  min-width: 100px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.tv-vs-divider {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.tv-vs-divider span {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--league-orange);
+  background: rgba(255, 107, 53, 0.1);
+  padding: 15px 30px;
+  border-radius: 20px;
+  border: 2px solid var(--league-orange);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tv-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  padding: 15px 0;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.tv-date {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.tv-status {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: 2px solid #10b981;
+}
+
+/* Loading and Error States for TV */
+.tv-loading, .tv-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+}
+
+.tv-spinner {
+  width: 80px;
+  height: 80px;
+  border: 8px solid rgba(255, 255, 255, 0.2);
+  border-top: 8px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.tv-loading-text, .tv-error-text {
+  font-size: 3rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+}
+
+.tv-error-icon {
+  font-size: 6rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments for different TV sizes while maintaining aspect ratio */
+@media (max-width: 1920px) and (max-height: 1080px) {
+  .tv-tournament-name {
+    font-size: 2.8rem;
+  }
+  
+  .tv-player-name {
+    font-size: 3.2rem;
+  }
+  
+  .tv-team-name {
+    font-size: 1.6rem;
+  }
+  
+  .tv-score-box {
+    font-size: 3.8rem;
+    padding: 18px 25px;
+    min-width: 90px;
+  }
+  
+  .tv-match-info {
+    font-size: 1.6rem;
+  }
+  
+  .tv-vs-divider span {
+    font-size: 2.8rem;
+    padding: 12px 25px;
+  }
+  
+  .tv-date, .tv-status {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 1440px) and (max-height: 900px) {
+  .tv-tournament-name {
+    font-size: 2.5rem;
+  }
+  
+  .tv-player-name {
+    font-size: 2.8rem;
+  }
+  
+  .tv-team-name {
+    font-size: 1.4rem;
+  }
+  
+  .tv-score-box {
+    font-size: 3.5rem;
+    padding: 15px 20px;
+    min-width: 80px;
+  }
+  
+  .tv-match-info {
+    font-size: 1.4rem;
+  }
+  
+  .tv-vs-divider span {
+    font-size: 2.5rem;
+    padding: 10px 20px;
+  }
+  
+  .tv-date, .tv-status {
+    font-size: 1.4rem;
+  }
+  
+  .tv-score-card {
+    padding: 25px;
+  }
+  
+  .tv-team-row {
+    padding: 20px 0;
+  }
+}
+
+/* Ensure no scrolling on any screen size */
+@media (max-height: 800px) {
+  .tv-display-container {
+    padding: 15px;
+  }
+  
+  .tv-tournament-name {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+  }
+  
+  .tv-player-name {
+    font-size: 2.5rem;
+  }
+  
+  .tv-team-name {
+    font-size: 1.2rem;
+  }
+  
+  .tv-score-box {
+    font-size: 3rem;
+    padding: 12px 18px;
+    min-width: 70px;
+  }
+  
+  .tv-match-info {
+    font-size: 1.2rem;
+    gap: 20px;
+  }
+  
+  .tv-vs-divider {
+    padding: 15px 0;
+  }
+  
+  .tv-vs-divider span {
+    font-size: 2.2rem;
+    padding: 8px 18px;
+  }
+  
+  .tv-date, .tv-status {
+    font-size: 1.2rem;
+  }
+  
+  .tv-score-card {
+    padding: 20px;
+  }
+  
+  .tv-team-row {
+    padding: 15px 0;
+  }
+  
+  .tv-footer {
+    padding: 10px 0;
+  }
+}
 .scrollbar-hide {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */

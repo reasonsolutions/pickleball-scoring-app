@@ -25,6 +25,7 @@ export default function UmpireScoring() {
   // Serve states
   const [servingPlayer, setServingPlayer] = useState('player1'); // 'player1' or 'player2'
   const [serveSequence, setServeSequence] = useState(0); // 0 = first serve, 1 = second serve (for doubles)
+  const [teamServeCount, setTeamServeCount] = useState(0); // 0 = first serve of team, 1 = second serve of team
 
   useEffect(() => {
     const fetchMatch = async () => {
@@ -42,6 +43,7 @@ export default function UmpireScoring() {
             setPointsPerGame(matchData.pointsPerGame || [11, 11, 11]);
             setServingPlayer(matchData.servingPlayer || 'player1');
             setServeSequence(matchData.serveSequence || 0);
+            setTeamServeCount(matchData.teamServeCount || 0);
           } else {
             // Initialize empty scores structure
             initializeScores(gamesCount, pointsPerGame);
@@ -112,6 +114,7 @@ export default function UmpireScoring() {
         pointsPerGame,
         servingPlayer,
         serveSequence,
+        teamServeCount,
         startedAt: serverTimestamp()
       });
     } catch (error) {
@@ -142,6 +145,7 @@ export default function UmpireScoring() {
         pointsPerGame,
         servingPlayer,
         serveSequence,
+        teamServeCount,
         status: 'live',
         lastUpdated: serverTimestamp()
       });
@@ -161,16 +165,97 @@ export default function UmpireScoring() {
     }
   };
 
+  const getPartnerName = (playerKey) => {
+    if (!match) return null;
+    
+    if (playerKey === 'player1') {
+      return match.player2Team1 || null;
+    } else {
+      return match.player2Team2 || null;
+    }
+  };
+
+  const isDoublesMatch = () => {
+    return match && (match.player2Team1 || match.player2Team2);
+  };
+
   const getPlayerImage = (playerKey) => {
     // Return placeholder for now - can be enhanced to fetch actual player images
     return null;
   };
 
-  const handleServeChange = () => {
-    // Toggle serve between players
-    const newServingPlayer = servingPlayer === 'player1' ? 'player2' : 'player1';
-    setServingPlayer(newServingPlayer);
-    setServeSequence(0); // Reset serve sequence when serve changes
+  const handleServeChange = async () => {
+    let newServingPlayer = servingPlayer;
+    let newTeamServeCount = teamServeCount;
+    let newServeSequence = serveSequence;
+
+    if (isDoublesMatch()) {
+      // Doubles serving logic: each team serves twice
+      if (teamServeCount === 0) {
+        // First serve of the team, move to second serve
+        newTeamServeCount = 1;
+        setTeamServeCount(1);
+      } else {
+        // Second serve of the team, switch to other team's first serve
+        newServingPlayer = servingPlayer === 'player1' ? 'player2' : 'player1';
+        newTeamServeCount = 0;
+        newServeSequence = 0;
+        setServingPlayer(newServingPlayer);
+        setTeamServeCount(0);
+        setServeSequence(0);
+      }
+    } else {
+      // Singles serving logic: just toggle between players
+      newServingPlayer = servingPlayer === 'player1' ? 'player2' : 'player1';
+      newServeSequence = 0;
+      setServingPlayer(newServingPlayer);
+      setServeSequence(0);
+    }
+
+    // Save serve state to Firebase for real-time sync
+    try {
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        servingPlayer: newServingPlayer,
+        serveSequence: newServeSequence,
+        teamServeCount: newTeamServeCount,
+        lastUpdated: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error updating serve state:', error);
+      setError('Failed to update serve state');
+    }
+  };
+
+  const getServeIndicator = (playerKey) => {
+    if (servingPlayer !== playerKey) return null;
+    
+    if (isDoublesMatch()) {
+      // Show 1 or 2 pickleball icons based on team serve count
+      const iconCount = teamServeCount + 1;
+      return (
+        <div className="flex items-center ml-2">
+          {Array.from({ length: iconCount }, (_, index) => (
+            <svg
+              key={index}
+              className="w-4 h-4 text-orange-500 mr-1"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1s1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+              <rect x="10.5" y="16" width="3" height="6" rx="1.5"/>
+            </svg>
+          ))}
+          <span className="text-sm text-green-700 font-normal">
+            (Serve {iconCount}/2)
+          </span>
+        </div>
+      );
+    } else {
+      // Singles: just show serving indicator
+      return (
+        <span className="ml-2 text-sm text-green-700 font-normal">(Serving)</span>
+      );
+    }
   };
 
   const handleEndMatch = async () => {
@@ -411,9 +496,14 @@ export default function UmpireScoring() {
               )}
             </div>
             <div className="text-xl font-bold text-black">
-              {getPlayerName('player1')}
-              {servingPlayer === 'player1' && (
-                <span className="ml-2 text-sm text-green-700 font-normal">(Serving)</span>
+              <div className="flex items-center">
+                {getPlayerName('player1')}
+                {getServeIndicator('player1')}
+              </div>
+              {isDoublesMatch() && getPartnerName('player1') && (
+                <div className="text-lg font-medium text-gray-700 mt-1">
+                  {getPartnerName('player1')}
+                </div>
               )}
             </div>
           </div>
@@ -462,9 +552,14 @@ export default function UmpireScoring() {
               )}
             </div>
             <div className="text-xl font-bold text-black">
-              {getPlayerName('player2')}
-              {servingPlayer === 'player2' && (
-                <span className="ml-2 text-sm text-green-700 font-normal">(Serving)</span>
+              <div className="flex items-center">
+                {getPlayerName('player2')}
+                {getServeIndicator('player2')}
+              </div>
+              {isDoublesMatch() && getPartnerName('player2') && (
+                <div className="text-lg font-medium text-gray-700 mt-1">
+                  {getPartnerName('player2')}
+                </div>
               )}
             </div>
           </div>

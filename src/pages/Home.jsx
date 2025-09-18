@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
 
@@ -10,6 +10,7 @@ export default function Home() {
   const [tournaments, setTournaments] = useState([]);
   const [matches, setMatches] = useState([]);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [featuredVideos, setFeaturedVideos] = useState([]);
 
   // Fetch tournaments from Firebase
   useEffect(() => {
@@ -141,6 +142,66 @@ export default function Home() {
     // Cleanup listener on unmount or tournament change
     return () => unsubscribe();
   }, [selectedTournament]);
+
+  // Fetch fixtures with YouTube URLs for featured videos
+  useEffect(() => {
+    const fetchFeaturedVideos = async () => {
+      try {
+        const fixturesRef = collection(db, 'fixtures');
+        const videosQuery = query(
+          fixturesRef,
+          where('youtubeUrl', '!=', ''),
+          orderBy('youtubeUrl'),
+          orderBy('createdAt', 'desc'),
+          limit(3)
+        );
+        
+        const snapshot = await getDocs(videosQuery);
+        const videosData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            player1Name: data.player1Team1 || data.team1Name || 'Team 1',
+            player2Name: data.player1Team2 || data.team2Name || 'Team 2',
+            tournamentName: tournaments.find(t => t.id === data.tournamentId)?.name ||
+                           tournaments.find(t => t.id === data.tournamentId)?.tournamentName ||
+                           'Tournament Match'
+          };
+        });
+        
+        setFeaturedVideos(videosData);
+      } catch (error) {
+        console.error('Error fetching featured videos:', error);
+        // Fallback to empty array if there's an error
+        setFeaturedVideos([]);
+      }
+    };
+
+    // Only fetch when tournaments are loaded
+    if (tournaments.length > 0) {
+      fetchFeaturedVideos();
+    }
+  }, [tournaments]);
+
+  // Helper function to extract YouTube video ID
+  const extractVideoId = (url) => {
+    if (!url) return null;
+    
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/v\/([^&\n?#]+)/,
+      /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    return null;
+  };
 
   // Dummy data for leaderboard
   const leaderboardData = {
@@ -452,25 +513,79 @@ export default function Home() {
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-xl font-bold mb-4 text-gray-900">Featured Videos</h2>
               <div className="space-y-4">
-                {[1, 2, 3].map((video) => (
-                  <div key={video} className="video-thumbnail">
-                    <img 
-                      src={`https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=180&fit=crop&q=${video}`}
-                      alt="Video thumbnail"
-                      className="w-full h-32 object-cover rounded"
-                    />
-                    <div className="video-play-button">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
+                {featuredVideos.length > 0 ? (
+                  featuredVideos.map((video) => {
+                    const videoId = extractVideoId(video.youtubeUrl);
+                    return (
+                      <div key={video.id} className="video-thumbnail">
+                        {videoId ? (
+                          <div className="relative">
+                            <img
+                              src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                              alt="Video thumbnail"
+                              className="w-full h-32 object-cover rounded"
+                              onError={(e) => {
+                                // Fallback to medium quality thumbnail if maxres fails
+                                e.target.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+                              }}
+                            />
+                            <a
+                              href={video.youtubeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="video-play-button"
+                            >
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </a>
+                            {video.status === 'live' && (
+                              <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                LIVE
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-gray-500">Invalid Video</span>
+                          </div>
+                        )}
+                        <div className="mt-2">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {video.player1Name} vs {video.player2Name}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {video.tournamentName}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  // Fallback content when no videos with YouTube URLs are available
+                  [1, 2, 3].map((video) => (
+                    <div key={video} className="video-thumbnail">
+                      <img
+                        src={`https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=180&fit=crop&q=${video}`}
+                        alt="Video thumbnail"
+                        className="w-full h-32 object-cover rounded"
+                      />
+                      <div className="video-play-button">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                      <div className="mt-2">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          Sample Match Highlights
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          No live streams available
+                        </p>
+                      </div>
                     </div>
-                    <div className="mt-2">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        Tenpoi Battle Past Alshon, Daescu, Eye Third Straight Title
-                      </h4>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <Link to="/videos" className="block text-center mt-4 text-orange-600 hover:text-orange-700 font-medium">
                 More Videos
