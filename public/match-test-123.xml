@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<match>
+  <matchId>test-123</matchId>
+  <lastUpdated>2025-01-18T13:38:00.000Z</lastUpdated>
+  <matchStatus>active</matchStatus>
+  <isDoubles>true</isDoubles>
+  <players>
+    <player id="1">
+      <playerName>John Doe/ Jane Smith</playerName>
+      <teamName>Team Alpha</teamName>
+      <teamLogoUrl>https://example.com/logo1.png</teamLogoUrl>
+      <points>15</points>
+      <serve>1</serve>
+    </player>
+    <player id="2">
+      <playerName>Mike Johnson/ Sarah Wilson</playerName>
+      <teamName>Team Beta</teamName>
+      <teamLogoUrl>https://example.com/logo2.png</teamLogoUrl>
+      <points>12</points>
+      <serve></serve>
+    </player>
+  </players>
+</match>

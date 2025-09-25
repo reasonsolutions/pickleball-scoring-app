@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import hplLogoWhite from '../assets/hpllogo_white.png';
+import challengerLogo from '../assets/challenger.png';
+import centrecourtLogo from '../assets/centrecourt_logo.png';
+import mavericksLogo from '../assets/mavericks.png';
+import allstarsLogo from '../assets/allstars.png';
+import dasosLogo from '../assets/dasos.png';
+import starrysmashersLogo from '../assets/starrysmashers.png';
+import keerthiLogo from '../assets/keerthi.png';
+import nandiLogo from '../assets/nandi.png';
+import teramorLogo from '../assets/teramor.png';
+import raptorsLogo from '../assets/raptors.png';
 
 export default function TVDisplay() {
   const { matchId } = useParams();
@@ -51,10 +62,10 @@ export default function TVDisplay() {
 
   if (loading) {
     return (
-      <div className="tv-display-container">
-        <div className="tv-loading">
-          <div className="tv-spinner"></div>
-          <div className="tv-loading-text">Loading Match...</div>
+      <div className="tv-display-pro">
+        <div className="tv-loading-pro">
+          <div className="tv-spinner-pro"></div>
+          <div className="tv-loading-text-pro">Loading Match...</div>
         </div>
       </div>
     );
@@ -62,131 +73,242 @@ export default function TVDisplay() {
 
   if (error || !match) {
     return (
-      <div className="tv-display-container">
-        <div className="tv-error">
-          <div className="tv-error-icon">⚠️</div>
-          <div className="tv-error-text">{error || 'Match not found'}</div>
+      <div className="tv-display-pro">
+        <div className="tv-error-pro">
+          <div className="tv-error-icon-pro">⚠️</div>
+          <div className="tv-error-text-pro">{error || 'Match not found'}</div>
         </div>
       </div>
     );
   }
 
-  // Extract scores from match data
+  // Extract current game scores from match data
   const getScores = () => {
     if (!match.scores) {
       return {
-        player1Scores: ['-', '-', '-'],
-        player2Scores: ['-', '-', '-']
+        player1Score: 0,
+        player2Score: 0,
+        currentGame: 1
       };
     }
 
-    const player1Scores = [];
-    const player2Scores = [];
-    const gamesCount = match.gamesCount || 3;
+    // Find the current game being played (first game with scores < target or last game)
+    const gamesCount = match.gamesCount || 1;
+    const pointsPerGame = match.pointsPerGame || [11];
+    let currentGameIndex = 0;
 
-    for (let i = 1; i <= gamesCount; i++) {
-      const gameKey = `game${i}`;
-      player1Scores.push(match.scores.player1?.[gameKey] ?? '-');
-      player2Scores.push(match.scores.player2?.[gameKey] ?? '-');
+    // Find current game by looking for the first incomplete game
+    for (let i = 0; i < gamesCount; i++) {
+      const gameKey = `game${i + 1}`;
+      const p1Score = match.scores.player1?.[gameKey] || 0;
+      const p2Score = match.scores.player2?.[gameKey] || 0;
+      const targetPoints = pointsPerGame[i] || 11;
+      
+      // If this game is not finished (neither player reached target with 2-point lead)
+      if (p1Score < targetPoints && p2Score < targetPoints) {
+        currentGameIndex = i;
+        break;
+      } else if (Math.abs(p1Score - p2Score) < 2) {
+        currentGameIndex = i;
+        break;
+      } else if (i === gamesCount - 1) {
+        // Last game, use it regardless
+        currentGameIndex = i;
+      }
     }
 
-    return { player1Scores, player2Scores };
+    const currentGameKey = `game${currentGameIndex + 1}`;
+    const player1Score = match.scores.player1?.[currentGameKey] || 0;
+    const player2Score = match.scores.player2?.[currentGameKey] || 0;
+
+    return {
+      player1Score,
+      player2Score,
+      currentGame: currentGameIndex + 1
+    };
   };
 
-  const { player1Scores, player2Scores } = getScores();
+  const { player1Score, player2Score } = getScores();
   const isLive = match.status === 'live';
 
+  // Function to get team logo based on team name
+  const getTeamLogo = (teamName) => {
+    if (!teamName) return null;
+    
+    const teamNameLower = teamName.toLowerCase();
+    
+    if (teamNameLower.includes('mavericks')) return mavericksLogo;
+    if (teamNameLower.includes('all stars') || teamNameLower.includes('allstars')) return allstarsLogo;
+    if (teamNameLower.includes('challenger') || teamNameLower.includes('spirit')) return challengerLogo;
+    if (teamNameLower.includes('raptors')) return raptorsLogo;
+    if (teamNameLower.includes('titans') || teamNameLower.includes('teramor')) return teramorLogo;
+    if (teamNameLower.includes('nandi') || teamNameLower.includes('chargers')) return nandiLogo;
+    if (teamNameLower.includes('keerthi') || teamNameLower.includes('warriors')) return keerthiLogo;
+    if (teamNameLower.includes('dasos') || teamNameLower.includes('dynamic')) return dasosLogo;
+    if (teamNameLower.includes('starry') || teamNameLower.includes('smashers')) return starrysmashersLogo;
+    
+    return null;
+  };
+
+  // Get team logos for current match
+  const team1Logo = getTeamLogo(match.team1Name);
+  const team2Logo = getTeamLogo(match.team2Name);
+
   return (
-    <div className="tv-display-container">
-      {/* Tournament Header */}
-      <div className="tv-header">
-        <div className="tv-tournament-name">
-          {tournament?.name || tournament?.tournamentName || 'Tournament'}
-        </div>
-        <div className="tv-match-info">
-          <span className="tv-match-type">{match.matchTypeLabel || match.matchType}</span>
-          {match.time && <span className="tv-match-time">{match.time}</span>}
-          {isLive && (
-            <div className="tv-live-indicator">
-              <div className="tv-live-dot"></div>
-              LIVE
-            </div>
-          )}
+    <div className="tv-display-pro">
+      {/* Header with CENTRECOURT logo */}
+      <div className="tv-header-pro">
+        <div className="centrecourt-logo-pro">
+          <img src={centrecourtLogo} alt="Centrecourt Sports & Entertainment" className="centrecourt-logo-img" />
         </div>
       </div>
 
-      {/* Main Score Card */}
-      <div className="tv-score-card">
-        {/* Team 1 */}
-        <div className="tv-team-row">
-          <div className="tv-team-info">
-            <div className="tv-players">
-              {match.player1Team1 && (
-                <div className="tv-player-name">{match.player1Team1}</div>
-              )}
-              {match.player2Team1 && (
-                <div className="tv-player-name">{match.player2Team1}</div>
-              )}
-            </div>
-            <div className="tv-team-name">{match.team1Name}</div>
+      {/* Main content area */}
+      <div className="tv-main-area">
+        {/* Left team logo - THE CHALLENGER SPIRIT */}
+        <div className="team-logo-left-pro">
+          <div className="challenger-spirit-logo">
+            <img src={challengerLogo} alt="The Challenger Spirit" className="challenger-logo-img" />
           </div>
-          <div className="tv-scores">
-            {player1Scores.map((score, index) => (
-              <div key={index} className="tv-score-box">
-                {score}
+        </div>
+
+        {/* Center section with scoreboard and surrounding logos */}
+        <div className="tv-center-area">
+          {/* Top logos row - Dynamic team logos */}
+          <div className="top-logos-row">
+            {/* Team 1 Logo */}
+            {team1Logo && (
+              <div className="team1-logo">
+                <div className="team-logo-card">
+                  <img src={team1Logo} alt={match.team1Name || 'Team 1'} className="team-card-logo" />
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {/* VS Divider */}
-        <div className="tv-vs-divider">
-          <span>VS</span>
-        </div>
-
-        {/* Team 2 */}
-        <div className="tv-team-row">
-          <div className="tv-team-info">
-            <div className="tv-players">
-              {match.player1Team2 && (
-                <div className="tv-player-name">{match.player1Team2}</div>
-              )}
-              {match.player2Team2 && (
-                <div className="tv-player-name">{match.player2Team2}</div>
-              )}
-            </div>
-            <div className="tv-team-name">{match.team2Name}</div>
-          </div>
-          <div className="tv-scores">
-            {player2Scores.map((score, index) => (
-              <div key={index} className="tv-score-box">
-                {score}
+            {/* Team 2 Logo */}
+            {team2Logo && (
+              <div className="team2-logo">
+                <div className="team-logo-card">
+                  <img src={team2Logo} alt={match.team2Name || 'Team 2'} className="team-card-logo" />
+                </div>
               </div>
-            ))}
+            )}
+          </div>
+
+          {/* Main scoreboard */}
+          <div className="tv-scoreboard-pro">
+            <div className="player-section-left">
+              <div className="player-names-stacked">
+                <div className="player-name-pro">
+                  {(match.player1Team1 || 'SREEKAR').toUpperCase()}
+                </div>
+                {(match.player2Team1) && (
+                  <>
+                    <div className="player-name-separator"></div>
+                    <div className="player-name-pro">
+                      {match.player2Team1.toUpperCase()}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="player-score-pro">{player1Score}</div>
+            </div>
+            
+            <div className="vs-section-pro">VS</div>
+            
+            <div className="player-section-right">
+              <div className="player-names-stacked">
+                <div className="player-name-pro">
+                  {(match.player1Team2 || 'SAMEER').toUpperCase()}
+                </div>
+                {(match.player2Team2) && (
+                  <>
+                    <div className="player-name-separator"></div>
+                    <div className="player-name-pro">
+                      {(match.player2Team2 || 'AKSHATH').toUpperCase()}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="player-score-pro">{player2Score}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right team logo - HYDERABAD PICKLEBALL LEAGUE */}
+        <div className="team-logo-right-pro">
+          <div className="hpl-logo">
+            <img src={hplLogoWhite} alt="Hyderabad Pickleball League" className="hpl-logo-img" />
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="tv-footer">
-        <div className="tv-date">
-          {match.date && match.date.toDate ? 
-            match.date.toDate().toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }) : 
-            'Match Date'
-          }
+      {/* Bottom logos row */}
+      <div className="tv-bottom-row">
+        {/* The Raptors */}
+        <div className="bottom-team-logo">
+          <div className="raptors-logo">
+            <img src={raptorsLogo} alt="The Raptors" className="bottom-team-logo-img" />
+          </div>
         </div>
-        <div className="tv-status">
-          {match.status === 'completed' ? 'Final' : 
-           match.status === 'live' ? 'Live' : 
-           match.status === 'in-progress' ? 'In Progress' : 
-           'Scheduled'}
+
+        {/* Titans */}
+        <div className="bottom-team-logo">
+          <div className="titans-logo">
+            <img src={teramorLogo} alt="Titans" className="bottom-team-logo-img" />
+          </div>
+        </div>
+
+        {/* The Mavericks (repeat) */}
+        <div className="bottom-team-logo">
+          <div className="mavericks-small">
+            <img src={mavericksLogo} alt="The Mavericks" className="bottom-team-logo-img" />
+          </div>
+        </div>
+
+        {/* Nandi Chargers */}
+        <div className="bottom-team-logo">
+          <div className="nandi-logo">
+            <img src={nandiLogo} alt="Nandi Chargers" className="bottom-team-logo-img" />
+          </div>
+        </div>
+
+        {/* Keerthi Warriors */}
+        <div className="bottom-team-logo">
+          <div className="keerthi-logo">
+            <img src={keerthiLogo} alt="Keerthi Warriors" className="bottom-team-logo-img" />
+          </div>
+        </div>
+
+        {/* Dasos Dynamic */}
+        <div className="bottom-team-logo">
+          <div className="dasos-logo">
+            <img src={dasosLogo} alt="Dasos Dynamic" className="bottom-team-logo-img" />
+          </div>
+        </div>
+
+        {/* All Stars (repeat) */}
+        <div className="bottom-team-logo">
+          <div className="allstars-small">
+            <img src={allstarsLogo} alt="All Stars" className="bottom-team-logo-img" />
+          </div>
+        </div>
+
+        {/* Starry Smashers */}
+        <div className="bottom-team-logo">
+          <div className="smashers-logo">
+            <img src={starrysmashersLogo} alt="Starry Smashers" className="bottom-team-logo-img" />
+          </div>
         </div>
       </div>
+
+      {/* Live indicator */}
+      {isLive && (
+        <div className="tv-live-indicator-pro">
+          <div className="live-dot-pro"></div>
+          LIVE
+        </div>
+      )}
     </div>
   );
 }

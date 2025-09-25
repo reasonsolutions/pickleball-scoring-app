@@ -920,3 +920,896 @@ body {
     height: 2rem;
   }
 }
+
+
+/* New TV Display Design - Centrecourt Layout */
+.tv-display-new {
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #1a237e 0%, #0d1b2a 50%, #1a237e 100%);
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  margin: 0;
+}
+
+/* Header with Centrecourt Logo */
+.tv-header-new {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.centrecourt-logo {
+  text-align: center;
+  border: 3px solid #9c27b0;
+  padding: 15px 40px;
+  background: rgba(156, 39, 176, 0.1);
+  border-radius: 8px;
+}
+
+.logo-text {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: 3px;
+  margin-bottom: 5px;
+}
+
+.logo-subtitle {
+  font-size: 1.2rem;
+  color: white;
+  letter-spacing: 2px;
+  font-weight: 400;
+}
+
+/* Main Content Layout */
+.tv-main-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  margin: 40px 0;
+}
+
+/* Left Team Logo */
+.team-logo-left {
+  flex: 0 0 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.team-logo-left .logo-placeholder {
+  text-align: center;
+  color: white;
+}
+
+.team-logo-left .logo-name {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.team-logo-left .logo-name-large {
+  font-size: 4rem;
+  font-weight: 900;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Right Team Logo */
+.team-logo-right {
+  flex: 0 0 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.team-logo-right .logo-placeholder {
+  text-align: center;
+  color: white;
+}
+
+.team-logo-right .logo-building {
+  font-size: 4rem;
+  margin-bottom: 10px;
+}
+
+.team-logo-right .logo-name {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.team-logo-right .logo-name-large {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 5px;
+}
+
+.team-logo-right .logo-subtitle {
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+/* Center Section */
+.tv-center-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  max-width: 800px;
+  margin: 0 40px;
+}
+
+/* Top Logos */
+.top-logos {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.team-logo-top-left,
+.team-logo-top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+}
+
+.logo-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 3px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.logo-icon {
+  font-size: 3rem;
+}
+
+.logo-name-small {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Main Scoreboard */
+.tv-scoreboard-new {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 30px 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 600px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.player-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.player-name {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.player-score {
+  font-size: 6rem;
+  font-weight: 900;
+  color: #1a237e;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.vs-section {
+  font-size: 4rem;
+  font-weight: 900;
+  color: #1a237e;
+  margin: 0 40px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Bottom Logos Row */
+.tv-bottom-logos {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+.bottom-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  flex: 1;
+  max-width: 150px;
+}
+
+.bottom-logo-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.bottom-logo-icon {
+  font-size: 2rem;
+}
+
+.bottom-logo-name {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Live Badge */
+.tv-live-badge {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  background: #dc2626;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+}
+
+.live-dot {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+/* Loading and Error States */
+.tv-loading-new,
+.tv-error-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: white;
+}
+
+.tv-spinner-new {
+  width: 80px;
+  height: 80px;
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  border-top: 8px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30px;
+}
+
+.tv-loading-text-new,
+.tv-error-text-new {
+  font-size: 3rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tv-error-icon-new {
+  font-size: 6rem;
+  margin-bottom: 30px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design for TV Display */
+@media (max-width: 1920px) and (max-height: 1080px) {
+  .logo-text {
+    font-size: 3rem;
+  }
+  
+  .player-name {
+    font-size: 2rem;
+  }
+  
+  .player-score {
+    font-size: 5rem;
+  }
+  
+  .vs-section {
+    font-size: 3.5rem;
+  }
+}
+
+@media (max-width: 1440px) and (max-height: 900px) {
+  .tv-display-new {
+    padding: 30px;
+  }
+  
+  .logo-text {
+    font-size: 2.5rem;
+  }
+  
+  .player-name {
+    font-size: 1.8rem;
+  }
+  
+  .player-score {
+    font-size: 4.5rem;
+  }
+  
+  .vs-section {
+    font-size: 3rem;
+  }
+  
+  .tv-scoreboard-new {
+    min-width: 500px;
+    padding: 25px 40px;
+  }
+}
+
+@media (max-height: 800px) {
+  .tv-display-new {
+    padding: 20px;
+  }
+  
+  .logo-text {
+    font-size: 2rem;
+  }
+  
+  .player-name {
+    font-size: 1.5rem;
+  }
+  
+  .player-score {
+    font-size: 4rem;
+  }
+  
+  .vs-section {
+    font-size: 2.5rem;
+  }
+  
+  .tv-scoreboard-new {
+    min-width: 450px;
+    padding: 20px 30px;
+  }
+  
+  .logo-circle {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .bottom-logo-circle {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+
+/* Professional TV Display Design - Centrecourt Layout */
+.tv-display-pro {
+  height: 100vh;
+  width: 100vw;
+  background: #000000 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  margin: 0;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+/* Ensure parent elements don't interfere with TV display background */
+.tv-display-pro::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  z-index: -1;
+}
+
+/* Override any parent background colors */
+body:has(.tv-display-pro) {
+  background: #000000 !important;
+  overflow: hidden;
+}
+
+html:has(.tv-display-pro) {
+  background: #000000 !important;
+}
+
+/* Header with Professional Centrecourt Logo */
+.tv-header-pro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.centrecourt-logo-pro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.centrecourt-logo-img {
+  max-height: 60px;
+  width: auto;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Main Content Layout */
+.tv-main-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  margin: 15px 0;
+  min-height: 0;
+}
+
+/* Left Team Logo - THE CHALLENGER SPIRIT */
+.team-logo-left-pro {
+  flex: 0 0 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.challenger-spirit-logo {
+  text-align: center;
+  color: white;
+}
+
+.challenger-logo-img {
+  max-width: 200px;
+  max-height: 150px;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Right Team Logo - HYDERABAD PICKLEBALL LEAGUE */
+.team-logo-right-pro {
+  flex: 0 0 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hpl-logo {
+  text-align: center;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hpl-logo-img {
+  max-width: 200px;
+  max-height: 150px;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Center Section */
+.tv-center-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 600px;
+  margin: 0 20px;
+}
+
+/* Top Logos Row */
+.top-logos-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 0 30px;
+}
+
+/* Dynamic Team Logos */
+.team1-logo,
+.team2-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-logo-card {
+  padding: 15px;
+  text-align: center;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-card-logo {
+  max-width: 200px;
+  max-height: 160px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Main Professional Scoreboard */
+.tv-scoreboard-pro {
+  background: rgba(0, 0, 0, 0.95);
+  border-radius: 25px;
+  padding: 20px 35px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  min-width: 624px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.player-section-left,
+.player-section-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 120px;
+}
+
+.player-names-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  min-height: 60px;
+}
+
+.player-name-pro {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
+
+.player-name-separator {
+  width: 80px;
+  height: 3px;
+  background-color: #ffffff;
+  margin: 8px 0;
+  border-radius: 2px;
+}
+
+.player-score-pro {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  margin-top: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  height: 80px;
+  line-height: 1;
+}
+
+.vs-section-pro {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-style: italic;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  height: 80px;
+  line-height: 1;
+  align-self: flex-end;
+  margin-bottom: 10px;
+}
+
+/* Bottom Logos Row */
+.tv-bottom-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 25px;
+  padding: 0 20px;
+}
+
+.bottom-team-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  flex: 1;
+  max-width: 140px;
+}
+
+/* Individual Bottom Team Logos */
+.raptors-logo {
+  text-align: center;
+}
+
+.raptor-icon {
+  font-size: 3.25rem;
+  margin-bottom: 8px;
+}
+
+.team-name-bottom {
+  text-align: center;
+}
+
+.the-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.raptors-text {
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.titans-logo {
+  text-align: center;
+}
+
+.titan-symbol {
+  font-size: 3.25rem;
+  margin-bottom: 8px;
+}
+
+.titans-text {
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.mavericks-small {
+  text-align: center;
+}
+
+.bottom-team-logo-img {
+  max-width: 120px;
+  max-height: 120px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.bottom-team-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.nandi-logo {
+  text-align: center;
+}
+
+.bull-icon {
+  font-size: 3.25rem;
+  margin-bottom: 8px;
+}
+
+.nandi-name,
+.chargers-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.keerthi-logo {
+  text-align: center;
+}
+
+.warrior-icon {
+  font-size: 3.25rem;
+  margin-bottom: 8px;
+}
+
+.keerthi-name,
+.warriors-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dasos-logo,
+.allstars-small,
+.smashers-logo {
+  text-align: center;
+}
+
+/* Live Indicator */
+.tv-live-indicator-pro {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  background: #dc2626;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+}
+
+.live-dot-pro {
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+/* Loading and Error States */
+.tv-loading-pro,
+.tv-error-pro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: white;
+}
+
+.tv-spinner-pro {
+  width: 80px;
+  height: 80px;
+  border: 8px solid rgba(255, 255, 255, 0.3);
+  border-top: 8px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30px;
+}
+
+.tv-loading-text-pro,
+.tv-error-text-pro {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tv-error-icon-pro {
+  font-size: 5rem;
+  margin-bottom: 30px;
+}
+
+/* Responsive Design for Professional TV Display */
+@media (max-width: 1920px) and (max-height: 1080px) {
+  .logo-main-text {
+    font-size: 2.4rem;
+  }
+  
+  .player-name-pro {
+    font-size: 1.6rem;
+  }
+  
+  .player-score-pro {
+    font-size: 4.5rem;
+  }
+  
+  .vs-section-pro {
+    font-size: 3rem;
+  }
+}
+
+@media (max-width: 1440px) and (max-height: 900px) {
+  .tv-display-pro {
+    padding: 25px;
+  }
+  
+  .logo-main-text {
+    font-size: 2rem;
+  }
+  
+  .player-name-pro {
+    font-size: 1.4rem;
+  }
+  
+  .player-score-pro {
+    font-size: 4rem;
+  }
+  
+  .vs-section-pro {
+    font-size: 2.5rem;
+  }
+  
+  .tv-scoreboard-pro {
+    min-width: 480px;
+    padding: 20px 35px;
+  }
+}
+
+@media (max-height: 800px) {
+  .tv-display-pro {
+    padding: 20px;
+  }
+  
+  .logo-main-text {
+    font-size: 1.8rem;
+  }
+  
+  .player-name-pro {
+    font-size: 1.2rem;
+  }
+  
+  .player-score-pro {
+    font-size: 3.5rem;
+  }
+  
+  .vs-section-pro {
+    font-size: 2.2rem;
+  }
+  
+  .tv-scoreboard-pro {
+    min-width: 420px;
+    padding: 18px 30px;
+  }
+  
+  .mavericks-shield,
+  .star-design {
+    min-width: 100px;
+    padding: 12px;
+  }
+}

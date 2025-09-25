@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Pickleball Match test-123 - Live Score</title>
+    <description>Live score updates for Pickleball Match test-123</description>
+    <link>http://localhost:3000/match/test-123</link>
+    <lastBuildDate>Sat, 18 Jan 2025 16:26:00 GMT</lastBuildDate>
+    <pubDate>Sat, 18 Jan 2025 16:26:00 GMT</pubDate>
+    <language>en-US</language>
+    <generator>Pickleball Scoring App</generator>
+
+    <item>
+      <title>Match test-123 - Current Score</title>
+      <description>Live score update for Doubles match</description>
+      <link>http://localhost:3000/match/test-123</link>
+      <pubDate>Sat, 18 Jan 2025 16:26:00 GMT</pubDate>
+      <guid isPermaLink="false">match-test-123-1737216360000</guid>
+      <content:encoded><![CDATA[
+<h2>Match test-123 - Live Score</h2>
+<p><strong>Match Type:</strong> Doubles</p>
+<p><strong>Status:</strong> Active</p>
+<p><strong>Last Updated:</strong> Sat, 18 Jan 2025 16:26:00 GMT</p>
+<hr>
+<table border="1" cellpadding="5" cellspacing="0">
+<tr><th>Players</th><th>Team</th><th>Points</th><th>Serve</th></tr>
+<tr><td>John Doe/ Jane Smith</td><td>Team Alpha</td><td><strong>15</strong></td><td>1</td></tr>
+<tr><td>Mike Johnson/ Sarah Wilson</td><td>Team Beta</td><td><strong>12</strong></td><td></td></tr>
+</table>
+<hr>
+<h3>Game Scores</h3>
+<table border="1" cellpadding="5" cellspacing="0">
+<tr><th>Team</th><th>Game 1</th><th>Game 2</th><th>Game 3</th><th>Total</th></tr>
+<tr><td>Team Alpha</td><td>11</td><td>4</td><td>0</td><td><strong>15</strong></td></tr>
+<tr><td>Team Beta</td><td>9</td><td>3</td><td>0</td><td><strong>12</strong></td></tr>
+</table>
+]]></content:encoded>
+    </item>
+  </channel>
+</rss>

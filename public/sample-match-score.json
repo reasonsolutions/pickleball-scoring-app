@@ -1,0 +1,22 @@
+{
+  "matchId": "sample-match-123",
+  "lastUpdated": "2025-01-18T13:27:00.000Z",
+  "matchStatus": "active",
+  "isDoubles": true,
+  "tableData": [
+    {
+      "playerName": "John Doe/ Jane Smith",
+      "teamName": "Team Alpha",
+      "teamLogoUrl": "https://example.com/logo1.png",
+      "points": 15,
+      "serve": "1"
+    },
+    {
+      "playerName": "Mike Johnson/ Sarah Wilson",
+      "teamName": "Team Beta",
+      "teamLogoUrl": "https://example.com/logo2.png",
+      "points": 12,
+      "serve": ""
+    }
+  ]
+}

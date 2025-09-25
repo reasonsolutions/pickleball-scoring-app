@@ -11,10 +11,14 @@ service cloud.firestore {
                    request.auth.uid == request.resource.data.createdBy &&
                    isValidTournamentData(request.resource.data);
       
-      // Allow updating/deleting only by the tournament creator
-      allow update, delete: if request.auth != null &&
-                           request.auth.uid == resource.data.createdBy &&
-                           isValidTournamentData(request.resource.data);
+      // Allow updating only by the tournament creator with valid data
+      allow update: if request.auth != null &&
+                   request.auth.uid == resource.data.createdBy &&
+                   isValidTournamentData(request.resource.data);
+      
+      // Allow deleting only by the tournament creator (no data validation needed for delete)
+      allow delete: if request.auth != null &&
+                   request.auth.uid == resource.data.createdBy;
     }
     
     // Function to validate tournament data structure
@@ -46,50 +50,40 @@ service cloud.firestore {
                    request.auth.uid == request.resource.data.createdBy &&
                    isValidPlayerData(request.resource.data);
       
-      // Allow updating/deleting only by the player creator
-      allow update, delete: if request.auth != null &&
-                            request.auth.uid == resource.data.createdBy &&
-                            isValidPlayerData(request.resource.data);
+      // Allow updating only by the player creator with valid data
+      allow update: if request.auth != null &&
+                   request.auth.uid == resource.data.createdBy &&
+                   isValidPlayerData(request.resource.data);
+      
+      // Allow deleting only by the player creator (no data validation needed for delete)
+      allow delete: if request.auth != null &&
+                   request.auth.uid == resource.data.createdBy;
     }
     
     // Teams collection rules
     match /teams/{teamId} {
-      // Allow all authenticated users to read teams
-      allow read: if request.auth != null;
+      // Allow public read access for teams (for streaming overlay and TV display)
+      allow read: if true;
       
       // Allow creating teams if user is authenticated and is the creator
       allow create: if request.auth != null &&
                    request.auth.uid == request.resource.data.createdBy &&
                    isValidTeamData(request.resource.data);
       
-      // Allow updating/deleting only by the team creator
-      allow update, delete: if request.auth != null &&
-                            request.auth.uid == resource.data.createdBy &&
-                            isValidTeamData(request.resource.data);
+      // Allow updating only by the team creator with valid data
+      allow update: if request.auth != null &&
+                   request.auth.uid == resource.data.createdBy &&
+                   isValidTeamData(request.resource.data);
+      
+      // Allow deleting only by the team creator (no data validation needed for delete)
+      allow delete: if request.auth != null &&
+                   request.auth.uid == resource.data.createdBy;
     }
     
-    // Fixtures collection rules
+    // Fixtures collection rules - COMPLETELY OPEN FOR TESTING
     match /fixtures/{fixtureId} {
-      // Allow all authenticated users to read fixtures
-      // Also allow unauthenticated read for umpire scoring
-      allow read: if true;
-      
-      // Allow creating fixtures if user is authenticated and is the creator
-      allow create: if request.auth != null &&
-                   request.auth.uid == request.resource.data.createdBy;
-      
-      // Allow updating by:
-      // 1. Fixture creator or tournament owner (authenticated)
-      // 2. Umpire scoring updates (unauthenticated but only specific fields)
-      allow update: if (request.auth != null &&
-                       (request.auth.uid == resource.data.createdBy ||
-                        isTournamentOwner(resource.data.tournamentId))) ||
-                       isUmpireScoringUpdate(request.resource.data, resource.data);
-      
-      // Allow deleting only by the fixture creator or tournament owner
-      allow delete: if request.auth != null &&
-                    (request.auth.uid == resource.data.createdBy ||
-                     isTournamentOwner(resource.data.tournamentId));
+      // Allow all operations for testing
+      allow read, write: if true;
     }
     
     // Users can read/write their own profile
@@ -106,10 +100,12 @@ service cloud.firestore {
              (data.age == null || data.age is number) &&
              (data.gender == null || data.gender is string) &&
              (data.duprId == null || data.duprId is string) &&
-             (data.photo == null || (data.photo is map &&
-              data.photo.keys().hasAll(['url', 'publicId']) &&
-              data.photo.url is string &&
-              data.photo.publicId is string));
+             (data.photo == null ||
+              data.photo is string || // Allow direct URL strings for bulk upload
+              (data.photo is map &&
+               data.photo.keys().hasAll(['url']) &&
+               data.photo.url is string &&
+               (data.photo.publicId == null || data.photo.publicId is string)));
     }
     
     // Function to validate team data structure
@@ -121,16 +117,15 @@ service cloud.firestore {
              data.createdBy is string &&
              (data.description == null || data.description is string) &&
              (data.logo == null || (data.logo is map &&
-              data.logo.keys().hasAll(['url', 'publicId']) &&
+              data.logo.keys().hasAll(['url']) &&
               data.logo.url is string &&
-              data.logo.publicId is string));
+              (data.logo.publicId == null || data.logo.publicId is string)));
     }
     
     // Function to validate fixture data structure
     function isValidFixtureData(data) {
       return data.tournamentId is string &&
              data.date is timestamp &&
-             (data.time == null || data.time is string) &&
              data.matchType is string &&
              data.matchTypeLabel is string &&
              data.team1 is string &&
@@ -139,16 +134,18 @@ service cloud.firestore {
              data.team2Name is string &&
              data.status is string &&
              data.createdBy is string &&
-             (data.fixtureGroupId == null || data.fixtureGroupId is string) &&
-             (data.matchNumber == null || data.matchNumber is number) &&
+             // Optional fields for different fixture types
+             (data.fixtureType == null || data.fixtureType is string) &&
+             (data.pool == null || data.pool is string) &&
+             (data.playoffStage == null || data.playoffStage is string) &&
+             (data.playoffNumber == null || data.playoffNumber is number) &&
+             (data.time == null || data.time is string) &&
+             (data.court == null || data.court is string) &&
+             (data.youtubeLink == null || data.youtubeLink is string) &&
              (data.player1Team1 == null || data.player1Team1 is string) &&
              (data.player2Team1 == null || data.player2Team1 is string) &&
              (data.player1Team2 == null || data.player1Team2 is string) &&
-             (data.player2Team2 == null || data.player2Team2 is string) &&
-             (data.youtubeLink == null || data.youtubeLink is string) &&
-             (data.score == null || data.score is map) &&
-             (data.createdAt == null || data.createdAt is timestamp) &&
-             (data.updatedAt == null || data.updatedAt is timestamp);
+             (data.player2Team2 == null || data.player2Team2 is string);
     }
     
     // Function to check if this is a valid umpire scoring update

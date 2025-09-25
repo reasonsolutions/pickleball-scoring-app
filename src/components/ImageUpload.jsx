@@ -92,7 +92,7 @@ export default function ImageUpload({ onImageUpload, currentImage, className = "
             </button>
           </div>
           {uploading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+            <div className="absolute inset-0 bg-gray-200 bg-opacity-80 flex items-center justify-center rounded-lg">
               <span className="loading loading-spinner loading-lg text-white"></span>
             </div>
           )}

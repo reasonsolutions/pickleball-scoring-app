@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
@@ -12,6 +12,8 @@ export default function TournamentDetails() {
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const fetchTournament = async () => {
@@ -80,6 +82,38 @@ export default function TournamentDetails() {
           default: return key;
         }
       });
+  };
+
+  const handleDeleteTournament = async () => {
+    if (!tournament || !currentUser || tournament.createdBy !== currentUser.uid) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      // Delete all related fixtures first
+      const fixturesQuery = query(
+        collection(db, 'fixtures'),
+        where('tournamentId', '==', tournament.id)
+      );
+      const fixturesSnapshot = await getDocs(fixturesQuery);
+      
+      // Delete all fixtures
+      const deletePromises = fixturesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // Delete the tournament
+      await deleteDoc(doc(db, 'tournaments', tournament.id));
+
+      // Navigate back to tournaments list
+      navigate('/admin/tournaments');
+    } catch (error) {
+      console.error('Error deleting tournament:', error);
+      setError('Failed to delete tournament. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
   };
 
   const isOwner = tournament && currentUser && tournament.createdBy === currentUser.uid;
@@ -259,8 +293,19 @@ export default function TournamentDetails() {
                       >
                         Edit Tournament
                       </button>
-                      <button className="btn btn-error btn-outline w-full">
-                        Delete Tournament
+                      <button
+                        className="btn btn-error btn-outline w-full"
+                        onClick={() => setShowDeleteModal(true)}
+                        disabled={deleteLoading}
+                      >
+                        {deleteLoading ? (
+                          <>
+                            <span className="loading loading-spinner loading-sm"></span>
+                            Deleting...
+                          </>
+                        ) : (
+                          'Delete Tournament'
+                        )}
                       </button>
                     </>
                   ) : (
@@ -274,6 +319,41 @@ export default function TournamentDetails() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg text-error">Delete Tournament</h3>
+            <p className="py-4">
+              Are you sure you want to delete "{tournament?.name}"? This action cannot be undone and will also delete all associated fixtures and matches.
+            </p>
+            <div className="modal-action">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={handleDeleteTournament}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Tournament'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

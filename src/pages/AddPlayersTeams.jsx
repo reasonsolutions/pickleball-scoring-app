@@ -223,12 +223,24 @@ export default function AddPlayersTeams() {
       const playersToAdd = [];
       for (const row of jsonData) {
         if (row.name || row.Name) {
+          // Handle photo URL from CSV/Excel
+          const photoUrl = (row.photo || row.Photo || row.photoUrl || row['Photo URL'] || row.photo_url || '').toString().trim();
+          let photoData = null;
+          
+          if (photoUrl) {
+            // If it's a direct URL, create a simple photo object
+            photoData = {
+              url: photoUrl,
+              publicId: null // No publicId for direct URLs
+            };
+          }
+
           const playerData = {
             name: (row.name || row.Name || '').toString().trim(),
             age: row.age || row.Age ? parseInt(row.age || row.Age) : null,
             gender: (row.gender || row.Gender || '').toString().trim(),
             duprId: (row.duprId || row['DUPR ID'] || row.dupr_id || '').toString().trim(),
-            photo: null, // Bulk upload doesn't support photos
+            photo: photoData,
             tournamentId: id,
             createdBy: currentUser.uid,
             createdAt: serverTimestamp()
@@ -417,20 +429,39 @@ export default function AddPlayersTeams() {
   };
 
   const handleDeleteTeam = async (teamId, teamName) => {
-    if (window.confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
-      try {
-        setSubmitting(true);
+    try {
+      setSubmitting(true);
+      
+      // Check if team is used in any fixtures
+      const fixturesQuery = query(
+        collection(db, 'fixtures'),
+        where('tournamentId', '==', id)
+      );
+      const fixturesSnapshot = await getDocs(fixturesQuery);
+      
+      const teamFixtures = fixturesSnapshot.docs.filter(doc => {
+        const fixture = doc.data();
+        return fixture.team1 === teamId || fixture.team2 === teamId;
+      });
+      
+      if (teamFixtures.length > 0) {
+        setError(`Cannot delete team "${teamName}" because it is used in ${teamFixtures.length} fixture(s). Please delete the fixtures first or reassign them to other teams.`);
+        return;
+      }
+      
+      // If no fixtures found, proceed with confirmation
+      if (window.confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
         await deleteDoc(doc(db, 'teams', teamId));
         
         // Refresh teams list
         fetchTeams();
         setError('');
-      } catch (error) {
-        console.error('Error deleting team:', error);
-        setError('Failed to delete team. Please try again.');
-      } finally {
-        setSubmitting(false);
       }
+    } catch (error) {
+      console.error('Error deleting team:', error);
+      setError('Failed to delete team. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -506,6 +537,378 @@ export default function AddPlayersTeams() {
       } finally {
         setSubmitting(false);
       }
+    }
+  };
+
+  // Export function to generate CSV with players and their team associations
+  const handleExportData = async () => {
+    try {
+      setSubmitting(true);
+      
+      // Prepare data for export
+      const exportData = [];
+      
+      if (format === 'team') {
+        // For team format, include team information
+        players.forEach(player => {
+          // Find which team(s) this player belongs to
+          const playerTeams = teams.filter(team =>
+            team.playerIds && team.playerIds.includes(player.id)
+          );
+          
+          if (playerTeams.length > 0) {
+            // If player is in teams, create a row for each team
+            playerTeams.forEach(team => {
+              exportData.push({
+                'Player Name': player.name,
+                'Age': player.age || '',
+                'Gender': player.gender || '',
+                'DUPR ID': player.duprId || '',
+                'Photo URL': player.photo?.url || '',
+                'Team Name': team.name,
+                'Team Description': team.description || '',
+                'Team Logo URL': team.logo?.url || ''
+              });
+            });
+          } else {
+            // If player is not in any team
+            exportData.push({
+              'Player Name': player.name,
+              'Age': player.age || '',
+              'Gender': player.gender || '',
+              'DUPR ID': player.duprId || '',
+              'Photo URL': player.photo?.url || '',
+              'Team Name': 'No Team',
+              'Team Description': '',
+              'Team Logo URL': ''
+            });
+          }
+        });
+      } else {
+        // For player format, just export players without team info
+        players.forEach(player => {
+          exportData.push({
+            'Player Name': player.name,
+            'Age': player.age || '',
+            'Gender': player.gender || '',
+            'DUPR ID': player.duprId || '',
+            'Photo URL': player.photo?.url || ''
+          });
+        });
+      }
+      
+      if (exportData.length === 0) {
+        alert('No data to export. Please add players first.');
+        return;
+      }
+      
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, format === 'team' ? 'Players & Teams' : 'Players');
+      
+      // Generate filename with tournament name and timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `${tournament?.name || 'Tournament'}_${format === 'team' ? 'Players_Teams' : 'Players'}_${timestamp}.xlsx`;
+      
+      // Download the file
+      XLSX.writeFile(workbook, filename);
+      
+      alert(`Successfully exported ${exportData.length} records to ${filename}`);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      setError('Failed to export data. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Bulk team import function
+  const handleBulkTeamImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setSubmitting(true);
+      setError(''); // Clear any previous errors
+      
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      console.log('Raw data from file:', jsonData); // Debug log
+
+      if (!jsonData || jsonData.length === 0) {
+        setError('The file appears to be empty or invalid. Please check your file.');
+        return;
+      }
+
+      // Get existing team names to prevent duplicates
+      const existingTeamNames = new Set(teams.map(t => t.name.toLowerCase()));
+      console.log('Existing teams:', Array.from(existingTeamNames)); // Debug log
+
+      // Group data by team
+      const teamsData = {};
+      const playersToAdd = [];
+      const existingPlayerNames = new Set(players.map(p => p.name.toLowerCase()));
+      let processedRows = 0;
+      let skippedDuplicateTeams = [];
+
+      for (const row of jsonData) {
+        // More flexible column name matching
+        const teamName = (
+          row['Team Name'] ||
+          row['TeamName'] ||
+          row['team_name'] ||
+          row['team'] ||
+          row['Team'] ||
+          ''
+        ).toString().trim();
+        
+        const playerName = (
+          row['Player Name'] ||
+          row['PlayerName'] ||
+          row['player_name'] ||
+          row['name'] ||
+          row['Name'] ||
+          row['Player'] ||
+          ''
+        ).toString().trim();
+        
+        console.log(`Processing row: Team="${teamName}", Player="${playerName}"`); // Debug log
+        
+        if (!teamName || !playerName) {
+          console.log('Skipping row due to missing team or player name'); // Debug log
+          continue;
+        }
+
+        // Skip if team already exists
+        if (existingTeamNames.has(teamName.toLowerCase())) {
+          if (!skippedDuplicateTeams.includes(teamName)) {
+            skippedDuplicateTeams.push(teamName);
+          }
+          console.log(`Skipping duplicate team: ${teamName}`); // Debug log
+          continue;
+        }
+
+        processedRows++;
+
+        // Initialize team if not exists in our import data
+        if (!teamsData[teamName]) {
+          teamsData[teamName] = {
+            name: teamName,
+            description: (
+              row['Team Description'] ||
+              row['TeamDescription'] ||
+              row['team_description'] ||
+              row['description'] ||
+              row['Description'] ||
+              ''
+            ).toString().trim(),
+            logo: null,
+            players: []
+          };
+          
+          // Handle team logo URL
+          const logoUrl = (
+            row['Team Logo URL'] ||
+            row['TeamLogoURL'] ||
+            row['team_logo_url'] ||
+            row['logo'] ||
+            row['Logo'] ||
+            ''
+          ).toString().trim();
+          
+          if (logoUrl) {
+            teamsData[teamName].logo = {
+              url: logoUrl,
+              publicId: null
+            };
+          }
+        }
+
+        // Check if player already exists (prevent duplicate players)
+        let playerToAdd = null;
+        if (!existingPlayerNames.has(playerName.toLowerCase())) {
+          const photoUrl = (
+            row['Photo URL'] ||
+            row['PhotoURL'] ||
+            row['photo_url'] ||
+            row['photo'] ||
+            row['Photo'] ||
+            ''
+          ).toString().trim();
+          
+          let photoData = null;
+          if (photoUrl) {
+            photoData = {
+              url: photoUrl,
+              publicId: null
+            };
+          }
+
+          const ageValue = row['Age'] || row['age'] || row['AGE'] || '';
+          const genderValue = (
+            row['Gender'] ||
+            row['gender'] ||
+            row['GENDER'] ||
+            ''
+          ).toString().trim();
+          
+          const duprValue = (
+            row['DUPR ID'] ||
+            row['DUPRID'] ||
+            row['dupr_id'] ||
+            row['duprId'] ||
+            row['dupr'] ||
+            row['DUPR'] ||
+            ''
+          ).toString().trim();
+
+          playerToAdd = {
+            name: playerName,
+            age: ageValue ? parseInt(ageValue) : null,
+            gender: genderValue,
+            duprId: duprValue,
+            photo: photoData,
+            tournamentId: id,
+            createdBy: currentUser.uid,
+            createdAt: serverTimestamp()
+          };
+          
+          playersToAdd.push(playerToAdd);
+          existingPlayerNames.add(playerName.toLowerCase());
+        } else {
+          // Find existing player
+          playerToAdd = players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+        }
+
+        if (playerToAdd) {
+          teamsData[teamName].players.push(playerToAdd);
+        }
+      }
+
+      console.log(`Processed ${processedRows} rows, found ${Object.keys(teamsData).length} new teams`); // Debug log
+      
+      if (skippedDuplicateTeams.length > 0) {
+        console.log(`Skipped duplicate teams: ${skippedDuplicateTeams.join(', ')}`); // Debug log
+      }
+
+      if (Object.keys(teamsData).length === 0) {
+        let errorMessage = `No new teams to import. Processed ${processedRows} rows.`;
+        if (skippedDuplicateTeams.length > 0) {
+          errorMessage += ` Skipped ${skippedDuplicateTeams.length} duplicate teams: ${skippedDuplicateTeams.join(', ')}.`;
+        }
+        errorMessage += ' Please ensure your file has columns: "Team Name" and "Player Name" at minimum.';
+        setError(errorMessage);
+        return;
+      }
+
+      // Add new players to Firestore first
+      const addedPlayers = [];
+      for (const player of playersToAdd) {
+        try {
+          const docRef = await addDoc(collection(db, 'players'), player);
+          addedPlayers.push({ id: docRef.id, ...player });
+          console.log(`Added player: ${player.name} with ID: ${docRef.id}`); // Debug log
+        } catch (playerError) {
+          console.error('Error adding player:', player.name, playerError);
+        }
+      }
+
+      // Update players list with new players
+      const updatedPlayers = [...players, ...addedPlayers];
+
+      // Create teams with player IDs
+      let teamsCreated = 0;
+      let teamsSkipped = 0;
+      const teamErrors = [];
+      
+      for (const [teamName, teamData] of Object.entries(teamsData)) {
+        console.log(`Creating team: ${teamName} with ${teamData.players.length} players`); // Debug log
+        
+        try {
+          const playerIds = [];
+          
+          for (const player of teamData.players) {
+            // Find player ID from updated players list
+            const foundPlayer = updatedPlayers.find(p => p.name.toLowerCase() === player.name.toLowerCase());
+            if (foundPlayer && foundPlayer.id) {
+              console.log(`Found player ${player.name} with ID: ${foundPlayer.id}`); // Debug log
+              playerIds.push(foundPlayer.id);
+            } else {
+              console.log(`Player not found or missing ID: ${player.name}`, foundPlayer); // Debug log
+            }
+          }
+
+          console.log(`Team ${teamName} will have ${playerIds.length} players with IDs: ${playerIds.join(', ')}`); // Debug log
+
+          if (playerIds.length > 0) {
+            // Validate team data before creating
+            if (!teamData.name || !teamData.name.trim()) {
+              throw new Error('Team name is required');
+            }
+            
+            if (!id) {
+              throw new Error('Tournament ID is missing');
+            }
+            
+            if (!currentUser || !currentUser.uid) {
+              throw new Error('User authentication is missing');
+            }
+
+            const teamDoc = {
+              name: teamData.name.trim(),
+              description: teamData.description ? teamData.description.trim() : '',
+              playerIds: playerIds,
+              logo: teamData.logo || null,
+              tournamentId: id,
+              createdBy: currentUser.uid,
+              createdAt: serverTimestamp()
+            };
+
+            console.log(`Creating team document:`, teamDoc); // Debug log
+
+            const docRef = await addDoc(collection(db, 'teams'), teamDoc);
+            console.log(`Successfully created team: ${teamName} with ID: ${docRef.id}`); // Debug log
+            teamsCreated++;
+          } else {
+            console.log(`Skipping team ${teamName} - no valid players found`); // Debug log
+            teamErrors.push(`${teamName}: No valid players found`);
+            teamsSkipped++;
+          }
+        } catch (teamError) {
+          console.error('Error adding team:', teamName, teamError);
+          teamErrors.push(`${teamName}: ${teamError.message}`);
+          teamsSkipped++;
+        }
+      }
+
+      // Refresh data
+      await fetchPlayers();
+      await fetchTeams();
+
+      setError('');
+      let successMessage = `Successfully imported ${teamsCreated} teams with ${addedPlayers.length} new players!`;
+      if (skippedDuplicateTeams.length > 0) {
+        successMessage += ` Skipped ${skippedDuplicateTeams.length} duplicate teams: ${skippedDuplicateTeams.join(', ')}.`;
+      }
+      if (teamsSkipped > 0) {
+        successMessage += ` ${teamsSkipped} teams were skipped due to errors.`;
+        if (teamErrors.length > 0) {
+          successMessage += `\n\nError details:\n${teamErrors.join('\n')}`;
+        }
+      }
+      alert(successMessage);
+    } catch (error) {
+      console.error('Error importing teams:', error);
+      setError(`Failed to import teams: ${error.message}. Please check your file format and try again.`);
+    } finally {
+      setSubmitting(false);
+      e.target.value = ''; // Reset file input
     }
   };
 
@@ -724,7 +1127,7 @@ export default function AddPlayersTeams() {
                       </svg>
                       <div>
                         <h4 className="font-bold">Excel Format Required</h4>
-                        <p className="text-sm">Columns: Name, Age, Gender, DUPR ID</p>
+                        <p className="text-sm">Columns: Name, Age, Gender, DUPR ID, Photo URL (optional)</p>
                       </div>
                     </div>
 
@@ -881,7 +1284,7 @@ export default function AddPlayersTeams() {
                         </svg>
                         <div>
                           <h4 className="font-bold">Excel Format Required</h4>
-                          <p className="text-sm">Columns: Name, Age, Gender, DUPR ID</p>
+                          <p className="text-sm">Columns: Name, Age, Gender, DUPR ID, Photo URL (optional)</p>
                         </div>
                       </div>
 
@@ -985,13 +1388,45 @@ export default function AddPlayersTeams() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold">Teams ({teams.length})</h3>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => setShowTeamModal(true)}
-                    disabled={players.length === 0}
-                  >
-                    Create Team
-                  </button>
+                  <div className="flex gap-2">
+                    {(players.length > 0 || teams.length > 0) && (
+                      <button
+                        className={`btn btn-success btn-sm ${submitting ? 'loading' : ''}`}
+                        onClick={handleExportData}
+                        disabled={submitting}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        {submitting ? 'Exporting...' : 'Export'}
+                      </button>
+                    )}
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleBulkTeamImport}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={submitting}
+                      />
+                      <button
+                        className={`btn btn-info btn-sm ${submitting ? 'loading' : ''}`}
+                        disabled={submitting}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                        </svg>
+                        {submitting ? 'Importing...' : 'Import'}
+                      </button>
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowTeamModal(true)}
+                      disabled={players.length === 0}
+                    >
+                      Create Team
+                    </button>
+                  </div>
                 </div>
 
                 {players.length === 0 && (
@@ -1002,6 +1437,22 @@ export default function AddPlayersTeams() {
                     <span>Add players first before creating teams</span>
                   </div>
                 )}
+
+                {/* Import Format Info */}
+                <div className="alert alert-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <h4 className="font-bold">Bulk Team Import Format</h4>
+                    <p className="text-sm">
+                      Excel/CSV columns: Team Name, Player Name, Age, Gender, DUPR ID, Photo URL, Team Description, Team Logo URL
+                    </p>
+                    <p className="text-sm mt-1">
+                      <strong>Note:</strong> Each row should contain one player. Multiple rows with the same Team Name will be grouped together.
+                    </p>
+                  </div>
+                </div>
 
                 {/* Teams List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

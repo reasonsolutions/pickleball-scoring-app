@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
@@ -20,9 +20,12 @@ export default function FixtureList() {
   // Edit match state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editForm, setEditForm] = useState({
     date: '',
     time: '',
+    pool: '',
+    court: '',
     player1Team1: '',
     player2Team1: '',
     player1Team2: '',
@@ -120,6 +123,8 @@ export default function FixtureList() {
     setEditForm({
       date: match.date && match.date.toDate ? match.date.toDate().toISOString().split('T')[0] : '',
       time: match.time || '',
+      pool: match.pool || '',
+      court: match.court || '',
       player1Team1: match.player1Team1 || '',
       player2Team1: match.player2Team1 || '',
       player1Team2: match.player1Team2 || '',
@@ -153,16 +158,22 @@ export default function FixtureList() {
         status: editingMatch.status,
         createdBy: editingMatch.createdBy,
         createdAt: editingMatch.createdAt,
-        fixtureGroupId: editingMatch.fixtureGroupId,
-        matchNumber: editingMatch.matchNumber,
         // Update the editable fields
-        date: new Date(editForm.date),
+        date: Timestamp.fromDate(new Date(editForm.date)),
         time: editForm.time,
+        pool: editForm.pool,
+        court: editForm.court,
         player1Team1: editForm.player1Team1,
         player2Team1: editForm.player2Team1,
         player1Team2: editForm.player1Team2,
         player2Team2: editForm.player2Team2,
         youtubeLink: editForm.youtubeLink,
+        // Optional fields that might exist
+        ...(editingMatch.fixtureType && { fixtureType: editingMatch.fixtureType }),
+        ...(editingMatch.fixtureGroupId && { fixtureGroupId: editingMatch.fixtureGroupId }),
+        ...(editingMatch.matchNumber && { matchNumber: editingMatch.matchNumber }),
+        ...(editingMatch.playoffStage && { playoffStage: editingMatch.playoffStage }),
+        ...(editingMatch.playoffNumber && { playoffNumber: editingMatch.playoffNumber }),
         updatedAt: serverTimestamp()
       };
 
@@ -181,6 +192,27 @@ export default function FixtureList() {
     } catch (error) {
       console.error('Error updating match:', error);
       setError('Failed to update match');
+    }
+  };
+
+  const handleDeleteMatch = async () => {
+    if (!editingMatch) return;
+    
+    try {
+      // Delete the match from Firestore
+      await deleteDoc(doc(db, 'fixtures', editingMatch.id));
+      
+      // Update local state to remove the match
+      setMatches(prev => prev.filter(match => match.id !== editingMatch.id));
+      
+      // Close modals
+      setShowDeleteConfirm(false);
+      setShowEditModal(false);
+      setEditingMatch(null);
+      setError('');
+    } catch (error) {
+      console.error('Error deleting match:', error);
+      setError('Failed to delete match');
     }
   };
 
@@ -361,6 +393,21 @@ export default function FixtureList() {
                       </button>
                     </div>
                     
+                    {/* Streaming Overlay Icon */}
+                    <div className="tooltip" data-tip="Open Streaming Overlay">
+                      <button
+                        className="w-8 h-8 sm:w-10 sm:h-10 bg-base-300 rounded-full flex items-center justify-center hover:bg-warning hover:text-warning-content transition-colors"
+                        onClick={() => {
+                          const overlayUrl = `${window.location.origin}/streaming-overlay/${match.id}`;
+                          window.open(overlayUrl, '_blank');
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                    
                     <button
                       className="btn btn-ghost btn-xs sm:btn-sm"
                       onClick={() => handleEditMatch(match)}
@@ -371,44 +418,36 @@ export default function FixtureList() {
                   </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-3">
-                  <div className="text-lg sm:text-xl font-bold break-words min-w-0">{match.team1Name}</div>
-                  <div className="text-base sm:text-lg font-medium text-base-content/60 flex-shrink-0 self-center">VS</div>
-                  <div className="text-lg sm:text-xl font-bold break-words min-w-0 sm:text-right">{match.team2Name}</div>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 sm:gap-8">
+                  {/* Team 1 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-lg sm:text-xl font-bold break-words mb-1">{match.team1Name}</div>
+                    {(match.player1Team1 || match.player2Team1) && (
+                      <div className="text-sm space-y-0.5">
+                        {match.player1Team1 && <div>{match.player1Team1}</div>}
+                        {match.player2Team1 && <div>{match.player2Team1}</div>}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* VS */}
+                  <div className="text-base sm:text-lg font-medium text-base-content/60 flex-shrink-0 self-start sm:self-center">VS</div>
+                  
+                  {/* Team 2 */}
+                  <div className="flex-1 min-w-0 sm:text-right">
+                    <div className="text-lg sm:text-xl font-bold break-words mb-1">{match.team2Name}</div>
+                    {(match.player1Team2 || match.player2Team2) && (
+                      <div className="text-sm space-y-0.5">
+                        {match.player1Team2 && <div>{match.player1Team2}</div>}
+                        {match.player2Team2 && <div>{match.player2Team2}</div>}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                {/* Show assigned players if any */}
-                {(match.player1Team1 || match.player1Team2) ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-4 pt-4 border-t border-base-300">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-sm text-base-content/70 mb-2 break-words">
-                        {match.team1Name} Players:
-                      </div>
-                      <div className="space-y-1">
-                        {match.player1Team1 && (
-                          <div className="text-sm break-words">• {match.player1Team1}</div>
-                        )}
-                        {match.player2Team1 && (
-                          <div className="text-sm break-words">• {match.player2Team1}</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-sm text-base-content/70 mb-2 break-words">
-                        {match.team2Name} Players:
-                      </div>
-                      <div className="space-y-1">
-                        {match.player1Team2 && (
-                          <div className="text-sm break-words">• {match.player1Team2}</div>
-                        )}
-                        {match.player2Team2 && (
-                          <div className="text-sm break-words">• {match.player2Team2}</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-base-content/50 border-t border-base-300 mt-4 text-sm sm:text-base">
+                {/* Show message if no players assigned */}
+                {!(match.player1Team1 || match.player1Team2 || match.player2Team1 || match.player2Team2) && (
+                  <div className="text-center py-2 text-base-content/50 border-t border-base-300 text-sm sm:text-base mt-2">
                     Players not assigned yet - Click Edit to assign players
                   </div>
                 )}
@@ -557,21 +596,58 @@ export default function FixtureList() {
                 </div>
 
                 <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-0">
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto"
-                    onClick={() => {
-                      setShowEditModal(false);
-                      setEditingMatch(null);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
-                    Update Match
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
+                    <button
+                      type="button"
+                      className="btn btn-error btn-sm sm:btn-md w-full sm:w-auto sm:mr-auto"
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      Delete Match
+                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setEditingMatch(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
+                        Update Match
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && editingMatch && (
+          <div className="modal modal-open">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg mb-4">Confirm Delete</h3>
+              <p className="mb-6">
+                Are you sure you want to delete this match? This action cannot be undone.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <button
+                  className="btn btn-outline btn-sm sm:btn-md flex-1"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-error btn-sm sm:btn-md flex-1"
+                  onClick={handleDeleteMatch}
+                >
+                  Delete Match
+                </button>
+              </div>
             </div>
           </div>
         )}

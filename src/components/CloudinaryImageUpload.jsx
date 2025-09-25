@@ -115,7 +115,7 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
             </button>
           </div>
           {uploading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full">
+            <div className="absolute inset-0 bg-gray-200 bg-opacity-80 flex items-center justify-center rounded-full">
               <span className="loading loading-spinner loading-lg text-white"></span>
             </div>
           )}

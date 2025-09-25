@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
@@ -43,6 +44,10 @@ export default function Navbar() {
 
       <div className="navbar-end">
         {currentUser && (
+          <>
+            <div className="mr-4">
+              <ThemeToggle />
+            </div>
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
               <div className="w-10 rounded-full">
@@ -67,6 +72,7 @@ export default function Navbar() {
               <li><a onClick={handleLogout} className="hover:bg-primary hover:bg-opacity-10">Logout</a></li>
             </ul>
           </div>
+          </>
         )}
       </div>
     </div>

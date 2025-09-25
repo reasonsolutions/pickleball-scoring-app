@@ -143,10 +143,10 @@ export default function SwipeToEndMatch({ onEndMatch, disabled = false }) {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-400 p-4">
-      <div 
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-200 p-4">
+      <div
         ref={containerRef}
-        className={`relative w-full h-16 bg-black rounded-full overflow-hidden cursor-pointer select-none ${
+        className={`relative w-full h-16 bg-gray-300 rounded-full overflow-hidden cursor-pointer select-none ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         style={{

@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/fi
 import { db } from '../utils/firebase';
 import SwipeToEndMatch from '../components/SwipeToEndMatch';
 import YouTubeUrlManager from '../components/YouTubeUrlManager';
+import paddleIcon from '../assets/paddle.png';
 
 export default function UmpireScoring() {
   const { matchId } = useParams();
@@ -14,8 +15,8 @@ export default function UmpireScoring() {
   
   // Match setup states
   const [setupStep, setSetupStep] = useState('games'); // 'games', 'points', 'scoring'
-  const [gamesCount, setGamesCount] = useState(3);
-  const [pointsPerGame, setPointsPerGame] = useState([11, 11, 11]);
+  const [gamesCount, setGamesCount] = useState(1);
+  const [pointsPerGame, setPointsPerGame] = useState([11]);
   
   // Scoring states
   const [scores, setScores] = useState({});
@@ -39,8 +40,8 @@ export default function UmpireScoring() {
           if (matchData.scores) {
             setScores(matchData.scores);
             setSetupStep('scoring');
-            setGamesCount(matchData.gamesCount || 3);
-            setPointsPerGame(matchData.pointsPerGame || [11, 11, 11]);
+            setGamesCount(matchData.gamesCount || 1);
+            setPointsPerGame(matchData.pointsPerGame || [11]);
             setServingPlayer(matchData.servingPlayer || 'player1');
             setServeSequence(matchData.serveSequence || 0);
             setTeamServeCount(matchData.teamServeCount || 0);
@@ -460,14 +461,11 @@ export default function UmpireScoring() {
           title="Change Serve"
         >
           {/* Paddle Icon */}
-          <svg
-            className="w-10 h-10 text-black"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1s1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-            <rect x="10.5" y="16" width="3" height="6" rx="1.5"/>
-          </svg>
+          <img
+            src={paddleIcon}
+            alt="Paddle"
+            className="w-10 h-10 object-contain"
+          />
         </button>
       </div>
 
@@ -495,7 +493,7 @@ export default function UmpireScoring() {
                 </div>
               )}
             </div>
-            <div className="text-xl font-bold text-black">
+            <div className="text-xl font-bold text-gray-800">
               <div className="flex items-center">
                 {getPlayerName('player1')}
                 {getServeIndicator('player1')}
@@ -511,13 +509,13 @@ export default function UmpireScoring() {
           {servingPlayer === 'player1' && (
             <div className="flex flex-col gap-2">
               <button
-                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                className="btn btn-square btn-lg bg-orange-600 text-white hover:bg-orange-700"
                 onClick={() => updateScore('player1', currentGame, 1)}
               >
                 <span className="text-2xl">+</span>
               </button>
               <button
-                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                className="btn btn-square btn-lg bg-gray-600 text-white hover:bg-gray-700"
                 onClick={() => updateScore('player1', currentGame, -1)}
               >
                 <span className="text-2xl">-</span>
@@ -551,7 +549,7 @@ export default function UmpireScoring() {
                 </div>
               )}
             </div>
-            <div className="text-xl font-bold text-black">
+            <div className="text-xl font-bold text-gray-800">
               <div className="flex items-center">
                 {getPlayerName('player2')}
                 {getServeIndicator('player2')}
@@ -567,13 +565,13 @@ export default function UmpireScoring() {
           {servingPlayer === 'player2' && (
             <div className="flex flex-col gap-2">
               <button
-                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                className="btn btn-square btn-lg bg-orange-600 text-white hover:bg-orange-700"
                 onClick={() => updateScore('player2', currentGame, 1)}
               >
                 <span className="text-2xl">+</span>
               </button>
               <button
-                className="btn btn-square btn-lg bg-black text-white hover:bg-gray-800"
+                className="btn btn-square btn-lg bg-gray-600 text-white hover:bg-gray-700"
                 onClick={() => updateScore('player2', currentGame, -1)}
               >
                 <span className="text-2xl">-</span>
