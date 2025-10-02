@@ -17,7 +17,7 @@ export default function Login() {
       setError('');
       setLoading(true);
       await signin(email, password);
-      navigate('/');
+      navigate('/admin');
     } catch (error) {
       setError('Failed to sign in: ' + error.message);
     }

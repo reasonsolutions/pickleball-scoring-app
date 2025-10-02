@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp, updateDoc, deleteDoc, Timestamp, or, and } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
@@ -8,10 +8,11 @@ import MainLayout from '../components/MainLayout';
 export default function AddFixtures() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, isSuperAdmin, isTeamAdmin } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [teamAdminTeamId, setTeamAdminTeamId] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -26,7 +27,7 @@ export default function AddFixtures() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeamFilter, setSelectedTeamFilter] = useState('');
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
+  const [selectedFixtureTypeFilter, setSelectedFixtureTypeFilter] = useState('');
   const [activeTab, setActiveTab] = useState('fixtures'); // 'fixtures', 'playoffs', 'ranking'
   const [playoffFixtures, setPlayoffFixtures] = useState([]);
   const [fixtures, setFixtures] = useState({});
@@ -41,6 +42,7 @@ export default function AddFixtures() {
   const [editForm, setEditForm] = useState({
     date: '',
     time: '',
+    fixtureType: '',
     pool: '',
     court: '',
     player1Team1: '',
@@ -91,10 +93,20 @@ export default function AddFixtures() {
   useEffect(() => {
     const fetchTournamentData = async () => {
       try {
+        console.log('Fetching tournament data for ID:', id);
+        console.log('Current user:', {
+          uid: currentUser?.uid,
+          email: currentUser?.email,
+          role: currentUser?.role,
+          teamName: currentUser?.teamName,
+          tournamentId: currentUser?.tournamentId
+        });
+        
         // Fetch tournament details
         const tournamentDoc = await getDoc(doc(db, 'tournaments', id));
         if (tournamentDoc.exists()) {
           const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
+          console.log('Tournament data fetched successfully:', tournamentData.name);
           setTournament(tournamentData);
           
           // Fetch teams for this tournament
@@ -121,11 +133,86 @@ export default function AddFixtures() {
           }));
           setPlayers(playersData);
           
-          // Fetch existing fixtures
-          const fixturesQuery = query(
-            collection(db, 'fixtures'),
-            where('tournamentId', '==', id)
-          );
+          // Fetch existing fixtures - filter based on user role
+          let fixturesQuery;
+          let teamAdminTeam = null;
+          
+          if (isTeamAdmin()) {
+            console.log('Team admin user detected:', {
+              email: currentUser.email,
+              teamName: currentUser.teamName,
+              tournamentId: currentUser.tournamentId,
+              currentTournamentId: id
+            });
+            
+            // Check if team admin belongs to this tournament
+            if (currentUser.tournamentId !== id) {
+              console.log('Team admin does not belong to this tournament');
+              setError('You do not have access to this tournament');
+              setLoading(false);
+              return;
+            }
+            
+            // Find the team admin's team ID - try multiple matching strategies
+            const teamAdmin = teamsData.find(team => {
+              // Strategy 1: Match by admin email
+              if (team.adminEmail && team.adminEmail.toLowerCase() === currentUser.email.toLowerCase()) {
+                return true;
+              }
+              
+              // Strategy 2: Match by team name (case insensitive)
+              if (currentUser.teamName && team.name &&
+                  team.name.toLowerCase() === currentUser.teamName.toLowerCase()) {
+                return true;
+              }
+              
+              // Strategy 3: Match by adminUid if available
+              if (team.adminUid && team.adminUid === currentUser.uid) {
+                return true;
+              }
+              
+              return false;
+            });
+            
+            console.log('Team search result:', teamAdmin);
+            console.log('Available teams:', teamsData.map(t => ({
+              id: t.id,
+              name: t.name,
+              adminEmail: t.adminEmail,
+              adminUid: t.adminUid
+            })));
+            
+            if (teamAdmin) {
+              teamAdminTeam = teamAdmin.id;
+              setTeamAdminTeamId(teamAdmin.id);
+              
+              console.log('Found team admin team:', teamAdmin.name, 'ID:', teamAdmin.id);
+              
+              // Team admins only see fixtures where their team is participating
+              fixturesQuery = query(
+                collection(db, 'fixtures'),
+                and(
+                  where('tournamentId', '==', id),
+                  or(
+                    where('team1', '==', teamAdmin.id),
+                    where('team2', '==', teamAdmin.id)
+                  )
+                )
+              );
+            } else {
+              console.log('Team admin team not found');
+              setError(`Your team was not found in this tournament. Please contact the tournament administrator.`);
+              setLoading(false);
+              return;
+            }
+          } else {
+            // Super admins see all fixtures
+            fixturesQuery = query(
+              collection(db, 'fixtures'),
+              where('tournamentId', '==', id)
+            );
+          }
+          
           const fixturesSnapshot = await getDocs(fixturesQuery);
           const fixturesData = {};
           const fixtureGroupsData = {};
@@ -172,11 +259,17 @@ export default function AddFixtures() {
           setFixtureGroups(fixtureGroupsData);
           setPlayoffFixtures(playoffFixturesData);
         } else {
+          console.log('Tournament document does not exist');
           setError('Tournament not found');
         }
       } catch (error) {
         console.error('Error fetching tournament data:', error);
-        setError('Failed to load tournament data');
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
+        setError(`Failed to load tournament data: ${error.message}`);
       } finally {
         setLoading(false);
       }
@@ -296,6 +389,7 @@ export default function AddFixtures() {
     setEditForm({
       date: dateString,
       time: fixture.time || '',
+      fixtureType: fixture.fixtureType || 'league',
       pool: poolValue,
       court: fixture.court || '',
       // For playoff fixtures, include team selection
@@ -330,24 +424,25 @@ export default function AddFixtures() {
         date: Timestamp.fromDate(new Date(editForm.date)),
         matchType: editingFixture.matchType,
         matchTypeLabel: editingFixture.matchTypeLabel,
-        team1: editingFixture.fixtureType === 'playoff' ? (editForm.team1 || editingFixture.team1) : editingFixture.team1,
-        team2: editingFixture.fixtureType === 'playoff' ? (editForm.team2 || editingFixture.team2) : editingFixture.team2,
-        team1Name: editingFixture.fixtureType === 'playoff' ? (editForm.team1Name || editingFixture.team1Name) : editingFixture.team1Name,
-        team2Name: editingFixture.fixtureType === 'playoff' ? (editForm.team2Name || editingFixture.team2Name) : editingFixture.team2Name,
+        team1: editingFixture.team1,
+        team2: editingFixture.team2,
+        team1Name: editingFixture.team1Name,
+        team2Name: editingFixture.team2Name,
         status: editingFixture.status,
         createdBy: editingFixture.createdBy,
         createdAt: editingFixture.createdAt,
-        // Editable fields
+        // Preserve existing fields
+        pool: editingFixture.pool,
+        court: editingFixture.court,
+        player1Team1: editingFixture.player1Team1,
+        player2Team1: editingFixture.player2Team1,
+        player1Team2: editingFixture.player1Team2,
+        player2Team2: editingFixture.player2Team2,
+        youtubeLink: editingFixture.youtubeLink,
+        // Only editable fields from the form
         time: editForm.time,
-        pool: editForm.pool,
-        court: editForm.court,
-        player1Team1: editForm.player1Team1,
-        player2Team1: editForm.player2Team1,
-        player1Team2: editForm.player1Team2,
-        player2Team2: editForm.player2Team2,
-        youtubeLink: editForm.youtubeLink,
+        fixtureType: editForm.fixtureType,
         // Optional fields that might exist
-        ...(editingFixture.fixtureType && { fixtureType: editingFixture.fixtureType }),
         ...(editingFixture.fixtureGroupId && { fixtureGroupId: editingFixture.fixtureGroupId }),
         ...(editingFixture.matchNumber && { matchNumber: editingFixture.matchNumber }),
         ...(editingFixture.playoffStage && { playoffStage: editingFixture.playoffStage }),
@@ -666,7 +761,7 @@ export default function AddFixtures() {
       const team1Data = teams.find(t => t.id === bulkFixtureForm.team1);
       const team2Data = teams.find(t => t.id === bulkFixtureForm.team2);
       
-      // Define the matches to create automatically for Mini Dreambreaker Team
+      // Define the matches to create automatically for Mini DreamBreaker Team
       const matchesToCreate = [
         { key: 'mensDoubles', label: "Men's Doubles", type: 'doubles' },
         { key: 'mensDoubles', label: "Men's Doubles", type: 'doubles' }, // Second men's doubles
@@ -1138,8 +1233,8 @@ export default function AddFixtures() {
         return false;
       }
 
-      // Group filter (pool filter)
-      if (selectedGroupFilter && fixture.pool !== selectedGroupFilter) {
+      // Fixture type filter
+      if (selectedFixtureTypeFilter && fixture.fixtureType !== selectedFixtureTypeFilter) {
         return false;
       }
 
@@ -1172,8 +1267,8 @@ export default function AddFixtures() {
         return false;
       }
 
-      // Group filter (pool filter) - check if any match in the group has the selected pool
-      if (selectedGroupFilter && !group.matches.some(match => match.pool === selectedGroupFilter)) {
+      // Fixture type filter - check if any match in the group has the selected fixture type
+      if (selectedFixtureTypeFilter && !group.matches.some(match => match.fixtureType === selectedFixtureTypeFilter)) {
         return false;
       }
 
@@ -1201,29 +1296,46 @@ export default function AddFixtures() {
     });
   };
 
-  // Get unique pools/groups for filtering
-  const getAvailableGroups = () => {
-    const groups = new Set();
+  // Get unique fixture types for filtering
+  const getAvailableFixtureTypes = () => {
+    const types = new Set();
     
-    // Add pools from individual fixtures
+    // Add fixture types from individual fixtures
     Object.values(fixtures).forEach(dayFixtures => {
       dayFixtures.forEach(fixture => {
-        if (fixture.pool) {
-          groups.add(fixture.pool);
+        if (fixture.fixtureType) {
+          types.add(fixture.fixtureType);
         }
       });
     });
     
-    // Add pools from fixture groups
+    // Add fixture types from fixture groups
     Object.values(fixtureGroups).forEach(group => {
       group.matches.forEach(match => {
-        if (match.pool) {
-          groups.add(match.pool);
+        if (match.fixtureType) {
+          types.add(match.fixtureType);
         }
       });
     });
     
-    return Array.from(groups).sort();
+    return Array.from(types).sort();
+  };
+
+  // Helper function to format fixture type for display
+  const formatFixtureType = (fixtureType) => {
+    switch (fixtureType) {
+      case 'league': return 'League';
+      case 'quarterfinal': return 'Quarter Final';
+      case 'semifinal': return 'Semi Final';
+      case 'thirdplace': return 'Third Place';
+      case 'final': return 'Final';
+      case 'dreambreaker': return 'DreamBreaker';
+      case 'minidreambreaker': return 'Mini DreamBreaker';
+      case 'roundrobin': return 'Round Robin';
+      case 'custom': return 'Custom';
+      case 'playoff': return 'Playoff';
+      default: return fixtureType || 'Unknown';
+    }
   };
 
   const selectedCategory = getAvailableCategories().find(cat => cat.key === fixtureForm.matchType);
@@ -1281,52 +1393,77 @@ export default function AddFixtures() {
               <span className="sm:hidden">Back</span>
             </button>
             
-            <div className="flex gap-2">
-              <button
-                className="btn btn-primary btn-sm sm:btn-md flex-shrink-0"
-                onClick={handleCreateFixtureClick}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="hidden sm:inline">Create Fixture</span>
-                <span className="sm:hidden">Create</span>
-              </button>
-              
-              <button
-                className="btn btn-info btn-sm sm:btn-md flex-shrink-0"
-                onClick={() => {
-                  const umpireMatchListUrl = `${window.location.origin}/umpire-matches/${id}`;
-                  window.open(umpireMatchListUrl, '_blank');
-                }}
-                title="View all matches for umpire access"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                <span className="hidden sm:inline">Umpire Match List</span>
-                <span className="sm:hidden">Umpire</span>
-              </button>
-              
-              <button
-                className="btn btn-warning btn-sm sm:btn-md flex-shrink-0"
-                onClick={() => {
-                  const streamingMatchListUrl = `${window.location.origin}/streaming-matches/${id}`;
-                  window.open(streamingMatchListUrl, '_blank');
-                }}
-                title="View all matches for streaming overlay access"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <span className="hidden sm:inline">Streaming Overlay List</span>
-                <span className="sm:hidden">Streaming</span>
-              </button>
-            </div>
+            {isSuperAdmin() && (
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-primary btn-sm sm:btn-md flex-shrink-0"
+                  onClick={handleCreateFixtureClick}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden sm:inline">Create Fixture</span>
+                  <span className="sm:hidden">Create</span>
+                </button>
+                
+                <button
+                  className="btn btn-info btn-sm sm:btn-md flex-shrink-0"
+                  onClick={() => {
+                    const umpireMatchListUrl = `${window.location.origin}/umpire-matches/${id}`;
+                    window.open(umpireMatchListUrl, '_blank');
+                  }}
+                  title="View all matches for umpire access"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  <span className="hidden sm:inline">Umpire Match List</span>
+                  <span className="sm:hidden">Umpire</span>
+                </button>
+                
+                <button
+                  className="btn btn-warning btn-sm sm:btn-md flex-shrink-0"
+                  onClick={() => {
+                    const streamingMatchListUrl = `${window.location.origin}/streaming-matches/${id}`;
+                    window.open(streamingMatchListUrl, '_blank');
+                  }}
+                  title="View all matches for streaming overlay access"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Streaming Overlay List</span>
+                  <span className="sm:hidden">Streaming</span>
+                </button>
+                
+                <button
+                  className="btn btn-secondary btn-sm sm:btn-md flex-shrink-0"
+                  onClick={() => {
+                    const tournamentDisplayUrl = `${window.location.origin}/tournament-display/${id}`;
+                    window.open(tournamentDisplayUrl, '_blank');
+                  }}
+                  title="Open tournament display view in new window"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span className="hidden sm:inline">Display View</span>
+                  <span className="sm:hidden">Display</span>
+                </button>
+              </div>
+            )}
           </div>
           
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">Fixtures</h1>
-          <p className="text-base-content/70 text-sm sm:text-base lg:text-lg break-words">{tournament?.name}</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 break-words">
+            {isTeamAdmin() ? 'My Team Fixtures' : 'Fixtures'}
+          </h1>
+          <p className="text-base-content/70 text-sm sm:text-base lg:text-lg break-words">
+            {isTeamAdmin()
+              ? `${tournament?.name} - ${currentUser?.teamName || 'Team'} fixtures only`
+              : tournament?.name
+            }
+          </p>
         </div>
 
         {error && (
@@ -1502,24 +1639,24 @@ export default function AddFixtures() {
                 )}
               </div>
 
-              {/* Group Filter */}
+              {/* Fixture Type Filter */}
               <div className="form-control w-full sm:w-64">
                 <select
                   className="select select-bordered w-full"
-                  value={selectedGroupFilter}
-                  onChange={(e) => setSelectedGroupFilter(e.target.value)}
+                  value={selectedFixtureTypeFilter}
+                  onChange={(e) => setSelectedFixtureTypeFilter(e.target.value)}
                 >
-                  <option value="">Filter by group</option>
-                  {getAvailableGroups().map(group => (
-                    <option key={group} value={group}>
-                      Pool {group}
+                  <option value="">Filter by fixture type</option>
+                  {getAvailableFixtureTypes().map(type => (
+                    <option key={type} value={type}>
+                      {formatFixtureType(type)}
                     </option>
                   ))}
                 </select>
-                {selectedGroupFilter && (
+                {selectedFixtureTypeFilter && (
                   <button
                     className="btn btn-ghost btn-xs mt-1"
-                    onClick={() => setSelectedGroupFilter('')}
+                    onClick={() => setSelectedFixtureTypeFilter('')}
                   >
                     Clear filter
                   </button>
@@ -1563,24 +1700,26 @@ export default function AddFixtures() {
                               })}
                             </div>
                             <div className="badge badge-primary badge-sm sm:badge-lg">
-                              DreamBreaker
+                              {formatFixtureType(group.matches[0]?.fixtureType)}
                             </div>
                             <div className="badge badge-secondary badge-sm sm:badge-lg">
                               {group.matches.length} matches
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditFixture(group.matches[0]);
-                              }}
-                              title="Edit"
-                            >
-                              <span className="hidden sm:inline">Edit</span>
-                              <span className="sm:hidden text-lg">✏️</span>
-                            </button>
+                            {isSuperAdmin() && (
+                              <button
+                                className="btn btn-ghost btn-xs sm:btn-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditFixture(group.matches[0]);
+                                }}
+                                title="Edit"
+                              >
+                                <span className="hidden sm:inline">Edit</span>
+                                <span className="sm:hidden text-lg">✏️</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                         
@@ -1652,7 +1791,7 @@ export default function AddFixtures() {
                                   {fixture.time}
                                 </div>
                                 <div className="badge badge-accent badge-sm sm:badge-lg">
-                                  {fixture.fixtureType === 'roundrobin' ? 'Round Robin' : 'Custom'}
+                                  {formatFixtureType(fixture.fixtureType)}
                                 </div>
                                 {fixture.pool && (
                                   <div className="badge badge-secondary badge-sm sm:badge-md">
@@ -1665,53 +1804,59 @@ export default function AddFixtures() {
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 {/* Action buttons like DreamBreaker fixtures */}
-                                <button
-                                  className="btn btn-ghost btn-xs sm:btn-sm"
-                                  onClick={() => {
-                                    const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
-                                    window.open(tvUrl, '_blank');
-                                  }}
-                                  title="TV Display"
-                                >
-                                  <span className="text-lg">📺</span>
-                                </button>
-                                <button
-                                  className="btn btn-ghost btn-xs sm:btn-sm"
-                                  onClick={() => {
-                                    const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
-                                    window.open(umpireUrl, '_blank');
-                                  }}
-                                  title="Umpire"
-                                >
-                                  <span className="text-lg">⚖️</span>
-                                </button>
-                                <button
-                                  className="btn btn-ghost btn-xs sm:btn-sm"
-                                  onClick={() => {
-                                    const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
-                                    window.open(basicScoreUrl, '_blank');
-                                  }}
-                                  title="Basic Score"
-                                >
-                                  <span className="text-lg">📊</span>
-                                </button>
-                                {fixture.youtubeLink && (
+                                {isSuperAdmin() && (
+                                  <>
+                                    <button
+                                      className="btn btn-ghost btn-xs sm:btn-sm"
+                                      onClick={() => {
+                                        const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
+                                        window.open(tvUrl, '_blank');
+                                      }}
+                                      title="TV Display"
+                                    >
+                                      <span className="text-lg">📺</span>
+                                    </button>
+                                    <button
+                                      className="btn btn-ghost btn-xs sm:btn-sm"
+                                      onClick={() => {
+                                        const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
+                                        window.open(umpireUrl, '_blank');
+                                      }}
+                                      title="Umpire"
+                                    >
+                                      <span className="text-lg">⚖️</span>
+                                    </button>
+                                    <button
+                                      className="btn btn-ghost btn-xs sm:btn-sm"
+                                      onClick={() => {
+                                        const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
+                                        window.open(basicScoreUrl, '_blank');
+                                      }}
+                                      title="Basic Score"
+                                    >
+                                      <span className="text-lg">📊</span>
+                                    </button>
+                                    {fixture.youtubeLink && (
+                                      <button
+                                        className="btn btn-ghost btn-xs sm:btn-sm"
+                                        onClick={() => window.open(fixture.youtubeLink, '_blank')}
+                                        title="Watch Live"
+                                      >
+                                        <span className="text-lg">📹</span>
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                {isSuperAdmin() && (
                                   <button
                                     className="btn btn-ghost btn-xs sm:btn-sm"
-                                    onClick={() => window.open(fixture.youtubeLink, '_blank')}
-                                    title="Watch Live"
+                                    onClick={() => handleEditFixture(fixture)}
+                                    title="Edit"
                                   >
-                                    <span className="text-lg">📹</span>
+                                    <span className="hidden sm:inline">Edit</span>
+                                    <span className="sm:hidden text-lg">✏️</span>
                                   </button>
                                 )}
-                                <button
-                                  className="btn btn-ghost btn-xs sm:btn-sm"
-                                  onClick={() => handleEditFixture(fixture)}
-                                  title="Edit"
-                                >
-                                  <span className="hidden sm:inline">Edit</span>
-                                  <span className="sm:hidden text-lg">✏️</span>
-                                </button>
                               </div>
                             </div>
                             
@@ -1748,7 +1893,7 @@ export default function AddFixtures() {
                   )}
                 
                 {/* Show message if no fixtures match filters */}
-                {(searchTerm || selectedTeamFilter || selectedGroupFilter) &&
+                {(searchTerm || selectedTeamFilter || selectedFixtureTypeFilter) &&
                  filterFixtureGroups(Object.entries(fixtureGroups)).length === 0 &&
                  Object.entries(fixtures).every(([dateKey, dayFixtures]) =>
                    filterFixtures(dayFixtures.filter(fixture => fixture.fixtureType === 'custom' || fixture.fixtureType === 'roundrobin')).length === 0
@@ -1774,12 +1919,12 @@ export default function AddFixtures() {
                           Clear team filter
                         </button>
                       )}
-                      {selectedGroupFilter && (
+                      {selectedFixtureTypeFilter && (
                         <button
                           className="btn btn-outline btn-sm"
-                          onClick={() => setSelectedGroupFilter('')}
+                          onClick={() => setSelectedFixtureTypeFilter('')}
                         >
-                          Clear group filter
+                          Clear fixture type filter
                         </button>
                       )}
                     </div>
@@ -1787,7 +1932,7 @@ export default function AddFixtures() {
                 )}
 
                 {/* Show message if no fixtures for selected date */}
-                {selectedDateForView && !searchTerm && !selectedTeamFilter && !selectedGroupFilter &&
+                {selectedDateForView && !searchTerm && !selectedTeamFilter && !selectedFixtureTypeFilter &&
                  Object.entries(fixtureGroups)
                    .filter(([, group]) => group.dateKey === selectedDateForView.toDateString())
                    .length === 0 &&
@@ -1872,44 +2017,50 @@ export default function AddFixtures() {
                               )}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => {
-                                  const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
-                                  window.open(tvUrl, '_blank');
-                                }}
-                                title="TV Display"
-                              >
-                                <span className="text-lg">📺</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => {
-                                  const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
-                                  window.open(umpireUrl, '_blank');
-                                }}
-                                title="Umpire"
-                              >
-                                <span className="text-lg">⚖️</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => {
-                                  const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
-                                  window.open(basicScoreUrl, '_blank');
-                                }}
-                                title="Basic Score"
-                              >
-                                <span className="text-lg">📊</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => handleEditFixture(fixture)}
-                                title="Edit"
-                              >
-                                <span className="hidden sm:inline">Edit</span>
-                                <span className="sm:hidden text-lg">✏️</span>
-                              </button>
+                              {isSuperAdmin() && (
+                                <>
+                                  <button
+                                    className="btn btn-ghost btn-xs sm:btn-sm"
+                                    onClick={() => {
+                                      const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
+                                      window.open(tvUrl, '_blank');
+                                    }}
+                                    title="TV Display"
+                                  >
+                                    <span className="text-lg">📺</span>
+                                  </button>
+                                  <button
+                                    className="btn btn-ghost btn-xs sm:btn-sm"
+                                    onClick={() => {
+                                      const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
+                                      window.open(umpireUrl, '_blank');
+                                    }}
+                                    title="Umpire"
+                                  >
+                                    <span className="text-lg">⚖️</span>
+                                  </button>
+                                  <button
+                                    className="btn btn-ghost btn-xs sm:btn-sm"
+                                    onClick={() => {
+                                      const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
+                                      window.open(basicScoreUrl, '_blank');
+                                    }}
+                                    title="Basic Score"
+                                  >
+                                    <span className="text-lg">📊</span>
+                                  </button>
+                                </>
+                              )}
+                              {isSuperAdmin() && (
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => handleEditFixture(fixture)}
+                                  title="Edit"
+                                >
+                                  <span className="hidden sm:inline">Edit</span>
+                                  <span className="sm:hidden text-lg">✏️</span>
+                                </button>
+                              )}
                               <button
                                 className="btn btn-ghost btn-xs sm:btn-sm text-warning"
                                 onClick={() => handleResetPlayoffFixture(fixture)}
@@ -1990,44 +2141,50 @@ export default function AddFixtures() {
                               )}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => {
-                                  const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
-                                  window.open(tvUrl, '_blank');
-                                }}
-                                title="TV Display"
-                              >
-                                <span className="text-lg">📺</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => {
-                                  const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
-                                  window.open(umpireUrl, '_blank');
-                                }}
-                                title="Umpire"
-                              >
-                                <span className="text-lg">⚖️</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => {
-                                  const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
-                                  window.open(basicScoreUrl, '_blank');
-                                }}
-                                title="Basic Score"
-                              >
-                                <span className="text-lg">📊</span>
-                              </button>
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={() => handleEditFixture(fixture)}
-                                title="Edit"
-                              >
-                                <span className="hidden sm:inline">Edit</span>
-                                <span className="sm:hidden text-lg">✏️</span>
-                              </button>
+                              {isSuperAdmin() && (
+                                <>
+                                  <button
+                                    className="btn btn-ghost btn-xs sm:btn-sm"
+                                    onClick={() => {
+                                      const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
+                                      window.open(tvUrl, '_blank');
+                                    }}
+                                    title="TV Display"
+                                  >
+                                    <span className="text-lg">📺</span>
+                                  </button>
+                                  <button
+                                    className="btn btn-ghost btn-xs sm:btn-sm"
+                                    onClick={() => {
+                                      const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
+                                      window.open(umpireUrl, '_blank');
+                                    }}
+                                    title="Umpire"
+                                  >
+                                    <span className="text-lg">⚖️</span>
+                                  </button>
+                                  <button
+                                    className="btn btn-ghost btn-xs sm:btn-sm"
+                                    onClick={() => {
+                                      const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
+                                      window.open(basicScoreUrl, '_blank');
+                                    }}
+                                    title="Basic Score"
+                                  >
+                                    <span className="text-lg">📊</span>
+                                  </button>
+                                </>
+                              )}
+                              {isSuperAdmin() && (
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => handleEditFixture(fixture)}
+                                  title="Edit"
+                                >
+                                  <span className="hidden sm:inline">Edit</span>
+                                  <span className="sm:hidden text-lg">✏️</span>
+                                </button>
+                              )}
                               <button
                                 className="btn btn-ghost btn-xs sm:btn-sm text-warning"
                                 onClick={() => handleResetPlayoffFixture(fixture)}
@@ -2106,44 +2263,50 @@ export default function AddFixtures() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => {
-                                const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
-                                window.open(tvUrl, '_blank');
-                              }}
-                              title="TV Display"
-                            >
-                              <span className="text-lg">📺</span>
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => {
-                                const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
-                                window.open(umpireUrl, '_blank');
-                              }}
-                              title="Umpire"
-                            >
-                              <span className="text-lg">⚖️</span>
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => {
-                                const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
-                                window.open(basicScoreUrl, '_blank');
-                              }}
-                              title="Basic Score"
-                            >
-                              <span className="text-lg">📊</span>
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => handleEditFixture(fixture)}
-                              title="Edit"
-                            >
-                              <span className="hidden sm:inline">Edit</span>
-                              <span className="sm:hidden text-lg">✏️</span>
-                            </button>
+                            {isSuperAdmin() && (
+                              <>
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => {
+                                    const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
+                                    window.open(tvUrl, '_blank');
+                                  }}
+                                  title="TV Display"
+                                >
+                                  <span className="text-lg">📺</span>
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => {
+                                    const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
+                                    window.open(umpireUrl, '_blank');
+                                  }}
+                                  title="Umpire"
+                                >
+                                  <span className="text-lg">⚖️</span>
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => {
+                                    const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
+                                    window.open(basicScoreUrl, '_blank');
+                                  }}
+                                  title="Basic Score"
+                                >
+                                  <span className="text-lg">📊</span>
+                                </button>
+                              </>
+                            )}
+                            {isSuperAdmin() && (
+                              <button
+                                className="btn btn-ghost btn-xs sm:btn-sm"
+                                onClick={() => handleEditFixture(fixture)}
+                                title="Edit"
+                              >
+                                <span className="hidden sm:inline">Edit</span>
+                                <span className="sm:hidden text-lg">✏️</span>
+                              </button>
+                            )}
                             <button
                               className="btn btn-ghost btn-xs sm:btn-sm text-warning"
                               onClick={() => handleResetPlayoffFixture(fixture)}
@@ -2218,44 +2381,50 @@ export default function AddFixtures() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => {
-                                const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
-                                window.open(tvUrl, '_blank');
-                              }}
-                              title="TV Display"
-                            >
-                              <span className="text-lg">📺</span>
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => {
-                                const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
-                                window.open(umpireUrl, '_blank');
-                              }}
-                              title="Umpire"
-                            >
-                              <span className="text-lg">⚖️</span>
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => {
-                                const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
-                                window.open(basicScoreUrl, '_blank');
-                              }}
-                              title="Basic Score"
-                            >
-                              <span className="text-lg">📊</span>
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs sm:btn-sm"
-                              onClick={() => handleEditFixture(fixture)}
-                              title="Edit"
-                            >
-                              <span className="hidden sm:inline">Edit</span>
-                              <span className="sm:hidden text-lg">✏️</span>
-                            </button>
+                            {isSuperAdmin() && (
+                              <>
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => {
+                                    const tvUrl = `${window.location.origin}/tv/${fixture.id}`;
+                                    window.open(tvUrl, '_blank');
+                                  }}
+                                  title="TV Display"
+                                >
+                                  <span className="text-lg">📺</span>
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => {
+                                    const umpireUrl = `${window.location.origin}/umpire/${fixture.id}`;
+                                    window.open(umpireUrl, '_blank');
+                                  }}
+                                  title="Umpire"
+                                >
+                                  <span className="text-lg">⚖️</span>
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-xs sm:btn-sm"
+                                  onClick={() => {
+                                    const basicScoreUrl = `${window.location.origin}/basic-score/${fixture.id}`;
+                                    window.open(basicScoreUrl, '_blank');
+                                  }}
+                                  title="Basic Score"
+                                >
+                                  <span className="text-lg">📊</span>
+                                </button>
+                              </>
+                            )}
+                            {isSuperAdmin() && (
+                              <button
+                                className="btn btn-ghost btn-xs sm:btn-sm"
+                                onClick={() => handleEditFixture(fixture)}
+                                title="Edit"
+                              >
+                                <span className="hidden sm:inline">Edit</span>
+                                <span className="sm:hidden text-lg">✏️</span>
+                              </button>
+                            )}
                             <button
                               className="btn btn-ghost btn-xs sm:btn-sm text-warning"
                               onClick={() => handleResetPlayoffFixture(fixture)}
@@ -2695,44 +2864,6 @@ export default function AddFixtures() {
                   </div>
                 </div>
 
-                {/* Only show Pool and Court selection for regular DreamBreaker, not Mini DreamBreaker */}
-                {fixtureStyle !== 'minidreambreaker' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-medium">Pool</span>
-                      </label>
-                      <select
-                        name="pool"
-                        className="select select-bordered w-full"
-                        value={bulkFixtureForm.pool}
-                        onChange={handleBulkFormChange}
-                      >
-                        <option value="">Select Pool</option>
-                        <option value="A">Pool A</option>
-                        <option value="B">Pool B</option>
-                        <option value="C">Pool C</option>
-                        <option value="D">Pool D</option>
-                      </select>
-                    </div>
-
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-medium">Court</span>
-                      </label>
-                      <select
-                        name="court"
-                        className="select select-bordered w-full"
-                        value={bulkFixtureForm.court}
-                        onChange={handleBulkFormChange}
-                      >
-                        <option value="">Select Court</option>
-                        <option value="1">Court 1</option>
-                        <option value="2">Court 2</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
 
                 <div className="modal-action">
                   <button
@@ -2884,13 +3015,13 @@ export default function AddFixtures() {
         {/* Edit Fixture Modal */}
         {showEditModal && editingFixture && (
           <div className="modal modal-open">
-            <div className="modal-box w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="modal-box w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
               <h3 className="font-bold text-lg mb-4">
                 Edit Fixture
               </h3>
               
               <form onSubmit={handleUpdateFixture} className="space-y-4">
-                {/* Date, Time, Pool, and Court */}
+                {/* Date and Time */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="form-control">
                     <label className="label">
@@ -2921,227 +3052,52 @@ export default function AddFixtures() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Pool</span>
-                    </label>
-                    <select
-                      name="pool"
-                      className="select select-bordered w-full"
-                      value={editForm.pool}
-                      onChange={handleEditFormChange}
-                    >
-                      <option value="">Select Pool</option>
-                      <option value="A">Pool A</option>
-                      <option value="B">Pool B</option>
-                      <option value="C">Pool C</option>
-                      <option value="D">Pool D</option>
-                    </select>
-                  </div>
-
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Court</span>
-                    </label>
-                    <select
-                      name="court"
-                      className="select select-bordered w-full"
-                      value={editForm.court}
-                      onChange={handleEditFormChange}
-                    >
-                      <option value="">Select Court</option>
-                      <option value="1">Court 1</option>
-                      <option value="2">Court 2</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* YouTube Live Link */}
+                {/* Fixture Type */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">YouTube Live Link</span>
+                    <span className="label-text font-medium">Fixture Type *</span>
                   </label>
-                  <input
-                    type="url"
-                    name="youtubeLink"
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="input input-bordered w-full"
-                    value={editForm.youtubeLink}
+                  <select
+                    name="fixtureType"
+                    className="select select-bordered w-full"
+                    value={editForm.fixtureType}
                     onChange={handleEditFormChange}
-                  />
-                </div>
-
-                {/* Team Selection for Playoff Fixtures */}
-                {editingFixture.fixtureType === 'playoff' && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold">Team Selection</h4>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text font-medium">Team 1</span>
-                        </label>
-                        <select
-                          name="team1"
-                          className="select select-bordered w-full"
-                          value={editForm.team1}
-                          onChange={(e) => {
-                            const selectedTeam = teams.find(team => team.id === e.target.value);
-                            setEditForm(prev => ({
-                              ...prev,
-                              team1: e.target.value,
-                              team1Name: selectedTeam ? selectedTeam.name : '',
-                              // Clear player selections when team changes
-                              player1Team1: '',
-                              player2Team1: ''
-                            }));
-                          }}
-                        >
-                          <option value="">Select Team 1</option>
-                          {teams.map((team) => (
-                            <option key={team.id} value={team.id}>
-                              {team.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text font-medium">Team 2</span>
-                        </label>
-                        <select
-                          name="team2"
-                          className="select select-bordered w-full"
-                          value={editForm.team2}
-                          onChange={(e) => {
-                            const selectedTeam = teams.find(team => team.id === e.target.value);
-                            setEditForm(prev => ({
-                              ...prev,
-                              team2: e.target.value,
-                              team2Name: selectedTeam ? selectedTeam.name : '',
-                              // Clear player selections when team changes
-                              player1Team2: '',
-                              player2Team2: ''
-                            }));
-                          }}
-                        >
-                          <option value="">Select Team 2</option>
-                          {teams.map((team) => (
-                            <option key={team.id} value={team.id}>
-                              {team.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Player Selection */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Player Assignment</h4>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Team 1 Players */}
-                    <div className="space-y-2">
-                      <label className="label">
-                        <span className="label-text font-medium">
-                          {editForm.team1Name || editingFixture.team1Name || 'Team 1'} Players
-                        </span>
-                      </label>
-                      
-                      <select
-                        name="player1Team1"
-                        className="select select-bordered w-full select-sm"
-                        value={editForm.player1Team1}
-                        onChange={handleEditFormChange}
-                        disabled={editingFixture.fixtureType === 'playoff' && !editForm.team1}
-                      >
-                        <option value="">Select player 1</option>
-                        {getTeamPlayers(editForm.team1 || editingFixture.team1).map((player) => (
-                          <option key={player.id} value={player.name}>
-                            {player.name}
-                          </option>
-                        ))}
-                      </select>
-                      
-                      {getAvailableCategories().find(cat => cat.key === editingFixture.matchType)?.type === 'doubles' && (
-                        <select
-                          name="player2Team1"
-                          className="select select-bordered w-full select-sm"
-                          value={editForm.player2Team1}
-                          onChange={handleEditFormChange}
-                          disabled={editingFixture.fixtureType === 'playoff' && !editForm.team1}
-                        >
-                          <option value="">Select player 2</option>
-                          {getTeamPlayers(editForm.team1 || editingFixture.team1).map((player) => (
-                            <option key={player.id} value={player.name}>
-                              {player.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-
-                    {/* Team 2 Players */}
-                    <div className="space-y-2">
-                      <label className="label">
-                        <span className="label-text font-medium">
-                          {editForm.team2Name || editingFixture.team2Name || 'Team 2'} Players
-                        </span>
-                      </label>
-                      
-                      <select
-                        name="player1Team2"
-                        className="select select-bordered w-full select-sm"
-                        value={editForm.player1Team2}
-                        onChange={handleEditFormChange}
-                        disabled={editingFixture.fixtureType === 'playoff' && !editForm.team2}
-                      >
-                        <option value="">Select player 1</option>
-                        {getTeamPlayers(editForm.team2 || editingFixture.team2).map((player) => (
-                          <option key={player.id} value={player.name}>
-                            {player.name}
-                          </option>
-                        ))}
-                      </select>
-                      
-                      {getAvailableCategories().find(cat => cat.key === editingFixture.matchType)?.type === 'doubles' && (
-                        <select
-                          name="player2Team2"
-                          className="select select-bordered w-full select-sm"
-                          value={editForm.player2Team2}
-                          onChange={handleEditFormChange}
-                          disabled={editingFixture.fixtureType === 'playoff' && !editForm.team2}
-                        >
-                          <option value="">Select player 2</option>
-                          {getTeamPlayers(editForm.team2 || editingFixture.team2).map((player) => (
-                            <option key={player.id} value={player.name}>
-                              {player.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modal-action">
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => {
-                      setShowEditModal(false);
-                      setEditingFixture(null);
-                    }}
+                    required
                   >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Update Fixture
-                  </button>
+                    <option value="">Select Fixture Type</option>
+                    <option value="league">League</option>
+                    <option value="quarterfinal">Quarter Final</option>
+                    <option value="semifinal">Semi Final</option>
+                    <option value="thirdplace">Third Place</option>
+                    <option value="final">Final</option>
+                  </select>
+                </div>
+
+                <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-0">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
+                    <button
+                      type="button"
+                      className="btn btn-error btn-sm sm:btn-md w-full sm:w-auto sm:mr-auto"
+                      onClick={() => handleDeleteClick(editingFixture)}
+                    >
+                      Delete Fixture
+                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto"
+                        onClick={() => {
+                          setShowEditModal(false);
+                          setEditingFixture(null);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
+                        Update Fixture
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </form>
             </div>
@@ -3407,12 +3363,27 @@ export default function AddFixtures() {
               </p>
               <div className="bg-base-200 p-4 rounded-lg mb-6">
                 <div className="font-semibold">
-                  {fixtureToDelete.dateObj.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })} at {fixtureToDelete.time}
+                  {(() => {
+                    let date;
+                    if (fixtureToDelete.dateObj && fixtureToDelete.dateObj.toLocaleDateString) {
+                      date = fixtureToDelete.dateObj;
+                    } else if (fixtureToDelete.date && fixtureToDelete.date.toDate) {
+                      date = fixtureToDelete.date.toDate();
+                    } else if (fixtureToDelete.date && fixtureToDelete.date.seconds) {
+                      date = new Date(fixtureToDelete.date.seconds * 1000);
+                    } else if (fixtureToDelete.date) {
+                      date = new Date(fixtureToDelete.date);
+                    } else {
+                      return 'Invalid Date';
+                    }
+                    
+                    return date.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    });
+                  })()} at {fixtureToDelete.time || 'No time set'}
                 </div>
                 <div className="text-sm text-base-content/70 mt-1">
                   {fixtureToDelete.team1Name} vs {fixtureToDelete.team2Name}

@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 export default function AddPlayersTeams() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, createTeamAdmin } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,7 +36,8 @@ export default function AddPlayersTeams() {
     name: '',
     description: '',
     selectedPlayers: [],
-    logo: null
+    logo: null,
+    adminEmail: ''
   });
   const [playerSearch, setPlayerSearch] = useState('');
   
@@ -47,7 +48,8 @@ export default function AddPlayersTeams() {
     name: '',
     description: '',
     selectedPlayers: [],
-    logo: null
+    logo: null,
+    adminEmail: ''
   });
 
   // Edit player modal state
@@ -317,6 +319,25 @@ export default function AddPlayersTeams() {
 
     try {
       setSubmitting(true);
+      let adminUid = null;
+      
+      // Create team admin account if email is provided
+      if (teamForm.adminEmail.trim()) {
+        const adminResult = await createTeamAdmin(
+          teamForm.adminEmail.trim(),
+          teamForm.name.trim(),
+          id
+        );
+        
+        if (adminResult.success) {
+          adminUid = adminResult.uid;
+          console.log(`Team admin account created with password: ${adminResult.tempPassword}`);
+        } else {
+          setError(`Failed to create team admin account: ${adminResult.error}`);
+          return;
+        }
+      }
+      
       const teamData = {
         name: teamForm.name.trim(),
         description: teamForm.description.trim(),
@@ -325,6 +346,8 @@ export default function AddPlayersTeams() {
           url: teamForm.logo.url,
           publicId: teamForm.logo.publicId
         } : null,
+        adminEmail: teamForm.adminEmail.trim(),
+        adminUid: adminUid, // Store the admin user ID
         tournamentId: id,
         createdBy: currentUser.uid,
         createdAt: serverTimestamp()
@@ -337,13 +360,19 @@ export default function AddPlayersTeams() {
         name: '',
         description: '',
         selectedPlayers: [],
-        logo: null
+        logo: null,
+        adminEmail: ''
       });
       setShowTeamModal(false);
       
       // Refresh teams list
       fetchTeams();
       setError('');
+      
+      // Show success message with admin credentials if created
+      if (adminUid && teamForm.adminEmail.trim()) {
+        alert(`Team created successfully! Team admin account created for ${teamForm.adminEmail.trim()}. Check the Settings page for login credentials.`);
+      }
     } catch (error) {
       console.error('Error creating team:', error);
       setError('Failed to create team. Please try again.');
@@ -358,7 +387,8 @@ export default function AddPlayersTeams() {
       name: team.name,
       description: team.description || '',
       selectedPlayers: team.playerIds || [],
-      logo: team.logo || null
+      logo: team.logo || null,
+      adminEmail: team.adminEmail || ''
     });
     setShowEditTeamModal(true);
   };
@@ -393,6 +423,38 @@ export default function AddPlayersTeams() {
 
     try {
       setSubmitting(true);
+      setError(''); // Clear any previous errors
+      let adminUid = editingTeam.adminUid || null;
+      
+      // Check if admin email changed and create new admin if needed
+      const oldAdminEmail = editingTeam.adminEmail || '';
+      const newAdminEmail = editTeamForm.adminEmail.trim();
+      
+      console.log('Updating team:', {
+        oldAdminEmail,
+        newAdminEmail,
+        teamName: editTeamForm.name.trim()
+      });
+      
+      if (newAdminEmail && newAdminEmail !== oldAdminEmail) {
+        console.log('Creating new team admin account...');
+        // Create new team admin account
+        const adminResult = await createTeamAdmin(
+          newAdminEmail,
+          editTeamForm.name.trim(),
+          id
+        );
+        
+        if (adminResult.success) {
+          adminUid = adminResult.uid;
+          console.log(`New team admin account created with password: ${adminResult.tempPassword}`);
+        } else {
+          console.error('Failed to create team admin:', adminResult.error);
+          setError(`Failed to create team admin account: ${adminResult.error}`);
+          return;
+        }
+      }
+      
       const teamData = {
         name: editTeamForm.name.trim(),
         description: editTeamForm.description.trim(),
@@ -401,17 +463,22 @@ export default function AddPlayersTeams() {
           url: editTeamForm.logo.url,
           publicId: editTeamForm.logo.publicId
         } : null,
+        adminEmail: newAdminEmail,
+        adminUid: adminUid, // Store the admin user ID
         updatedAt: serverTimestamp()
       };
 
+      console.log('Updating team document with data:', teamData);
       await updateDoc(doc(db, 'teams', editingTeam.id), teamData);
+      console.log('Team updated successfully');
       
       // Reset form and close modal
       setEditTeamForm({
         name: '',
         description: '',
         selectedPlayers: [],
-        logo: null
+        logo: null,
+        adminEmail: ''
       });
       setShowEditTeamModal(false);
       setEditingTeam(null);
@@ -420,9 +487,21 @@ export default function AddPlayersTeams() {
       // Refresh teams list
       fetchTeams();
       setError('');
+      
+      // Show success message with admin credentials if created
+      if (newAdminEmail && newAdminEmail !== oldAdminEmail) {
+        alert(`Team updated successfully! ${newAdminEmail ? 'Team admin account created for ' + newAdminEmail + '. Check the Settings page for login credentials.' : ''}`);
+      } else {
+        alert('Team updated successfully!');
+      }
     } catch (error) {
       console.error('Error updating team:', error);
-      setError('Failed to update team. Please try again.');
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      setError(`Failed to update team: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -1552,6 +1631,20 @@ export default function AddPlayersTeams() {
                   />
                 </div>
 
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Team Admin Email</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="adminEmail"
+                    placeholder="Enter team admin email (optional)"
+                    className="input input-bordered"
+                    value={teamForm.adminEmail}
+                    onChange={handleTeamFormChange}
+                  />
+                </div>
+
                 <CloudinaryImageUpload
                   onImageUpload={handleTeamLogoUpload}
                   currentImage={teamForm.logo?.url}
@@ -1623,7 +1716,8 @@ export default function AddPlayersTeams() {
                         name: '',
                         description: '',
                         selectedPlayers: [],
-                        logo: null
+                        logo: null,
+                        adminEmail: ''
                       });
                       setPlayerSearch('');
                     }}
@@ -1674,6 +1768,20 @@ export default function AddPlayersTeams() {
                     placeholder="Enter team description (optional)"
                     className="textarea textarea-bordered"
                     value={editTeamForm.description}
+                    onChange={handleEditTeamFormChange}
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Team Admin Email</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="adminEmail"
+                    placeholder="Enter team admin email (optional)"
+                    className="input input-bordered"
+                    value={editTeamForm.adminEmail}
                     onChange={handleEditTeamFormChange}
                   />
                 </div>
@@ -1749,7 +1857,9 @@ export default function AddPlayersTeams() {
                       setEditTeamForm({
                         name: '',
                         description: '',
-                        selectedPlayers: []
+                        selectedPlayers: [],
+                        logo: null,
+                        adminEmail: ''
                       });
                       setPlayerSearch('');
                     }}

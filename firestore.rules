@@ -21,25 +21,6 @@ service cloud.firestore {
                    request.auth.uid == resource.data.createdBy;
     }
     
-    // Function to validate tournament data structure
-    function isValidTournamentData(data) {
-      return data.keys().hasAll(['name', 'description', 'rules', 'prizeMoney', 'startDate', 'endDate', 'categories', 'createdBy']) &&
-             data.name is string &&
-             data.description is string &&
-             data.rules is string &&
-             data.prizeMoney is number &&
-             data.startDate is timestamp &&
-             data.endDate is timestamp &&
-             data.categories is map &&
-             data.categories.keys().hasAll(['mensSingles', 'mensDoubles', 'womensSingles', 'womensDoubles', 'mixedDoubles']) &&
-             data.categories.mensSingles is bool &&
-             data.categories.mensDoubles is bool &&
-             data.categories.womensSingles is bool &&
-             data.categories.womensDoubles is bool &&
-             data.categories.mixedDoubles is bool &&
-             data.createdBy is string;
-    }
-    
     // Players collection rules
     match /players/{playerId} {
       // Allow all authenticated users to read players
@@ -86,9 +67,38 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
-    // Users can read/write their own profile
+    // Fixture Groups collection rules - COMPLETELY OPEN FOR TESTING
+    match /fixtureGroups/{fixtureGroupId} {
+      // Allow all operations for testing
+      allow read, write: if true;
+    }
+    
+    // Users collection rules - Simplified for debugging
     match /users/{userId} {
+      // Users can read/write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Super admins can do everything with user documents
+      allow read, write, create, update, delete, list: if request.auth != null && isSuperAdminSimple();
+    }
+    
+    // Function to validate tournament data structure
+    function isValidTournamentData(data) {
+      return data.keys().hasAll(['name', 'description', 'rules', 'prizeMoney', 'startDate', 'endDate', 'categories', 'createdBy']) &&
+             data.name is string &&
+             data.description is string &&
+             data.rules is string &&
+             data.prizeMoney is number &&
+             data.startDate is timestamp &&
+             data.endDate is timestamp &&
+             data.categories is map &&
+             data.categories.keys().hasAll(['mensSingles', 'mensDoubles', 'womensSingles', 'womensDoubles', 'mixedDoubles']) &&
+             data.categories.mensSingles is bool &&
+             data.categories.mensDoubles is bool &&
+             data.categories.womensSingles is bool &&
+             data.categories.womensDoubles is bool &&
+             data.categories.mixedDoubles is bool &&
+             data.createdBy is string;
     }
     
     // Function to validate player data structure
@@ -116,74 +126,18 @@ service cloud.firestore {
              data.tournamentId is string &&
              data.createdBy is string &&
              (data.description == null || data.description is string) &&
+             (data.adminEmail == null || data.adminEmail is string) &&
+             (data.adminUid == null || data.adminUid is string) &&
              (data.logo == null || (data.logo is map &&
               data.logo.keys().hasAll(['url']) &&
               data.logo.url is string &&
               (data.logo.publicId == null || data.logo.publicId is string)));
     }
     
-    // Function to validate fixture data structure
-    function isValidFixtureData(data) {
-      return data.tournamentId is string &&
-             data.date is timestamp &&
-             data.matchType is string &&
-             data.matchTypeLabel is string &&
-             data.team1 is string &&
-             data.team2 is string &&
-             data.team1Name is string &&
-             data.team2Name is string &&
-             data.status is string &&
-             data.createdBy is string &&
-             // Optional fields for different fixture types
-             (data.fixtureType == null || data.fixtureType is string) &&
-             (data.pool == null || data.pool is string) &&
-             (data.playoffStage == null || data.playoffStage is string) &&
-             (data.playoffNumber == null || data.playoffNumber is number) &&
-             (data.time == null || data.time is string) &&
-             (data.court == null || data.court is string) &&
-             (data.youtubeLink == null || data.youtubeLink is string) &&
-             (data.player1Team1 == null || data.player1Team1 is string) &&
-             (data.player2Team1 == null || data.player2Team1 is string) &&
-             (data.player1Team2 == null || data.player1Team2 is string) &&
-             (data.player2Team2 == null || data.player2Team2 is string);
-    }
-    
-    // Function to check if this is a valid umpire scoring update
-    function isUmpireScoringUpdate(newData, existingData) {
-      // Allow updates to scoring-related fields only
-      let allowedFields = ['scores', 'gamesCount', 'pointsPerGame', 'lastUpdated', 'status', 'completedAt', 'servingPlayer', 'serveSequence', 'teamServeCount', 'startedAt', 'endedAt'];
-      let changedFields = newData.diff(existingData).changedKeys();
-      
-      // Check that only allowed fields are being changed
-      return changedFields.hasOnly(allowedFields) &&
-             // Ensure core match data remains unchanged
-             newData.tournamentId == existingData.tournamentId &&
-             newData.team1 == existingData.team1 &&
-             newData.team2 == existingData.team2 &&
-             newData.createdBy == existingData.createdBy &&
-             // Validate scoring data structure if present
-             (newData.scores == null || isValidScoringData(newData.scores)) &&
-             (newData.gamesCount == null || newData.gamesCount is number) &&
-             (newData.pointsPerGame == null || newData.pointsPerGame is list) &&
-             // Validate serve-related fields
-             (newData.servingPlayer == null || newData.servingPlayer is string) &&
-             (newData.serveSequence == null || newData.serveSequence is number) &&
-             (newData.teamServeCount == null || newData.teamServeCount is number);
-    }
-    
-    // Function to validate scoring data structure
-    function isValidScoringData(scores) {
-      return scores is map &&
-             scores.keys().hasAll(['player1', 'player2']) &&
-             scores.player1 is map &&
-             scores.player2 is map;
-    }
-    
-    // Function to check if user is tournament owner
-    function isTournamentOwner(tournamentId) {
-      return request.auth != null &&
-             exists(/databases/$(database)/documents/tournaments/$(tournamentId)) &&
-             get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.createdBy == request.auth.uid;
+    // Simplified function to check if current user is super admin
+    function isSuperAdminSimple() {
+      // Hardcoded super admin email - simplified check
+      return request.auth != null && request.auth.token.email == 'siddharth@318digital.com';
     }
   }
 }

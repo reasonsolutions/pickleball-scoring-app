@@ -8,7 +8,7 @@ import MainLayout from '../components/MainLayout';
 export default function TournamentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, isSuperAdmin, isTeamAdmin } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -287,7 +287,7 @@ export default function TournamentDetails() {
                 <div className="space-y-3">
                   {isOwner ? (
                     <>
-                      <button 
+                      <button
                         className="btn btn-outline w-full"
                         onClick={() => navigate(`/admin/tournaments/${id}/edit`)}
                       >
@@ -308,7 +308,19 @@ export default function TournamentDetails() {
                         )}
                       </button>
                     </>
+                  ) : isTeamAdmin() ? (
+                    // Team admins only see Fixtures button
+                    <button
+                      className="btn btn-primary w-full"
+                      onClick={() => navigate(`/admin/tournaments/${id}/fixtures`)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                      Fixtures
+                    </button>
                   ) : (
+                    // Regular users see registration button
                     <button className="btn btn-primary w-full">
                       Register for Tournament
                     </button>

@@ -24,6 +24,8 @@ import BasicScore from './pages/BasicScore';
 import MatchDetails from './pages/MatchDetails';
 import XmlFeed from './pages/XmlFeed';
 import StreamingOverlay from './pages/StreamingOverlay';
+import Rankings from './pages/Rankings';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -36,6 +38,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<Home />} />
+            <Route path="/rankings" element={<Rankings />} />
             
             {/* Admin Dashboard - Protected Routes */}
             <Route path="/admin" element={
@@ -86,6 +89,12 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/admin/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            
             {/* Umpire Scoring Route - Public access for umpires */}
             <Route path="/umpire/:matchId" element={<UmpireScoring />} />
             
@@ -103,6 +112,9 @@ function App() {
             
             {/* TV Display Route - Public access for TV display */}
             <Route path="/tv/:matchId" element={<TVDisplay />} />
+            
+            {/* Tournament Display Route - Public access for tournament display */}
+            <Route path="/tournament-display/:tournamentId" element={<TVDisplay />} />
             
             {/* Basic Score JSON API Route - Public access for JSON API endpoint */}
             <Route path="/basic-score/:matchId" element={<BasicScore />} />

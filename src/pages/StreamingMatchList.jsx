@@ -236,20 +236,14 @@ export default function StreamingMatchList() {
               >
                 <div className="card-body">
                   {/* Fixture Header */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="badge badge-warning badge-lg">
-                      {fixtureGroup.pool || 'No Pool'}
-                    </div>
+                  <div className="flex justify-end items-start mb-4">
                     <div className="badge badge-secondary">
                       {fixtureGroup.matches.length} match{fixtureGroup.matches.length !== 1 ? 'es' : ''}
                     </div>
                   </div>
 
-                  {/* Team vs Team */}
+                  {/* Date */}
                   <div className="text-center mb-4">
-                    <div className="text-2xl font-bold">
-                      {fixtureGroup.team1Name} vs {fixtureGroup.team2Name}
-                    </div>
                     <div className="text-base-content/70">
                       {formatDate(fixtureGroup.date?.toDate ? fixtureGroup.date.toDate() : fixtureGroup.date)}
                     </div>

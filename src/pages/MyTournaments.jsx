@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
@@ -10,31 +10,83 @@ export default function MyTournaments() {
   const [activeTab, setActiveTab] = useState('current');
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { currentUser } = useAuth();
+  const { currentUser, isSuperAdmin, isTeamAdmin } = useAuth();
 
   useEffect(() => {
     if (!currentUser) return;
 
-    const q = query(
-      collection(db, 'tournaments'),
-      where('createdBy', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
+    const fetchTournaments = async () => {
+      try {
+        setLoading(true);
+        
+        if (isSuperAdmin()) {
+          // Super admins see tournaments they created
+          const q = query(
+            collection(db, 'tournaments'),
+            where('createdBy', '==', currentUser.uid),
+            orderBy('createdAt', 'desc')
+          );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const tournamentsData = [];
-      querySnapshot.forEach((doc) => {
-        tournamentsData.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      setTournaments(tournamentsData);
-      setLoading(false);
-    });
+          const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const tournamentsData = [];
+            querySnapshot.forEach((doc) => {
+              tournamentsData.push({
+                id: doc.id,
+                ...doc.data()
+              });
+            });
+            setTournaments(tournamentsData);
+            setLoading(false);
+          });
 
-    return () => unsubscribe();
-  }, [currentUser]);
+          return unsubscribe;
+        } else if (isTeamAdmin()) {
+          // Team admins see the tournament they're associated with
+          if (currentUser.tournamentId) {
+            const tournamentDoc = await getDoc(doc(db, 'tournaments', currentUser.tournamentId));
+            if (tournamentDoc.exists()) {
+              setTournaments([{
+                id: tournamentDoc.id,
+                ...tournamentDoc.data()
+              }]);
+            }
+          }
+          setLoading(false);
+        } else {
+          // Default case - show tournaments created by user
+          const q = query(
+            collection(db, 'tournaments'),
+            where('createdBy', '==', currentUser.uid),
+            orderBy('createdAt', 'desc')
+          );
+
+          const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const tournamentsData = [];
+            querySnapshot.forEach((doc) => {
+              tournamentsData.push({
+                id: doc.id,
+                ...doc.data()
+              });
+            });
+            setTournaments(tournamentsData);
+            setLoading(false);
+          });
+
+          return unsubscribe;
+        }
+      } catch (error) {
+        console.error('Error fetching tournaments:', error);
+        setLoading(false);
+      }
+    };
+
+    const unsubscribe = fetchTournaments();
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [currentUser, isSuperAdmin, isTeamAdmin]);
 
   const filterTournaments = (tournaments, type) => {
     const now = new Date();
@@ -83,12 +135,14 @@ export default function MyTournaments() {
           <div className="text-6xl mb-4">🏓</div>
           <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{emptyMessage}</h3>
           <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
-            {activeTab === 'current'
-              ? "Create your first tournament to get started!"
-              : "Your completed tournaments will appear here."
+            {isTeamAdmin()
+              ? "No tournament assigned to your team admin account."
+              : activeTab === 'current'
+                ? "Create your first tournament to get started!"
+                : "Your completed tournaments will appear here."
             }
           </p>
-          {activeTab === 'current' && (
+          {activeTab === 'current' && isSuperAdmin() && (
             <Link to="/admin/tournaments/create" className="btn" style={{
               backgroundColor: 'var(--primary-green)',
               color: 'var(--text-primary)',
@@ -159,21 +213,28 @@ export default function MyTournaments() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>My Tournaments</h1>
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              {isTeamAdmin() ? 'My Tournament' : 'My Tournaments'}
+            </h1>
             <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Manage and track your pickleball tournaments
+              {isTeamAdmin()
+                ? `Tournament you're managing as ${currentUser?.teamName || 'Team'} Admin`
+                : 'Manage and track your pickleball tournaments'
+              }
             </p>
           </div>
-          <Link to="/admin/tournaments/create" className="btn" style={{
-            backgroundColor: 'var(--primary-green)',
-            color: 'var(--text-primary)',
-            border: 'none'
-          }}>
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Create Tournament
-          </Link>
+          {isSuperAdmin() && (
+            <Link to="/admin/tournaments/create" className="btn" style={{
+              backgroundColor: 'var(--primary-green)',
+              color: 'var(--text-primary)',
+              border: 'none'
+            }}>
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Create Tournament
+            </Link>
+          )}
         </div>
 
         {/* Stats */}

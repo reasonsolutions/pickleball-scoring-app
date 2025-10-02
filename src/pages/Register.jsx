@@ -36,7 +36,7 @@ export default function Register() {
       setError('');
       setLoading(true);
       await signup(formData.email, formData.password, formData.displayName);
-      navigate('/');
+      navigate('/admin');
     } catch (error) {
       setError('Failed to create account: ' + error.message);
     }

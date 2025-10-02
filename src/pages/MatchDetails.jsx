@@ -14,6 +14,9 @@ export default function MatchDetails() {
   const [selectedTournament, setSelectedTournament] = useState('');
   const [tournaments, setTournaments] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [teams, setTeams] = useState([]);
+  const [currentTournament, setCurrentTournament] = useState(null);
 
   // Fetch tournaments from Firebase
   useEffect(() => {
@@ -47,30 +50,90 @@ export default function MatchDetails() {
     fetchTournaments();
   }, []);
 
+  // Fetch tournament details and teams when tournament changes
+  useEffect(() => {
+    if (!selectedTournament) return;
+
+    const fetchTournamentAndTeams = async () => {
+      try {
+        // Fetch tournament details
+        const tournamentDoc = await getDoc(doc(db, 'tournaments', selectedTournament));
+        if (tournamentDoc.exists()) {
+          const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
+          setCurrentTournament(tournamentData);
+
+          // Always try to fetch teams for this tournament
+          const teamsQuery = query(
+            collection(db, 'teams'),
+            where('tournamentId', '==', selectedTournament)
+          );
+          const teamsSnapshot = await getDocs(teamsQuery);
+          const teamsData = teamsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setTeams(teamsData);
+        }
+        
+        // Reset team selection when tournament changes
+        setSelectedTeam('');
+      } catch (error) {
+        console.error('Error fetching tournament and teams:', error);
+        setCurrentTournament(null);
+        setTeams([]);
+        setSelectedTeam('');
+      }
+    };
+
+    fetchTournamentAndTeams();
+  }, [selectedTournament]);
+
   // Real-time listener for matches in selected tournament
   useEffect(() => {
     if (!selectedTournament) return;
 
-    // Set up real-time listener for fixtures
-    const fixturesQuery = query(
-      collection(db, 'fixtures'),
-      where('tournamentId', '==', selectedTournament)
-    );
-
-    const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
+    // Fetch players data first to get photo URLs
+    const fetchPlayersAndMatches = async () => {
       try {
-        const fixturesData = snapshot.docs.map(doc => ({
+        // Fetch players for this tournament
+        const playersQuery = query(
+          collection(db, 'players'),
+          where('tournamentId', '==', selectedTournament)
+        );
+        const playersSnapshot = await getDocs(playersQuery);
+        const playersData = playersSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
 
-        // Transform Firebase fixtures to match the expected format for live scores
-        const transformedMatches = fixturesData
-          .filter(fixture => {
-            // Only show matches that have scores (completed or in-progress) or are currently live
-            return fixture.scores || fixture.status === 'in-progress' || fixture.status === 'live';
-          })
-          .map(fixture => {
+        // Create a mapping from player name to photo URL
+        const playerPhotoMap = {};
+        playersData.forEach(player => {
+          if (player.name && player.photo?.url) {
+            playerPhotoMap[player.name] = player.photo.url;
+          }
+        });
+
+        // Set up real-time listener for fixtures
+        const fixturesQuery = query(
+          collection(db, 'fixtures'),
+          where('tournamentId', '==', selectedTournament)
+        );
+
+        const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
+          try {
+            const fixturesData = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+
+            // Transform Firebase fixtures to match the expected format for live scores
+            const transformedMatches = fixturesData
+              .filter(fixture => {
+                // Only show matches that have scores (completed or in-progress) or are currently live
+                return fixture.scores || fixture.status === 'in-progress' || fixture.status === 'live';
+              })
+              .map(fixture => {
             // Get player names and create display format
             const player1Name = fixture.player1Team1 || fixture.team1Name || 'Team 1';
             const player1Partner = fixture.player2Team1 || null;
@@ -78,8 +141,9 @@ export default function MatchDetails() {
             const player2Partner = fixture.player2Team2 || null;
 
             // Transform scores from Firebase format to display format
-            let scores = ['-', '-', '-'];
-            let opponentScores = ['-', '-', '-'];
+            const actualGamesCount = fixture.gamesCount || 3;
+            let scores = Array(actualGamesCount).fill('-');
+            let opponentScores = Array(actualGamesCount).fill('-');
             
             if (fixture.scores) {
               const player1Scores = fixture.scores.player1 || {};
@@ -114,15 +178,21 @@ export default function MatchDetails() {
 
             return {
               id: fixture.id,
+              team1Id: fixture.team1,
+              team2Id: fixture.team2,
+              team1Name: fixture.team1Name,
+              team2Name: fixture.team2Name,
               player1: {
                 name: player1Name,
                 partner: player1Partner,
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face'
+                avatar: playerPhotoMap[player1Name] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
+                partnerAvatar: player1Partner ? (playerPhotoMap[player1Partner] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face') : null
               },
               player2: {
                 name: player2Name,
                 partner: player2Partner,
-                avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face'
+                avatar: playerPhotoMap[player2Name] || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face',
+                partnerAvatar: player2Partner ? (playerPhotoMap[player2Partner] || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face') : null
               },
               scores: scores,
               opponentScores: opponentScores,
@@ -132,18 +202,31 @@ export default function MatchDetails() {
             };
           });
 
-        setMatches(transformedMatches);
+        // Apply team filtering if a team is selected
+        const filteredMatches = selectedTeam
+          ? transformedMatches.filter(match =>
+              match.team1Id === selectedTeam || match.team2Id === selectedTeam
+            )
+          : transformedMatches;
+
+        setLiveMatches(filteredMatches);
       } catch (error) {
         console.error('Error processing real-time match updates:', error);
         setMatches([]);
       }
-    }, (error) => {
-      console.error('Error with real-time listener:', error);
-      setMatches([]);
-    });
+        }, (error) => {
+          console.error('Error with real-time listener:', error);
+          setLiveMatches([]);
+        });
 
-    // Cleanup listener on unmount or tournament change
-    return () => unsubscribe();
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error fetching players:', error);
+        setLiveMatches([]);
+      }
+    };
+
+    fetchPlayersAndMatches();
   }, [selectedTournament]);
 
   useEffect(() => {
@@ -347,6 +430,24 @@ export default function MatchDetails() {
             </select>
           </div>
 
+          {/* Team Dropdown - Show for team format tournaments or when teams exist */}
+          {(currentTournament?.format === 'team' || teams.length > 0) && (
+            <div className="flex items-center min-w-0 mr-4">
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 max-w-xs truncate"
+              >
+                <option value="">All Teams</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Left Arrow */}
           <button
             onClick={scrollLeft}
@@ -360,75 +461,198 @@ export default function MatchDetails() {
 
           {/* Live Matches Container */}
           <div className="live-scores-container flex-1 mx-2">
-            {matches.map((liveMatch) => (
-              <Link key={liveMatch.id} to={`/match/${liveMatch.id}`} className={`score-card cursor-pointer hover:shadow-lg transition-shadow ${liveMatch.id === matchId ? 'ring-2 ring-orange-500' : ''}`}>
-                <div className="score-card-header">
-                  {tournaments.find(t => t.id === selectedTournament)?.name ||
-                   tournaments.find(t => t.id === selectedTournament)?.tournamentName ||
-                   'Tournament'}
-                </div>
-                <div className="score-card-content">
-                  <div className="player-row">
-                    <div className="player-info">
-                      <img
-                        src={liveMatch.player1.avatar}
-                        alt={liveMatch.player1.name}
-                        className="player-avatar-small"
-                      />
-                      <div>
-                        <div className="player-name">{liveMatch.player1.name}</div>
-                        {liveMatch.player1.partner && (
-                          <div className="player-name">{liveMatch.player1.partner}</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="score-display">
-                      {liveMatch.scores.map((score, index) => (
-                        <span key={index} className="score-number">{score}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="player-row">
-                    <div className="player-info">
-                      <img
-                        src={liveMatch.player2.avatar}
-                        alt={liveMatch.player2.name}
-                        className="player-avatar-small"
-                      />
-                      <div>
-                        <div className="player-name">{liveMatch.player2.name}</div>
-                        {liveMatch.player2.partner && (
-                          <div className="player-name">{liveMatch.player2.partner}</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="score-display">
-                      {liveMatch.opponentScores.map((score, index) => (
-                        <span key={index} className="score-number">{score}</span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="score-card-footer">
-                  <span>{liveMatch.time}</span>
-                  <span className="match-status">{liveMatch.status}</span>
-                  {liveMatch.isLive && (
-                    <div className="live-indicator">
-                      <div className="live-dot"></div>
-                      LIVE
-                    </div>
-                  )}
-                </div>
+            {matches.map((liveMatch) => {
+              // Determine winner based on scores
+              const getWinner = () => {
+                let player1Wins = 0;
+                let player2Wins = 0;
                 
-                {/* Live indicator in bottom right corner */}
-                {liveMatch.isLive && (
-                  <div className="live-indicator-corner">
-                    <div className="live-dot"></div>
-                    LIVE
+                for (let i = 0; i < liveMatch.scores.length; i++) {
+                  const p1Score = parseInt(liveMatch.scores[i]) || 0;
+                  const p2Score = parseInt(liveMatch.opponentScores[i]) || 0;
+                  
+                  if (p1Score > p2Score) player1Wins++;
+                  else if (p2Score > p1Score) player2Wins++;
+                }
+                
+                if (player1Wins > player2Wins) return 'player1';
+                if (player2Wins > player1Wins) return 'player2';
+                return 'none';
+              };
+              
+              const winner = getWinner();
+              
+              return (
+                <Link key={liveMatch.id} to={`/match/${liveMatch.id}`} className={`compact-score-card cursor-pointer hover:shadow-lg transition-shadow ${liveMatch.id === matchId ? 'ring-2 ring-orange-500' : ''}`}>
+                  <div className="compact-score-content">
+                    {/* Team 1 Row */}
+                    <div className="compact-team-row">
+                      <div className="compact-players">
+                        <div className="compact-player-avatars">
+                          <div className={`compact-avatar-wrapper ${winner === 'player1' ? 'winner' : 'loser'}`}>
+                            <img
+                              src={liveMatch.player1.avatar}
+                              alt={liveMatch.player1.name}
+                              className="compact-player-avatar"
+                            />
+                            {winner === 'player1' && (
+                              <div className="winner-indicator">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                            {winner === 'player2' && (
+                              <div className="loser-indicator">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          {liveMatch.player1.partner && (
+                            <div className={`compact-avatar-wrapper ${winner === 'player1' ? 'winner' : 'loser'}`}>
+                              <img
+                                src={liveMatch.player1.partnerAvatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face"}
+                                alt={liveMatch.player1.partner}
+                                className="compact-player-avatar"
+                              />
+                              {winner === 'player1' && (
+                                <div className="winner-indicator">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                              {winner === 'player2' && (
+                                <div className="loser-indicator">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="compact-player-names">
+                          <div className="compact-player-name">
+                            {typeof liveMatch.player1.name === 'string' ?
+                              liveMatch.player1.name.split(' ').length > 1 ?
+                                liveMatch.player1.name.split(' ')[0].charAt(0) + '. ' + liveMatch.player1.name.split(' ').slice(1).join(' ')
+                                : liveMatch.player1.name
+                              : 'Player 1'}
+                          </div>
+                          {liveMatch.player1.partner && (
+                            <div className="compact-player-name">
+                              {typeof liveMatch.player1.partner === 'string' ?
+                                liveMatch.player1.partner.split(' ').length > 1 ?
+                                  liveMatch.player1.partner.split(' ')[0].charAt(0) + '. ' + liveMatch.player1.partner.split(' ').slice(1).join(' ')
+                                  : liveMatch.player1.partner
+                                : 'Partner 1'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="compact-scores">
+                        {liveMatch.scores.map((score, index) => (
+                          <span key={index} className={`compact-score ${winner === 'player1' && score !== '-' ? 'winner-score' : ''}`}>
+                            {score}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Team 2 Row */}
+                    <div className="compact-team-row">
+                      <div className="compact-players">
+                        <div className="compact-player-avatars">
+                          <div className={`compact-avatar-wrapper ${winner === 'player2' ? 'winner' : 'loser'}`}>
+                            <img
+                              src={liveMatch.player2.avatar}
+                              alt={liveMatch.player2.name}
+                              className="compact-player-avatar"
+                            />
+                            {winner === 'player2' && (
+                              <div className="winner-indicator">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                            {winner === 'player1' && (
+                              <div className="loser-indicator">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          {liveMatch.player2.partner && (
+                            <div className={`compact-avatar-wrapper ${winner === 'player2' ? 'winner' : 'loser'}`}>
+                              <img
+                                src={liveMatch.player2.partnerAvatar || "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face"}
+                                alt={liveMatch.player2.partner}
+                                className="compact-player-avatar"
+                              />
+                              {winner === 'player2' && (
+                                <div className="winner-indicator">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                              {winner === 'player1' && (
+                                <div className="loser-indicator">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="compact-player-names">
+                          <div className="compact-player-name">
+                            {typeof liveMatch.player2.name === 'string' ?
+                              liveMatch.player2.name.split(' ').length > 1 ?
+                                liveMatch.player2.name.split(' ')[0].charAt(0) + '. ' + liveMatch.player2.name.split(' ').slice(1).join(' ')
+                                : liveMatch.player2.name
+                              : 'Player 2'}
+                          </div>
+                          {liveMatch.player2.partner && (
+                            <div className="compact-player-name">
+                              {typeof liveMatch.player2.partner === 'string' ?
+                                liveMatch.player2.partner.split(' ').length > 1 ?
+                                  liveMatch.player2.partner.split(' ')[0].charAt(0) + '. ' + liveMatch.player2.partner.split(' ').slice(1).join(' ')
+                                  : liveMatch.player2.partner
+                                : 'Partner 2'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="compact-scores">
+                        {liveMatch.opponentScores.map((score, index) => (
+                          <span key={index} className={`compact-score ${winner === 'player2' && score !== '-' ? 'winner-score' : ''}`}>
+                            {score}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </Link>
-            ))}
+                  
+                  <div className="compact-score-footer">
+                    <span className="compact-time">{liveMatch.time || '6:27 PM PDT'}</span>
+                    <span className="compact-status">{liveMatch.status || 'Bronze'}</span>
+                    {liveMatch.isLive && (
+                      <div className="compact-live-indicator">
+                        <div className="live-dot"></div>
+                        LIVE
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
             
             {matches.length === 0 && (
               <div className="flex items-center justify-center py-8 text-gray-500">

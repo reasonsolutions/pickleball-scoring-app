@@ -19,8 +19,12 @@ export default function StreamingOverlay() {
   const [match, setMatch] = useState(null);
   const [tournament, setTournament] = useState(null);
   const [teams, setTeams] = useState({});
+  const [fixture, setFixture] = useState(null);
+  const [fixtureContext, setFixtureContext] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [serveTicker, setServeTicker] = useState(null);
+  const [previousServer, setPreviousServer] = useState(null);
 
   // Team logo mapping
   const teamLogos = {
@@ -47,6 +51,28 @@ export default function StreamingOverlay() {
         try {
           if (matchDoc.exists()) {
             const matchData = { id: matchDoc.id, ...matchDoc.data() };
+            
+            // Check for serve changes and trigger ticker (only for non-dreambreaker matches)
+            if (match && (!matchData.matchType || matchData.matchType !== 'dreamBreaker')) {
+              const currentServer = matchData.servingPlayer;
+              
+              // Check if server changed
+              if (previousServer && currentServer && currentServer !== previousServer) {
+                const serverNumber = currentServer === 'player1' ? '1' : '2';
+                setServeTicker({
+                  server: currentServer,
+                  serverNumber: serverNumber,
+                  timestamp: Date.now()
+                });
+                
+                // Clear ticker after 3 seconds
+                setTimeout(() => setServeTicker(null), 3000);
+              }
+              
+              // Update previous server
+              setPreviousServer(currentServer);
+            }
+            
             setMatch(matchData);
 
             // Fetch tournament details
@@ -83,6 +109,39 @@ export default function StreamingOverlay() {
               }
             }
             setTeams(teamsData);
+            
+            // Try to determine fixture context from related matches
+            if (matchData.fixtureGroupId && !fixtureContext) {
+              try {
+                // Query for other matches with the same fixtureGroupId to find the tournament stage
+                const { query, where, getDocs, collection } = await import('firebase/firestore');
+                const relatedMatchesQuery = query(
+                  collection(db, 'fixtures'),
+                  where('fixtureGroupId', '==', matchData.fixtureGroupId)
+                );
+                const relatedMatchesSnapshot = await getDocs(relatedMatchesQuery);
+                
+                // Look for a match that has a tournament stage fixtureType
+                let tournamentStage = null;
+                relatedMatchesSnapshot.forEach((doc) => {
+                  const matchData = doc.data();
+                  if (matchData.fixtureType && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(matchData.fixtureType)) {
+                    tournamentStage = matchData.fixtureType;
+                  }
+                });
+                
+                if (tournamentStage) {
+                  setFixtureContext({ stage: tournamentStage });
+                }
+              } catch (error) {
+                console.error('Error determining fixture context:', error);
+              }
+            }
+            
+            // Initialize previous server on first load
+            if (!match) {
+              setPreviousServer(matchData.servingPlayer);
+            }
           } else {
             setError('Match not found');
           }
@@ -142,6 +201,24 @@ export default function StreamingOverlay() {
     return hplLogoWhite;
   };
 
+  // Helper function to format fixture type for display
+  const formatFixtureType = (fixtureType) => {
+    switch (fixtureType) {
+      case 'league': return 'League';
+      case 'quarterfinal': return 'Quarter Final';
+      case 'semifinal': return 'Semi Final';
+      case 'thirdplace': return 'Third Place';
+      case 'third-place': return 'Third Place';
+      case 'final': return 'Final';
+      case 'dreambreaker': return 'DreamBreaker';
+      case 'minidreambreaker': return 'Mini DreamBreaker';
+      case 'roundrobin': return 'Round Robin';
+      case 'custom': return 'Custom';
+      case 'playoff': return 'Playoff';
+      default: return fixtureType || 'Unknown';
+    }
+  };
+
   const formatScore = (playerKey) => {
     if (!match.scores || !match.scores[playerKey]) return '0';
     
@@ -158,8 +235,62 @@ export default function StreamingOverlay() {
     return totalScore.toString();
   };
 
+  // Serve Ticker Component (shows when serve changes)
+  const ServeTicker = ({ ticker, side }) => {
+    if (!ticker) return null;
+    
+    const isLeft = side === 'left';
+    const shouldShow = (ticker.server === 'player1' && isLeft) || (ticker.server === 'player2' && !isLeft);
+    
+    if (!shouldShow) return null;
+    
+    return (
+      <div className={`absolute top-1/2 transform -translate-y-1/2 ${isLeft ? 'left-2' : 'right-2'} z-20`}>
+        <div className="animate-bounce bg-green-500 text-white px-3 py-2 rounded-full shadow-lg border-2 border-green-600">
+          <div className="flex items-center space-x-1">
+            <span className="text-lg font-bold">SERVE</span>
+            <span className="text-sm">{ticker.serverNumber}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Static Serve Indicator Component (yellow triangle with serve number)
+  const ServeIndicator = ({ side }) => {
+    const isLeft = side === 'left';
+    
+    // If no servingPlayer field, default to player1 serving
+    const currentServer = match.servingPlayer || 'player1';
+    const shouldShow = (currentServer === 'player1' && isLeft) || (currentServer === 'player2' && !isLeft);
+    
+    if (!shouldShow) return null;
+    
+    // Get serve number - for doubles, use teamServeCount (0 = first serve, 1 = second serve)
+    const serveNumber = (match.teamServeCount || 0) + 1;
+    
+    return (
+      <div className={`absolute top-1/2 transform -translate-y-1/2 z-20 ${isLeft ? 'left-[38%]' : 'right-[38%]'}`}>
+        <div className="relative">
+          {/* Yellow triangle pointing towards the score */}
+          <div
+            className={`w-0 h-0 ${
+              isLeft
+                ? 'border-l-[30px] border-l-yellow-400 border-r-[30px] border-r-transparent border-t-[20px] border-t-transparent border-b-[20px] border-b-transparent'
+                : 'border-r-[30px] border-r-yellow-400 border-l-[30px] border-l-transparent border-t-[20px] border-t-transparent border-b-[20px] border-b-transparent'
+            }`}
+          />
+          {/* Serve number inside triangle */}
+          <div className={`absolute top-1/2 ${isLeft ? 'left-2' : 'right-2'} transform -translate-y-1/2`}>
+            <span className="text-green-800 text-lg font-black">{serveNumber}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen bg-transparent relative overflow-hidden">
       {/* Streaming Overlay positioned at bottom center */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-7xl px-4">
         <div className="relative h-20 sm:h-24 lg:h-28">
@@ -180,12 +311,14 @@ export default function StreamingOverlay() {
               <div className="text-lg sm:text-xl lg:text-2xl font-black text-black uppercase tracking-wider truncate">
                 {match.team1Name}
               </div>
-              <div className="text-sm sm:text-base lg:text-lg font-bold text-black truncate">
-                {match.player1Team1 && match.player2Team1
-                  ? `${match.player1Team1}/${match.player2Team1}`
-                  : match.player1Team1 || 'TBD'
-                }
-              </div>
+              {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+                <div className="text-sm sm:text-base lg:text-lg font-bold text-black truncate">
+                  {match.player1Team1 && match.player2Team1
+                    ? `${match.player1Team1}/${match.player2Team1}`
+                    : match.player1Team1 || 'TBD'
+                  }
+                </div>
+              )}
             </div>
             
             {/* Pool/Court indicator for Team 1 */}
@@ -210,12 +343,14 @@ export default function StreamingOverlay() {
               <div className="text-lg sm:text-xl lg:text-2xl font-black text-black uppercase tracking-wider truncate">
                 {match.team2Name}
               </div>
-              <div className="text-sm sm:text-base lg:text-lg font-bold text-black truncate">
-                {match.player1Team2 && match.player2Team2
-                  ? `${match.player1Team2}/${match.player2Team2}`
-                  : match.player1Team2 || 'TBD'
-                }
-              </div>
+              {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+                <div className="text-sm sm:text-base lg:text-lg font-bold text-black truncate">
+                  {match.player1Team2 && match.player2Team2
+                    ? `${match.player1Team2}/${match.player2Team2}`
+                    : match.player1Team2 || 'TBD'
+                  }
+                </div>
+              )}
             </div>
             
             {/* Team 2 Logo */}
@@ -228,11 +363,66 @@ export default function StreamingOverlay() {
             </div>
           </div>
 
+          {/* Serve Indicators and Tickers */}
+          {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+            <>
+              {/* Static serve indicators */}
+              <ServeIndicator side="left" />
+              <ServeIndicator side="right" />
+              
+              {/* Animated serve change tickers */}
+              <ServeTicker ticker={serveTicker} side="left" />
+              <ServeTicker ticker={serveTicker} side="right" />
+            </>
+          )}
+
           {/* Center Section */}
           <div className="absolute left-1/2 top-0 transform -translate-x-1/2 h-full flex flex-col items-center justify-center space-y-1 z-10">
-            {/* Tournament Type */}
+            {/* Fixture Type */}
             <div className="text-xs sm:text-sm lg:text-base font-bold text-white uppercase tracking-wider bg-black px-3 py-1 rounded">
-              {tournament?.format || 'Round Robin'}
+              {(() => {
+                // Priority 1: Use playoffName if available
+                if (match.playoffName) {
+                  return match.playoffName;
+                }
+                
+                // Priority 2: Use playoffStage with number if available
+                if (match.playoffStage) {
+                  return formatFixtureType(match.playoffStage) + (match.playoffNumber ? ` ${match.playoffNumber}` : '');
+                }
+                
+                // Priority 3: Check if fixtureType indicates a main tournament stage (highest priority)
+                if (match.fixtureType && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(match.fixtureType)) {
+                  return formatFixtureType(match.fixtureType);
+                }
+                
+                // Priority 4: Handle minidreambreaker matches - they should inherit the fixture stage
+                if (match.fixtureType === 'minidreambreaker') {
+                  // Check fixture context determined from related matches
+                  if (fixtureContext && fixtureContext.stage) {
+                    return formatFixtureType(fixtureContext.stage);
+                  }
+                  
+                  // If we can't determine the context, show as Mini DreamBreaker
+                  return 'Mini DreamBreaker';
+                }
+                
+                // Priority 5: Check other possible tournament stage fields
+                if (match.stage && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(match.stage)) {
+                  return formatFixtureType(match.stage);
+                }
+                if (match.tournamentStage && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(match.tournamentStage)) {
+                  return formatFixtureType(match.tournamentStage);
+                }
+                
+                // Priority 6: Use formatted fixtureType for other cases
+                if (match.fixtureType) {
+                  return formatFixtureType(match.fixtureType);
+                }
+                
+                // Fallback
+                return 'Round Robin';
+              })()}
             </div>
             
             {/* Score Display */}

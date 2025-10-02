@@ -4,9 +4,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  updatePassword
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
 
 const AuthContext = createContext();
@@ -34,6 +35,7 @@ export function AuthProvider({ children }) {
         email: user.email,
         displayName: displayName,
         photoURL: user.photoURL || '',
+        role: 'super_admin', // Default role for manual signups
         createdAt: new Date()
       });
       console.log('User document created successfully in Firestore');
@@ -67,6 +69,168 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Create team admin account
+  async function createTeamAdmin(email, teamName, tournamentId) {
+    try {
+      // Generate a temporary password
+      const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      
+      // Store current user to restore later
+      const currentUserBackup = auth.currentUser;
+      
+      try {
+        // Try to create the user account
+        const userCredential = await createUserWithEmailAndPassword(auth, email, tempPassword);
+        const user = userCredential.user;
+        
+        // Update profile with display name
+        await updateProfile(user, { displayName: `${teamName} Admin` });
+        
+        // Create user document in Firestore with team admin role
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          displayName: `${teamName} Admin`,
+          photoURL: user.photoURL || '',
+          role: 'team_admin',
+          teamName: teamName,
+          tournamentId: tournamentId,
+          tempPassword: tempPassword, // Store temp password for super admin to see
+          createdAt: new Date()
+        });
+        
+        // Sign out the newly created user and restore the original user
+        await signOut(auth);
+        
+        console.log('Team admin account created successfully');
+        return { success: true, tempPassword, uid: user.uid };
+        
+      } catch (authError) {
+        if (authError.code === 'auth/email-already-in-use') {
+          // Email exists, try to convert existing user to team admin
+          console.log('Email already exists, attempting to convert to team admin...');
+          
+          // Query Firestore to find the existing user by email
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('email', '==', email));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            // User document exists, update it to team admin
+            const userDoc = querySnapshot.docs[0];
+            const existingUserData = userDoc.data();
+            
+            await updateDoc(doc(db, 'users', userDoc.id), {
+              role: 'team_admin',
+              teamName: teamName,
+              tournamentId: tournamentId,
+              tempPassword: tempPassword,
+              displayName: `${teamName} Admin`,
+              updatedAt: new Date()
+            });
+            
+            console.log('Existing user converted to team admin successfully');
+            return { success: true, tempPassword, uid: userDoc.id };
+          } else {
+            // User exists in Auth but not in Firestore - we can't get their UID easily
+            return {
+              success: false,
+              error: 'An account with this email already exists but is not in our system. Please contact the user to sign in first, or use a different email.'
+            };
+          }
+        } else {
+          throw authError;
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error creating team admin account:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Update team admin password (super admin only)
+  async function updateTeamAdminPassword(adminUid, newPassword) {
+    try {
+      // Update the password in Firebase Auth would require the user to be signed in
+      // For now, we'll update the temp password in Firestore
+      await updateDoc(doc(db, 'users', adminUid), {
+        tempPassword: newPassword,
+        passwordUpdatedAt: new Date()
+      });
+      
+      console.log('Team admin password updated successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating team admin password:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get all team admins (super admin only)
+  async function getTeamAdmins() {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('role', '==', 'team_admin'));
+      const querySnapshot = await getDocs(q);
+      
+      const teamAdmins = [];
+      querySnapshot.forEach((doc) => {
+        teamAdmins.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return teamAdmins;
+    } catch (error) {
+      console.error('Error fetching team admins:', error);
+      return [];
+    }
+  }
+
+  // Check if current user is super admin
+  function isSuperAdmin() {
+    // Hardcoded super admin email
+    if (currentUser?.email === 'siddharth@318digital.com') {
+      return true;
+    }
+    
+    // If no role is set, assume super admin for existing users (backward compatibility)
+    return currentUser?.role === 'super_admin' || (!currentUser?.role && currentUser);
+  }
+
+  // Check if current user is team admin
+  function isTeamAdmin() {
+    return currentUser?.role === 'team_admin';
+  }
+
+  // Update current user role to super admin (for existing users)
+  async function setSuperAdminRole() {
+    if (!currentUser) return { success: false, error: 'No user logged in' };
+    
+    try {
+      // Create or update user document with super admin role
+      const userData = {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName || currentUser.email,
+        photoURL: currentUser.photoURL || '',
+        role: 'super_admin',
+        updatedAt: new Date()
+      };
+      
+      // Use setDoc with merge option to create document if it doesn't exist
+      await setDoc(doc(db, 'users', currentUser.uid), userData, { merge: true });
+      
+      // Refresh user data
+      const userProfile = await getUserProfile(currentUser.uid);
+      setCurrentUser({ ...currentUser, ...userProfile });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error setting super admin role:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -93,7 +257,13 @@ export function AuthProvider({ children }) {
     signup,
     signin,
     logout,
-    getUserProfile
+    getUserProfile,
+    createTeamAdmin,
+    updateTeamAdminPassword,
+    getTeamAdmins,
+    isSuperAdmin,
+    isTeamAdmin,
+    setSuperAdminRole
   };
 
   return (
