@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../utils/firebase';
 import MainLayout from '../components/MainLayout';
 
 export default function Settings() {
@@ -15,6 +17,12 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [settingRole, setSettingRole] = useState(false);
+  
+  // Venue management state
+  const [venues, setVenues] = useState([]);
+  const [newVenueName, setNewVenueName] = useState('');
+  const [addingVenue, setAddingVenue] = useState(false);
+  const [deletingVenue, setDeletingVenue] = useState(null);
 
   useEffect(() => {
     // Redirect if not super admin
@@ -24,6 +32,7 @@ export default function Settings() {
     }
 
     fetchTeamAdmins();
+    fetchVenues();
   }, [isSuperAdmin, navigate]);
 
   const fetchTeamAdmins = async () => {
@@ -36,6 +45,65 @@ export default function Settings() {
       setError('Failed to load team admins');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVenues = async () => {
+    try {
+      const venuesSnapshot = await getDocs(collection(db, 'venues'));
+      const venuesData = venuesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setVenues(venuesData);
+    } catch (error) {
+      console.error('Error fetching venues:', error);
+      setError('Failed to load venues');
+    }
+  };
+
+  const handleAddVenue = async (e) => {
+    e.preventDefault();
+    if (!newVenueName.trim()) {
+      setError('Please enter a venue name');
+      return;
+    }
+
+    try {
+      setAddingVenue(true);
+      setError('');
+      
+      const venueData = {
+        name: newVenueName.trim(),
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid
+      };
+
+      await addDoc(collection(db, 'venues'), venueData);
+      setSuccess('Venue added successfully!');
+      setNewVenueName('');
+      fetchVenues(); // Refresh the venues list
+    } catch (error) {
+      console.error('Error adding venue:', error);
+      setError('Failed to add venue');
+    } finally {
+      setAddingVenue(false);
+    }
+  };
+
+  const handleDeleteVenue = async (venueId) => {
+    try {
+      setDeletingVenue(venueId);
+      setError('');
+      
+      await deleteDoc(doc(db, 'venues', venueId));
+      setSuccess('Venue deleted successfully!');
+      fetchVenues(); // Refresh the venues list
+    } catch (error) {
+      console.error('Error deleting venue:', error);
+      setError('Failed to delete venue');
+    } finally {
+      setDeletingVenue(null);
     }
   };
 
@@ -191,6 +259,90 @@ export default function Settings() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Venue Management Section */}
+        <div className="card bg-base-100 shadow-xl mb-6">
+          <div className="card-body">
+            <h2 className="card-title text-2xl mb-6">Venue Management</h2>
+            
+            {/* Add New Venue Form */}
+            <form onSubmit={handleAddVenue} className="mb-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="form-control flex-1">
+                  <label className="label">
+                    <span className="label-text font-medium">Venue Name</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter venue name"
+                    className="input input-bordered w-full"
+                    value={newVenueName}
+                    onChange={(e) => setNewVenueName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">&nbsp;</span>
+                  </label>
+                  <button
+                    type="submit"
+                    className={`btn btn-primary ${addingVenue ? 'loading' : ''}`}
+                    disabled={addingVenue || !newVenueName.trim()}
+                  >
+                    {addingVenue ? 'Adding...' : 'Add Venue'}
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Venues List */}
+            {venues.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-base-content/60 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No Venues Added</h3>
+                <p className="text-base-content/60">
+                  Add venues where fixtures will be played. These will be available when creating DreamBreaker fixtures.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Venue Name</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {venues.map((venue) => (
+                      <tr key={venue.id}>
+                        <td className="font-medium">{venue.name}</td>
+                        <td>
+                          {venue.createdAt ? new Date(venue.createdAt.seconds * 1000).toLocaleDateString() : '-'}
+                        </td>
+                        <td>
+                          <button
+                            className={`btn btn-sm btn-error btn-outline ${deletingVenue === venue.id ? 'loading' : ''}`}
+                            onClick={() => handleDeleteVenue(venue.id)}
+                            disabled={deletingVenue === venue.id}
+                          >
+                            {deletingVenue === venue.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 

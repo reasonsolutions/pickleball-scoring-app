@@ -27,13 +27,14 @@ export default function AddFixtures() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeamFilter, setSelectedTeamFilter] = useState('');
-  const [selectedFixtureTypeFilter, setSelectedFixtureTypeFilter] = useState('');
+  const [selectedVenueFilter, setSelectedVenueFilter] = useState('');
   const [activeTab, setActiveTab] = useState('fixtures'); // 'fixtures', 'playoffs', 'ranking'
   const [playoffFixtures, setPlayoffFixtures] = useState([]);
   const [fixtures, setFixtures] = useState({});
   const [fixtureGroups, setFixtureGroups] = useState({});
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [venues, setVenues] = useState([]);
   const [selectedDateForView, setSelectedDateForView] = useState(null);
   
   // Edit fixture state
@@ -79,7 +80,8 @@ export default function AddFixtures() {
     date: '',
     time: '',
     pool: '',
-    court: ''
+    court: '',
+    venue: ''
   });
 
   // Check for saved fixture style preference
@@ -132,6 +134,15 @@ export default function AddFixtures() {
             ...doc.data()
           }));
           setPlayers(playersData);
+          
+          // Fetch venues
+          const venuesQuery = query(collection(db, 'venues'));
+          const venuesSnapshot = await getDocs(venuesQuery);
+          const venuesData = venuesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setVenues(venuesData);
           
           // Fetch existing fixtures - filter based on user role
           let fixturesQuery;
@@ -292,6 +303,16 @@ export default function AddFixtures() {
     }
     
     return dates;
+  };
+
+  const getDateRangeWithFixtures = () => {
+    const allDates = generateDateRange();
+    // Filter to only include dates that have fixtures
+    return allDates.filter(date => {
+      const dateKey = date.toDateString();
+      const dayFixtures = fixtures[dateKey] || [];
+      return dayFixtures.length > 0;
+    });
   };
 
   const formatDate = (date) => {
@@ -641,15 +662,16 @@ export default function AddFixtures() {
       const selectedDateObj = new Date(bulkFixtureForm.date);
       const team1Data = teams.find(t => t.id === bulkFixtureForm.team1);
       const team2Data = teams.find(t => t.id === bulkFixtureForm.team2);
+      const venueData = venues.find(v => v.id === bulkFixtureForm.venue);
       
-      // Define the matches to create automatically
+      // Define the matches to create automatically in the correct order
       const matchesToCreate = [
+        { key: 'mensDoubles', label: "Men's Doubles", type: 'doubles' },
+        { key: 'womensDoubles', label: "Women's Doubles", type: 'doubles' },
         { key: 'mensSingles', label: "Men's Singles", type: 'singles' },
         { key: 'womensSingles', label: "Women's Singles", type: 'singles' },
-        { key: 'mixedDoubles', label: "Mixed Doubles", type: 'doubles' },
-        { key: 'mensDoubles', label: "Men's Doubles", type: 'doubles' },
         { key: 'mensDoubles', label: "Men's Doubles", type: 'doubles' }, // Second men's doubles
-        { key: 'womensDoubles', label: "Women's Doubles", type: 'doubles' }
+        { key: 'mixedDoubles', label: "Mixed Doubles", type: 'doubles' }
       ];
 
       const fixturePromises = matchesToCreate.map(async (match, index) => {
@@ -666,6 +688,8 @@ export default function AddFixtures() {
           team2: bulkFixtureForm.team2,
           team1Name: team1Data?.name || '',
           team2Name: team2Data?.name || '',
+          venue: bulkFixtureForm.venue || null,
+          venueName: venueData?.name || null,
           status: 'scheduled',
           createdAt: serverTimestamp(),
           createdBy: currentUser.uid,
@@ -727,7 +751,8 @@ export default function AddFixtures() {
         date: '',
         time: '',
         pool: '',
-        court: ''
+        court: '',
+        venue: ''
       });
       setError('');
     } catch (error) {
@@ -760,6 +785,7 @@ export default function AddFixtures() {
       const selectedDateObj = new Date(bulkFixtureForm.date);
       const team1Data = teams.find(t => t.id === bulkFixtureForm.team1);
       const team2Data = teams.find(t => t.id === bulkFixtureForm.team2);
+      const venueData = venues.find(v => v.id === bulkFixtureForm.venue);
       
       // Define the matches to create automatically for Mini DreamBreaker Team
       const matchesToCreate = [
@@ -786,6 +812,8 @@ export default function AddFixtures() {
           team2: bulkFixtureForm.team2,
           team1Name: team1Data?.name || '',
           team2Name: team2Data?.name || '',
+          venue: bulkFixtureForm.venue || null,
+          venueName: venueData?.name || null,
           status: 'scheduled',
           createdAt: serverTimestamp(),
           createdBy: currentUser.uid,
@@ -853,7 +881,8 @@ export default function AddFixtures() {
         date: '',
         time: '',
         pool: '',
-        court: ''
+        court: '',
+        venue: ''
       });
       setError('');
     } catch (error) {
@@ -1233,8 +1262,8 @@ export default function AddFixtures() {
         return false;
       }
 
-      // Fixture type filter
-      if (selectedFixtureTypeFilter && fixture.fixtureType !== selectedFixtureTypeFilter) {
+      // Venue filter
+      if (selectedVenueFilter && fixture.venue !== selectedVenueFilter) {
         return false;
       }
 
@@ -1267,8 +1296,8 @@ export default function AddFixtures() {
         return false;
       }
 
-      // Fixture type filter - check if any match in the group has the selected fixture type
-      if (selectedFixtureTypeFilter && !group.matches.some(match => match.fixtureType === selectedFixtureTypeFilter)) {
+      // Venue filter - check if any match in the group has the selected venue
+      if (selectedVenueFilter && !group.matches.some(match => match.venue === selectedVenueFilter)) {
         return false;
       }
 
@@ -1294,31 +1323,6 @@ export default function AddFixtures() {
 
       return true;
     });
-  };
-
-  // Get unique fixture types for filtering
-  const getAvailableFixtureTypes = () => {
-    const types = new Set();
-    
-    // Add fixture types from individual fixtures
-    Object.values(fixtures).forEach(dayFixtures => {
-      dayFixtures.forEach(fixture => {
-        if (fixture.fixtureType) {
-          types.add(fixture.fixtureType);
-        }
-      });
-    });
-    
-    // Add fixture types from fixture groups
-    Object.values(fixtureGroups).forEach(group => {
-      group.matches.forEach(match => {
-        if (match.fixtureType) {
-          types.add(match.fixtureType);
-        }
-      });
-    });
-    
-    return Array.from(types).sort();
   };
 
   // Helper function to format fixture type for display
@@ -1374,7 +1378,7 @@ export default function AddFixtures() {
     );
   }
 
-  const dateRange = generateDateRange();
+  const dateRange = getDateRangeWithFixtures();
 
   return (
     <MainLayout>
@@ -1569,18 +1573,22 @@ export default function AddFixtures() {
                 >
                   Fixtures
                 </button>
-                <button
-                  className={`tab tab-lg ${activeTab === 'playoffs' ? 'tab-active' : ''}`}
-                  onClick={() => setActiveTab('playoffs')}
-                >
-                  Playoffs
-                </button>
-                <button
-                  className={`tab tab-lg ${activeTab === 'ranking' ? 'tab-active' : ''}`}
-                  onClick={() => setActiveTab('ranking')}
-                >
-                  Ranking
-                </button>
+                {!isTeamAdmin() && (
+                  <>
+                    <button
+                      className={`tab tab-lg ${activeTab === 'playoffs' ? 'tab-active' : ''}`}
+                      onClick={() => setActiveTab('playoffs')}
+                    >
+                      Playoffs
+                    </button>
+                    <button
+                      className={`tab tab-lg ${activeTab === 'ranking' ? 'tab-active' : ''}`}
+                      onClick={() => setActiveTab('ranking')}
+                    >
+                      Ranking
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -1592,11 +1600,13 @@ export default function AddFixtures() {
               {/* Search Input */}
               <div className="form-control flex-1">
                 <div className="input-group">
-                  <span className="bg-base-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </span>
+                  {!isTeamAdmin() && (
+                    <span className="bg-base-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </span>
+                  )}
                   <input
                     type="text"
                     placeholder="Search by player name or team name..."
@@ -1639,24 +1649,24 @@ export default function AddFixtures() {
                 )}
               </div>
 
-              {/* Fixture Type Filter */}
+              {/* Venue Filter */}
               <div className="form-control w-full sm:w-64">
                 <select
                   className="select select-bordered w-full"
-                  value={selectedFixtureTypeFilter}
-                  onChange={(e) => setSelectedFixtureTypeFilter(e.target.value)}
+                  value={selectedVenueFilter}
+                  onChange={(e) => setSelectedVenueFilter(e.target.value)}
                 >
-                  <option value="">Filter by fixture type</option>
-                  {getAvailableFixtureTypes().map(type => (
-                    <option key={type} value={type}>
-                      {formatFixtureType(type)}
+                  <option value="">Filter by venue</option>
+                  {venues.map(venue => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name}
                     </option>
                   ))}
                 </select>
-                {selectedFixtureTypeFilter && (
+                {selectedVenueFilter && (
                   <button
                     className="btn btn-ghost btn-xs mt-1"
-                    onClick={() => setSelectedFixtureTypeFilter('')}
+                    onClick={() => setSelectedVenueFilter('')}
                   >
                     Clear filter
                   </button>
@@ -1690,6 +1700,15 @@ export default function AddFixtures() {
                       onClick={() => navigate(`/admin/tournaments/${id}/fixtures/${group.id}`)}
                     >
                       <div className="card-body p-4 sm:p-6">
+                        {/* Venue display at center top */}
+                        {group.matches[0]?.venueName && (
+                          <div className="text-center mb-4">
+                            <div className="badge badge-accent badge-lg">
+                              📍 {group.matches[0].venueName}
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-4">
                           <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
                             <div className="text-base sm:text-lg font-bold flex-shrink-0">
@@ -1893,7 +1912,7 @@ export default function AddFixtures() {
                   )}
                 
                 {/* Show message if no fixtures match filters */}
-                {(searchTerm || selectedTeamFilter || selectedFixtureTypeFilter) &&
+                {(searchTerm || selectedTeamFilter || selectedVenueFilter) &&
                  filterFixtureGroups(Object.entries(fixtureGroups)).length === 0 &&
                  Object.entries(fixtures).every(([dateKey, dayFixtures]) =>
                    filterFixtures(dayFixtures.filter(fixture => fixture.fixtureType === 'custom' || fixture.fixtureType === 'roundrobin')).length === 0
@@ -1919,7 +1938,7 @@ export default function AddFixtures() {
                           Clear team filter
                         </button>
                       )}
-                      {selectedFixtureTypeFilter && (
+                      {selectedVenueFilter && (
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => setSelectedFixtureTypeFilter('')}
@@ -1932,7 +1951,7 @@ export default function AddFixtures() {
                 )}
 
                 {/* Show message if no fixtures for selected date */}
-                {selectedDateForView && !searchTerm && !selectedTeamFilter && !selectedFixtureTypeFilter &&
+                {selectedDateForView && !searchTerm && !selectedTeamFilter && !selectedVenueFilter &&
                  Object.entries(fixtureGroups)
                    .filter(([, group]) => group.dateKey === selectedDateForView.toDateString())
                    .length === 0 &&
@@ -2776,11 +2795,12 @@ export default function AddFixtures() {
                       <>
                         This will automatically create 6 matches between the selected teams:
                         <ul className="list-disc list-inside mt-2 ml-4">
+                          <li>1 Men's Doubles</li>
+                          <li>1 Women's Doubles</li>
                           <li>1 Men's Singles</li>
                           <li>1 Women's Singles</li>
+                          <li>1 Men's Doubles (2)</li>
                           <li>1 Mixed Doubles</li>
-                          <li>2 Men's Doubles</li>
-                          <li>1 Women's Doubles</li>
                         </ul>
                       </>
                     )}
@@ -2864,6 +2884,25 @@ export default function AddFixtures() {
                   </div>
                 </div>
 
+                {/* Venue Selection */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Venue (Optional)</span>
+                  </label>
+                  <select
+                    name="venue"
+                    className="select select-bordered w-full"
+                    value={bulkFixtureForm.venue}
+                    onChange={handleBulkFormChange}
+                  >
+                    <option value="">Select venue</option>
+                    {venues.map(venue => (
+                      <option key={venue.id} value={venue.id}>
+                        {venue.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="modal-action">
                   <button
@@ -2909,11 +2948,12 @@ export default function AddFixtures() {
                           Automatically creates 6 matches between two teams:
                         </p>
                         <ul className="text-xs text-base-content/60 mt-2 list-disc list-inside">
+                          <li>1 Men's Doubles</li>
+                          <li>1 Women's Doubles</li>
                           <li>1 Men's Singles</li>
                           <li>1 Women's Singles</li>
+                          <li>1 Men's Doubles (2)</li>
                           <li>1 Mixed Doubles</li>
-                          <li>2 Men's Doubles</li>
-                          <li>1 Women's Doubles</li>
                         </ul>
                       </div>
                     </div>

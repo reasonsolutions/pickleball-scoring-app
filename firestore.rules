@@ -82,6 +82,32 @@ service cloud.firestore {
       allow read, write, create, update, delete, list: if request.auth != null && isSuperAdminSimple();
     }
     
+    // Venues collection rules
+    match /venues/{venueId} {
+      // Allow public read access for venues (needed for fixture display)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete venues
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidVenueData(request.resource.data);
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidVenueData(request.resource.data);
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Function to validate venue data structure
+    function isValidVenueData(data) {
+      return data.keys().hasAll(['name', 'createdBy']) &&
+             data.name is string &&
+             data.createdBy is string &&
+             (data.createdAt == null || data.createdAt is timestamp);
+    }
+    
     // Function to validate tournament data structure
     function isValidTournamentData(data) {
       return data.keys().hasAll(['name', 'description', 'rules', 'prizeMoney', 'startDate', 'endDate', 'categories', 'createdBy']) &&

@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import hplLogo from '../assets/hpl_logo.png';
 
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
@@ -31,7 +32,7 @@ export default function Navbar() {
           </ul>
         </div>
         <a className="btn btn-ghost text-xl font-bold text-primary" href="/admin" style={{ color: 'var(--primary-green)' }}>
-          🏓 Pickleball Tourny
+          <img src={hplLogo} alt="HPL Logo" style={{ height: '6rem', width: 'auto' }} />
         </a>
       </div>
 
