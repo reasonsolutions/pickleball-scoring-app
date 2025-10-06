@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import SwipeToEndMatch from '../components/SwipeToEndMatch';
 import YouTubeUrlManager from '../components/YouTubeUrlManager';
@@ -73,11 +73,11 @@ export default function UmpireScoring() {
             initializeScores(gamesCount, pointsPerGame);
           }
 
-          // Fetch teams, players, and all fixture matches for substitution
+          // Fetch teams, players, and all fixture matches for substitution (filtered by tournament)
           const [teamsSnapshot, playersSnapshot, fixturesSnapshot] = await Promise.all([
-            getDocs(collection(db, 'teams')),
-            getDocs(collection(db, 'players')),
-            getDocs(collection(db, 'fixtures'))
+            getDocs(query(collection(db, 'teams'), where('tournamentId', '==', matchData.tournamentId))),
+            getDocs(query(collection(db, 'players'), where('tournamentId', '==', matchData.tournamentId))),
+            getDocs(query(collection(db, 'fixtures'), where('tournamentId', '==', matchData.tournamentId)))
           ]);
 
           const teamsData = teamsSnapshot.docs.map(doc => ({

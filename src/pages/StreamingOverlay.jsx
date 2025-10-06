@@ -19,6 +19,7 @@ export default function StreamingOverlay() {
   const [match, setMatch] = useState(null);
   const [tournament, setTournament] = useState(null);
   const [teams, setTeams] = useState({});
+  const [cachedTeams, setCachedTeams] = useState({});
   const [fixture, setFixture] = useState(null);
   const [fixtureContext, setFixtureContext] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,29 +84,43 @@ export default function StreamingOverlay() {
               }
             }
 
-            // Fetch team details for logos
+            // Fetch team details for logos (with caching)
             const teamsData = {};
             
             if (matchData.team1) {
-              try {
-                const team1Doc = await getDoc(doc(db, 'teams', matchData.team1));
-                if (team1Doc.exists()) {
-                  const team1Data = { id: team1Doc.id, ...team1Doc.data() };
-                  teamsData.team1 = team1Data;
+              if (cachedTeams[matchData.team1]) {
+                // Use cached data
+                teamsData.team1 = cachedTeams[matchData.team1];
+              } else {
+                // Fetch and cache
+                try {
+                  const team1Doc = await getDoc(doc(db, 'teams', matchData.team1));
+                  if (team1Doc.exists()) {
+                    const team1Data = { id: team1Doc.id, ...team1Doc.data() };
+                    teamsData.team1 = team1Data;
+                    setCachedTeams(prev => ({ ...prev, [matchData.team1]: team1Data }));
+                  }
+                } catch (team1Error) {
+                  console.error('Error fetching team1:', team1Error);
                 }
-              } catch (team1Error) {
-                console.error('Error fetching team1:', team1Error);
               }
             }
             if (matchData.team2) {
-              try {
-                const team2Doc = await getDoc(doc(db, 'teams', matchData.team2));
-                if (team2Doc.exists()) {
-                  const team2Data = { id: team2Doc.id, ...team2Doc.data() };
-                  teamsData.team2 = team2Data;
+              if (cachedTeams[matchData.team2]) {
+                // Use cached data
+                teamsData.team2 = cachedTeams[matchData.team2];
+              } else {
+                // Fetch and cache
+                try {
+                  const team2Doc = await getDoc(doc(db, 'teams', matchData.team2));
+                  if (team2Doc.exists()) {
+                    const team2Data = { id: team2Doc.id, ...team2Doc.data() };
+                    teamsData.team2 = team2Data;
+                    setCachedTeams(prev => ({ ...prev, [matchData.team2]: team2Data }));
+                  }
+                } catch (team2Error) {
+                  console.error('Error fetching team2:', team2Error);
                 }
-              } catch (team2Error) {
-                console.error('Error fetching team2:', team2Error);
               }
             }
             setTeams(teamsData);

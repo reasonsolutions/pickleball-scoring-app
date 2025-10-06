@@ -108,40 +108,34 @@ export default function AddFixtures() {
           tournamentId: currentUser?.tournamentId
         });
         
-        // Fetch tournament details
-        const tournamentDoc = await getDoc(doc(db, 'tournaments', id));
+        // Fetch all data in parallel for better performance
+        const [tournamentDoc, teamsSnapshot, playersSnapshot, venuesSnapshot] = await Promise.all([
+          getDoc(doc(db, 'tournaments', id)),
+          getDocs(query(collection(db, 'teams'), where('tournamentId', '==', id))),
+          getDocs(query(collection(db, 'players'), where('tournamentId', '==', id))),
+          getDocs(query(collection(db, 'venues')))
+        ]);
+
         if (tournamentDoc.exists()) {
           const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
           console.log('Tournament data fetched successfully:', tournamentData.name);
           setTournament(tournamentData);
           
-          // Fetch teams for this tournament
-          const teamsQuery = query(
-            collection(db, 'teams'),
-            where('tournamentId', '==', id)
-          );
-          const teamsSnapshot = await getDocs(teamsQuery);
+          // Process teams data
           const teamsData = teamsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
           setTeams(teamsData);
           
-          // Fetch players for this tournament
-          const playersQuery = query(
-            collection(db, 'players'),
-            where('tournamentId', '==', id)
-          );
-          const playersSnapshot = await getDocs(playersQuery);
+          // Process players data
           const playersData = playersSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
           setPlayers(playersData);
           
-          // Fetch venues
-          const venuesQuery = query(collection(db, 'venues'));
-          const venuesSnapshot = await getDocs(venuesQuery);
+          // Process venues data
           const venuesData = venuesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()

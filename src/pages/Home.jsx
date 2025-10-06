@@ -49,95 +49,83 @@ export default function Home() {
     fetchTournaments();
   }, []);
 
-  // Fetch tournament details and teams when tournament changes
+  // Fetch all tournament-related data in parallel when tournament changes
   useEffect(() => {
     if (!selectedTournament) return;
 
-    const fetchTournamentAndTeams = async () => {
+    const fetchAllTournamentData = async () => {
       try {
-        // Fetch tournament details
-        const tournamentDoc = await getDoc(doc(db, 'tournaments', selectedTournament));
+        // Fetch all tournament-related data in parallel
+        const [tournamentDoc, teamsSnapshot, matchesSnapshot, playersSnapshot] = await Promise.all([
+          getDoc(doc(db, 'tournaments', selectedTournament)),
+          getDocs(query(collection(db, 'teams'), where('tournamentId', '==', selectedTournament))),
+          getDocs(query(collection(db, 'fixtures'), where('tournamentId', '==', selectedTournament))),
+          getDocs(query(collection(db, 'players'), where('tournamentId', '==', selectedTournament)))
+        ]);
+
         if (tournamentDoc.exists()) {
           const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
           setCurrentTournament(tournamentData);
 
-          // Always try to fetch teams for this tournament
-          const teamsQuery = query(
-            collection(db, 'teams'),
-            where('tournamentId', '==', selectedTournament)
-          );
-          const teamsSnapshot = await getDocs(teamsQuery);
+          // Process teams data
           const teamsData = teamsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }));
           setTeams(teamsData);
-        }
-        
-        // Reset team selection when tournament changes
-        setSelectedTeam('');
-      } catch (error) {
-        console.error('Error fetching tournament and teams:', error);
-        setCurrentTournament(null);
-        setTeams([]);
-        setSelectedTeam('');
-      }
-    };
 
-    fetchTournamentAndTeams();
-  }, [selectedTournament]);
+          // Process matches data for team statistics
+          const matchesData = matchesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
 
-  // Fetch team statistics for rankings display
-  useEffect(() => {
-    if (!selectedTournament || teams.length === 0) {
-      setTeamsWithStats([]);
-      return;
-    }
+          // Process players data for photo mapping
+          const playersData = playersSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
 
-    const fetchTeamStats = async () => {
-      try {
-        // Fetch matches to calculate team statistics
-        const matchesQuery = query(
-          collection(db, 'fixtures'),
-          where('tournamentId', '==', selectedTournament)
-        );
-        const matchesSnapshot = await getDocs(matchesQuery);
-        const matchesData = matchesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+          // Create a mapping from player name to photo URL
+          const playerPhotoMap = {};
+          playersData.forEach(player => {
+            if (player.name && player.photo?.url) {
+              playerPhotoMap[player.name] = player.photo.url;
+            }
+          });
 
-        // Calculate team statistics
-        const teamStats = teams.map(team => {
-          const teamMatches = matchesData.filter(match =>
-            match.team1 === team.id || match.team2 === team.id
-          );
+          // Calculate team statistics
+          if (teamsData.length > 0) {
+            const teamStats = teamsData.map(team => {
+              const teamMatches = matchesData.filter(match =>
+                match.team1 === team.id || match.team2 === team.id
+              );
 
-          let battleWins = 0;
-          let battleLosses = 0;
-          let points = 0;
-          let gameWins = 0;
-          let gameLosses = 0;
+              let battleWins = 0;
+              let battleLosses = 0;
+              let points = 0;
+              let gameWins = 0;
+              let gameLosses = 0;
 
-          teamMatches.forEach(match => {
-            if (match.scores && match.status === 'completed') {
-              const isTeam1 = match.team1 === team.id;
-              const team1Scores = match.scores.player1 || {};
-              const team2Scores = match.scores.player2 || {};
-              
-              let team1Games = 0;
-              let team2Games = 0;
+              teamMatches.forEach(match => {
+                if (match.scores && match.status === 'completed') {
+                  const isTeam1 = match.team1 === team.id;
+                  const team1Scores = match.scores.player1 || {};
+                  const team2Scores = match.scores.player2 || {};
+                  
+                  let team1Games = 0;
+                  let team2Games = 0;
 
-              // Count games won
-              for (let i = 1; i <= (match.gamesCount || 3); i++) {
-                const gameKey = `game${i}`;
-                const team1Score = parseInt(team1Scores[gameKey]) || 0;
-                const team2Score = parseInt(team2Scores[gameKey]) || 0;
-                
-                if (team1Score > team2Score) {
-                  team1Games++;
-                } else if (team2Score > team1Score) {
-                  team2Games++;
+                  // Count games won
+                  for (let i = 1; i <= (match.gamesCount || 3); i++) {
+                    const gameKey = `game${i}`;
+                    const team1Score = parseInt(team1Scores[gameKey]) || 0;
+                    const team2Score = parseInt(team2Scores[gameKey]) || 0;
+                    
+                    if (team1Score > team2Score) {
+                      team1Games++;
+                    } else if (team2Score > team1Score) {
+                      team2Games++;
                 }
               }
 
@@ -183,58 +171,44 @@ export default function Home() {
             gameWins,
             gameLosses
           };
-        });
+            });
 
-        // Sort teams by points (descending), then by battle wins, then by games difference
-        teamStats.sort((a, b) => {
-          if (b.points !== a.points) return b.points - a.points;
-          if (b.battleWins !== a.battleWins) return b.battleWins - a.battleWins;
-          return (b.gameWins - b.gameLosses) - (a.gameWins - a.gameLosses);
-        });
+            // Sort teams by points (descending), then by battle wins, then by games difference
+            teamStats.sort((a, b) => {
+              if (b.points !== a.points) return b.points - a.points;
+              if (b.battleWins !== a.battleWins) return b.battleWins - a.battleWins;
+              return (b.gameWins - b.gameLosses) - (a.gameWins - a.gameLosses);
+            });
 
-        setTeamsWithStats(teamStats);
+            setTeamsWithStats(teamStats);
+          }
+        }
+        
+        // Reset team selection when tournament changes
+        setSelectedTeam('');
       } catch (error) {
-        console.error('Error fetching team statistics:', error);
+        console.error('Error fetching tournament data:', error);
+        setCurrentTournament(null);
+        setTeams([]);
+        setSelectedTeam('');
         setTeamsWithStats([]);
       }
     };
 
-    fetchTeamStats();
-  }, [selectedTournament, teams]);
+    fetchAllTournamentData();
+  }, [selectedTournament]);
 
   // Real-time listener for matches in selected tournament
   useEffect(() => {
     if (!selectedTournament) return;
 
-    // Fetch players data first to get photo URLs
-    const fetchPlayersAndMatches = async () => {
-      try {
-        // Fetch players for this tournament
-        const playersQuery = query(
-          collection(db, 'players'),
-          where('tournamentId', '==', selectedTournament)
-        );
-        const playersSnapshot = await getDocs(playersQuery);
-        const playersData = playersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+    // Set up real-time listener for fixtures (players data already fetched in main useEffect)
+    const fixturesQuery = query(
+      collection(db, 'fixtures'),
+      where('tournamentId', '==', selectedTournament)
+    );
 
-        // Create a mapping from player name to photo URL
-        const playerPhotoMap = {};
-        playersData.forEach(player => {
-          if (player.name && player.photo?.url) {
-            playerPhotoMap[player.name] = player.photo.url;
-          }
-        });
-
-        // Set up real-time listener for fixtures
-        const fixturesQuery = query(
-          collection(db, 'fixtures'),
-          where('tournamentId', '==', selectedTournament)
-        );
-
-        const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
           try {
             const fixturesData = snapshot.docs.map(doc => ({
               id: doc.id,
@@ -333,15 +307,8 @@ export default function Home() {
           setMatches([]);
         });
 
-        // Cleanup listener on unmount or tournament change
-        return () => unsubscribe();
-      } catch (error) {
-        console.error('Error fetching players:', error);
-        setMatches([]);
-      }
-    };
-
-    fetchPlayersAndMatches();
+      // Cleanup listener on unmount or tournament change
+      return () => unsubscribe();
   }, [selectedTournament, selectedTeam]);
 
   // Fetch featured videos from admin-managed collection
