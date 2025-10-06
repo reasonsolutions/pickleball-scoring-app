@@ -4,7 +4,7 @@ import MainLayout from '../components/MainLayout';
 import { Link } from 'react-router-dom';
 
 export default function SuperAdminManagement() {
-  const { currentUser, isSuperAdmin, getSuperAdmins, getAllSuperAdminTournaments } = useAuth();
+  const { currentUser, isSuperAdmin, getSuperAdmins, getAllTournaments } = useAuth();
   const [superAdmins, setSuperAdmins] = useState([]);
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +25,8 @@ export default function SuperAdminManagement() {
         const adminsData = await getSuperAdmins();
         setSuperAdmins(adminsData);
         
-        // Fetch all tournaments created by super admins
-        const tournamentsData = await getAllSuperAdminTournaments();
+        // Fetch all tournaments in the database
+        const tournamentsData = await getAllTournaments();
         setTournaments(tournamentsData);
         
       } catch (error) {
@@ -38,7 +38,7 @@ export default function SuperAdminManagement() {
     };
 
     fetchData();
-  }, [isSuperAdmin, getSuperAdmins, getAllSuperAdminTournaments]);
+  }, [isSuperAdmin, getSuperAdmins, getAllTournaments]);
 
   const formatDate = (date) => {
     if (!date) return 'N/A';
@@ -52,6 +52,11 @@ export default function SuperAdminManagement() {
 
   const getTournamentsByAdmin = (adminId) => {
     return tournaments.filter(tournament => tournament.createdBy === adminId);
+  };
+
+  const getTournamentsNotCreatedByAdmins = () => {
+    const superAdminIds = superAdmins.map(admin => admin.id);
+    return tournaments.filter(tournament => !superAdminIds.includes(tournament.createdBy));
   };
 
   if (!isSuperAdmin()) {
@@ -213,6 +218,67 @@ export default function SuperAdminManagement() {
             );
           })}
         </div>
+
+        {/* Tournaments not created by super admins */}
+        {getTournamentsNotCreatedByAdmins().length > 0 && (
+          <div className="card bg-base-100 shadow-xl mt-6">
+            <div className="card-body">
+              <h2 className="card-title text-xl mb-4">
+                Other Tournaments in Database
+                <div className="badge badge-info ml-2">
+                  {getTournamentsNotCreatedByAdmins().length}
+                </div>
+              </h2>
+              <p className="text-base-content/70 mb-4">
+                Tournaments created by other users or imported from external sources
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {getTournamentsNotCreatedByAdmins().map((tournament) => (
+                  <div key={tournament.id} className="card bg-base-200 shadow">
+                    <div className="card-body p-4">
+                      <h4 className="card-title text-sm">{tournament.name}</h4>
+                      <div className="text-xs text-base-content/70 space-y-1">
+                        <p>Start: {formatDate(tournament.startDate)}</p>
+                        <p>End: {formatDate(tournament.endDate)}</p>
+                        <p>Created by: {tournament.createdBy || 'Unknown'}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className={`badge badge-sm ${
+                            (() => {
+                              const now = new Date();
+                              const startDate = tournament.startDate?.toDate ? tournament.startDate.toDate() : new Date(tournament.startDate);
+                              const endDate = tournament.endDate?.toDate ? tournament.endDate.toDate() : new Date(tournament.endDate);
+                              
+                              if (now < startDate) return 'badge-info';
+                              if (now >= startDate && now <= endDate) return 'badge-success';
+                              return 'badge-neutral';
+                            })()
+                          }`}>
+                            {(() => {
+                              const now = new Date();
+                              const startDate = tournament.startDate?.toDate ? tournament.startDate.toDate() : new Date(tournament.startDate);
+                              const endDate = tournament.endDate?.toDate ? tournament.endDate.toDate() : new Date(tournament.endDate);
+                              
+                              if (now < startDate) return 'Upcoming';
+                              if (now >= startDate && now <= endDate) return 'Active';
+                              return 'Completed';
+                            })()}
+                          </div>
+                          <Link
+                            to={`/admin/tournaments/${tournament.id}`}
+                            className="btn btn-xs btn-primary"
+                          >
+                            View
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {superAdmins.length === 0 && (
           <div className="text-center py-12">

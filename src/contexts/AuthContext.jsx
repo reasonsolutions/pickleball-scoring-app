@@ -260,7 +260,7 @@ export function AuthProvider({ children }) {
     try {
       // First get all super admins
       const superAdmins = await getSuperAdmins();
-      const superAdminIds = superAdmins.map(admin => admin.id);
+      const superAdminIds = superAdmins.map(admin => admin.uid);
       
       if (superAdminIds.length === 0) {
         return [];
@@ -283,6 +283,25 @@ export function AuthProvider({ children }) {
       return tournaments;
     } catch (error) {
       console.error('Error fetching super admin tournaments:', error);
+      return [];
+    }
+  }
+
+  // Get all tournaments in the database (super admin only)
+  async function getAllTournaments() {
+    try {
+      const tournamentsRef = collection(db, 'tournaments');
+      const q = query(tournamentsRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      
+      const tournaments = [];
+      querySnapshot.forEach((doc) => {
+        tournaments.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return tournaments;
+    } catch (error) {
+      console.error('Error fetching all tournaments:', error);
       return [];
     }
   }
@@ -321,13 +340,17 @@ export function AuthProvider({ children }) {
 
   // Check if current user is super admin
   function isSuperAdmin() {
-    // Hardcoded super admin email
-    if (currentUser?.email === 'siddharth@318digital.com') {
+    // Check if user has super_admin role in database
+    if (currentUser?.role === 'super_admin') {
       return true;
     }
     
-    // If no role is set, assume super admin for existing users (backward compatibility)
-    return currentUser?.role === 'super_admin' || (!currentUser?.role && currentUser);
+    // Backward compatibility: if no role is set for siddharth@318digital.com, assume super admin
+    if (currentUser?.email === 'siddharth@318digital.com' && !currentUser?.role) {
+      return true;
+    }
+    
+    return false;
   }
 
   // Check if current user is team admin
@@ -370,7 +393,31 @@ export function AuthProvider({ children }) {
         try {
           // Get additional user data from Firestore
           const userProfile = await getUserProfile(user.uid);
-          setCurrentUser({ ...user, ...userProfile });
+          const userData = { ...user, ...userProfile };
+          setCurrentUser(userData);
+          
+          // Ensure original superadmin has proper role set
+          if (user.email === 'siddharth@318digital.com' && !userProfile?.role) {
+            try {
+              await setDoc(doc(db, 'users', user.uid), {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || user.email,
+                photoURL: user.photoURL || '',
+                role: 'super_admin',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }, { merge: true });
+              
+              console.log('Original superadmin role set successfully');
+              
+              // Refresh user data
+              const updatedUserProfile = await getUserProfile(user.uid);
+              setCurrentUser({ ...user, ...updatedUserProfile });
+            } catch (roleError) {
+              console.error('Error setting original superadmin role:', roleError);
+            }
+          }
         } catch (error) {
           console.log('Firestore not available yet, using basic user data:', error.message);
           // If Firestore is not available, just use the basic user data
@@ -400,6 +447,7 @@ export function AuthProvider({ children }) {
     createSuperAdmin,
     getSuperAdmins,
     getAllSuperAdminTournaments,
+    getAllTournaments,
     changePassword
   };
 

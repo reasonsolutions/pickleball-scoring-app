@@ -42,7 +42,7 @@ export default function TournamentCard({ tournament }) {
 
   const handleDeleteTournament = async (e) => {
     e.stopPropagation(); // Prevent card click navigation
-    if (!tournament || !currentUser || tournament.createdBy !== currentUser.uid) {
+    if (!tournament || !currentUser || (!isOwner && !isSuperAdmin())) {
       return;
     }
 
@@ -71,6 +71,7 @@ export default function TournamentCard({ tournament }) {
   };
 
   const isOwner = tournament && currentUser && tournament.createdBy === currentUser.uid;
+  const canManage = isOwner || isSuperAdmin(); // Super admins can manage all tournaments
 
   return (
     <div className="card shadow-xl hover:shadow-2xl transition-shadow card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
@@ -152,7 +153,7 @@ export default function TournamentCard({ tournament }) {
               >
                 View Details
               </button>
-              {isOwner && (
+              {canManage && (
                 <>
                   <button
                     className="btn btn-outline btn-sm"

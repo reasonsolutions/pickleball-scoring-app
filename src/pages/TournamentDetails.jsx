@@ -98,7 +98,7 @@ export default function TournamentDetails() {
   };
 
   const handleDeleteTournament = async () => {
-    if (!tournament || !currentUser || (!isOwner && !isSuperAdminOwner)) {
+    if (!tournament || !currentUser || (!isOwner && !isSuperAdminOwner && !isSuperAdminWithFullAccess)) {
       return;
     }
 
@@ -131,7 +131,8 @@ export default function TournamentDetails() {
 
   const isOwner = tournament && currentUser && tournament.createdBy === currentUser.uid;
   const isSuperAdminOwner = tournament && currentUser && isSuperAdmin() && superAdminIds.includes(tournament.createdBy);
-  const canManage = isOwner || isSuperAdminOwner;
+  const isSuperAdminWithFullAccess = tournament && currentUser && isSuperAdmin(); // Super admins can manage ALL tournaments
+  const canManage = isOwner || isSuperAdminOwner || isSuperAdminWithFullAccess;
 
   if (loading) {
     return (

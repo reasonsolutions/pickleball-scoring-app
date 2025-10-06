@@ -242,10 +242,17 @@ service cloud.firestore {
     
     // Enhanced function to check if current user is super admin
     function isSuperAdminSimple() {
-      // Check hardcoded super admin email for backward compatibility OR custom claims role
+      // Check hardcoded super admin email for backward compatibility OR database role
       return request.auth != null &&
              (request.auth.token.email == 'siddharth@318digital.com' ||
-              request.auth.token.role == 'super_admin');
+              isSuperAdminFromDatabase());
+    }
+    
+    // Function to check if user has super_admin role in database
+    function isSuperAdminFromDatabase() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
     }
     
     // Function to validate user data structure for super admin creation

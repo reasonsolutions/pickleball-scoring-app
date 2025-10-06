@@ -48,12 +48,19 @@ export default function NewsManagement() {
 
     setSaving(true);
     try {
-      await addDoc(collection(db, 'news'), {
-        ...newArticle,
+      // Ensure all required fields are present and properly formatted
+      const articleData = {
+        title: newArticle.title,
+        subtext: newArticle.subtext,
         publishDate: new Date(newArticle.publishDate),
+        description: newArticle.description || '',
+        featuredImage: newArticle.featuredImage || null,
+        featured: newArticle.featured || false,
         createdAt: new Date(),
         updatedAt: new Date()
-      });
+      };
+
+      await addDoc(collection(db, 'news'), articleData);
       
       setNewArticle({
         title: '',
@@ -79,15 +86,18 @@ export default function NewsManagement() {
 
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'news', editingArticle.id), {
+      // Ensure all required fields are present and properly formatted
+      const updateData = {
         title: editingArticle.title,
         subtext: editingArticle.subtext,
-        description: editingArticle.description,
-        featuredImage: editingArticle.featuredImage,
+        description: editingArticle.description || '',
+        featuredImage: editingArticle.featuredImage || null,
         publishDate: new Date(editingArticle.publishDate),
-        featured: editingArticle.featured,
+        featured: editingArticle.featured || false,
         updatedAt: new Date()
-      });
+      };
+
+      await updateDoc(doc(db, 'news', editingArticle.id), updateData);
       
       setEditingArticle(null);
       fetchNews();
