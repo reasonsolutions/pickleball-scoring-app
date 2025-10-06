@@ -10,7 +10,7 @@ export default function MyTournaments() {
   const [activeTab, setActiveTab] = useState('current');
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { currentUser, isSuperAdmin, isTeamAdmin } = useAuth();
+  const { currentUser, isSuperAdmin, isTeamAdmin, getAllSuperAdminTournaments } = useAuth();
 
   useEffect(() => {
     if (!currentUser) return;
@@ -20,26 +20,15 @@ export default function MyTournaments() {
         setLoading(true);
         
         if (isSuperAdmin()) {
-          // Super admins see tournaments they created
-          const q = query(
-            collection(db, 'tournaments'),
-            where('createdBy', '==', currentUser.uid),
-            orderBy('createdAt', 'desc')
-          );
-
-          const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const tournamentsData = [];
-            querySnapshot.forEach((doc) => {
-              tournamentsData.push({
-                id: doc.id,
-                ...doc.data()
-              });
-            });
-            setTournaments(tournamentsData);
+          // Super admins see all tournaments created by any super admin
+          try {
+            const allSuperAdminTournaments = await getAllSuperAdminTournaments();
+            setTournaments(allSuperAdminTournaments);
             setLoading(false);
-          });
-
-          return unsubscribe;
+          } catch (error) {
+            console.error('Error fetching super admin tournaments:', error);
+            setLoading(false);
+          }
         } else if (isTeamAdmin()) {
           // Team admins see the tournament they're associated with
           if (currentUser.tournamentId) {

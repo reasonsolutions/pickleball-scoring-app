@@ -891,7 +891,7 @@ export default function MatchDetails() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Match Type:</span>
-                  <span className="font-medium">{match.matchTypeLabel || match.matchType || 'Singles'}</span>
+                  <span className="font-medium">{(match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel) || match.matchType || 'Singles'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Games:</span>

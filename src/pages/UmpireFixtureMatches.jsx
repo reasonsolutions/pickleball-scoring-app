@@ -209,7 +209,7 @@ export default function UmpireFixtureMatches() {
                   {/* Match Type and Time */}
                   <div className="text-center mb-4">
                     <div className="badge badge-primary badge-lg mb-2">
-                      {match.matchTypeLabel || 'Match'}
+                      {(match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel) || 'Match'}
                     </div>
                     <div className="text-base-content/70">{formatTime(match.time)}</div>
                   </div>

@@ -24,11 +24,12 @@ export default function ProtectedRoute({ children, requiredRole = null }) {
   // Role-based route restrictions
   const path = location.pathname;
   
-  // Team admins can only access fixtures routes
+  // Team admins can only access fixtures routes and settings
   if (isTeamAdmin()) {
     const allowedPaths = [
       '/admin/fixtures',
-      '/admin/tournaments'
+      '/admin/tournaments',
+      '/admin/settings'
     ];
     
     const isAllowedPath = allowedPaths.some(allowedPath =>

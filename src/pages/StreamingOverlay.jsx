@@ -210,8 +210,8 @@ export default function StreamingOverlay() {
       case 'thirdplace': return 'Third Place';
       case 'third-place': return 'Third Place';
       case 'final': return 'Final';
-      case 'dreambreaker': return 'DreamBreaker';
-      case 'minidreambreaker': return 'Mini DreamBreaker';
+      case 'dreambreaker': return 'Game Breaker';
+      case 'minidreambreaker': return 'Mini Game Breaker';
       case 'roundrobin': return 'Round Robin';
       case 'custom': return 'Custom';
       case 'playoff': return 'Playoff';
@@ -403,8 +403,8 @@ export default function StreamingOverlay() {
                     return formatFixtureType(fixtureContext.stage);
                   }
                   
-                  // If we can't determine the context, show as Mini DreamBreaker
-                  return 'Mini DreamBreaker';
+                  // If we can't determine the context, show as Mini Game Breaker
+                  return 'Mini Game Breaker';
                 }
                 
                 // Priority 5: Check other possible tournament stage fields
@@ -441,7 +441,7 @@ export default function StreamingOverlay() {
             {/* Match Type */}
             <div className="bg-red-600 text-white px-4 sm:px-5 lg:px-6 py-1 sm:py-2 rounded-full shadow-lg border border-red-700">
               <span className="text-sm sm:text-base lg:text-lg font-bold">
-                {match.matchTypeLabel || match.matchType || 'Match'}
+                {(match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel) || match.matchType || 'Match'}
               </span>
             </div>
           </div>

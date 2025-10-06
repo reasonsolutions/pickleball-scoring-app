@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { uploadPlayerPhoto, uploadTeamLogo } from '../utils/cloudinary';
+import { uploadPlayerPhoto, uploadTeamLogo, uploadNewsImage } from '../utils/cloudinary';
 
 export default function CloudinaryImageUpload({ onImageUpload, currentImage, className = "", label = "Player Photo", uploadType = "player" }) {
   const [uploading, setUploading] = useState(false);
@@ -30,14 +30,18 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
 
       // Upload to Cloudinary using appropriate function
       try {
-        const uploadFunction = uploadType === 'team' ? uploadTeamLogo : uploadPlayerPhoto;
+        let uploadFunction;
+        if (uploadType === 'team') {
+          uploadFunction = uploadTeamLogo;
+        } else if (uploadType === 'news') {
+          uploadFunction = uploadNewsImage;
+        } else {
+          uploadFunction = uploadPlayerPhoto;
+        }
         const result = await uploadFunction(file);
         
-        // Call parent callback with the result
-        onImageUpload({
-          url: result.url,
-          publicId: result.publicId
-        });
+        // Call parent callback with the full Cloudinary result
+        onImageUpload(result);
         
         // Update preview with the actual Cloudinary URL
         setPreview(result.url);
@@ -45,7 +49,14 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
         console.error('Cloudinary upload failed:', uploadError);
         
         // Show more specific error message
-        const imageType = uploadType === 'team' ? 'team logo' : 'player photo';
+        let imageType;
+        if (uploadType === 'team') {
+          imageType = 'team logo';
+        } else if (uploadType === 'news') {
+          imageType = 'news image';
+        } else {
+          imageType = 'player photo';
+        }
         if (uploadError.message.includes('Invalid upload preset')) {
           alert(`Cloudinary upload preset not configured. Please set up an unsigned upload preset named "player_photos" in your Cloudinary dashboard.`);
         } else if (uploadError.message.includes('Upload failed')) {
@@ -84,8 +95,8 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
           <div className="w-32 h-32 mx-auto">
             <img
               src={preview}
-              alt={`${uploadType === 'team' ? 'Team logo' : 'Player photo'} preview`}
-              className={`w-full h-full object-cover border-4 border-base-300 ${uploadType === 'team' ? 'rounded-lg' : 'rounded-full'}`}
+              alt={`${uploadType === 'team' ? 'Team logo' : uploadType === 'news' ? 'News image' : 'Player photo'} preview`}
+              className={`w-full h-full object-cover border-4 border-base-300 ${uploadType === 'team' || uploadType === 'news' ? 'rounded-lg' : 'rounded-full'}`}
             />
           </div>
           <div className="flex justify-center gap-2 mt-3">
@@ -122,10 +133,14 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
         </div>
       ) : (
         <div className="flex flex-col items-center">
-          <label className={`w-32 h-32 border-2 border-dashed border-base-300 ${uploadType === 'team' ? 'rounded-lg' : 'rounded-full'} flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors`}>
+          <label className={`w-32 h-32 border-2 border-dashed border-base-300 ${uploadType === 'team' || uploadType === 'news' ? 'rounded-lg' : 'rounded-full'} flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors`}>
             {uploadType === 'team' ? (
               <svg className="w-8 h-8 text-base-content/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            ) : uploadType === 'news' ? (
+              <svg className="w-8 h-8 text-base-content/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             ) : (
               <svg className="w-8 h-8 text-base-content/40 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

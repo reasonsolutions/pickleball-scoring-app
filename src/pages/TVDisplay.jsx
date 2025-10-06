@@ -337,9 +337,9 @@ export default function TVDisplay() {
       const matchType = fixture.matchTypeLabel || fixture.matchType || '';
       const lowerMatchType = matchType.toLowerCase();
       
-      // Dream Breaker match - should be in 5th column
+      // Game Breaker match - should be in 5th column
       if (lowerMatchType.includes("dream breaker") || lowerMatchType.includes("dreambreaker")) {
-        return 4; // Dream Breaker (5th column)
+        return 4; // Game Breaker (5th column)
       }
       
       // Men's Doubles variations
@@ -365,7 +365,7 @@ export default function TVDisplay() {
       return 99; // Unknown match types go to the end
     };
 
-    // Check if this group has dream breaker matches
+    // Check if this group has game breaker matches
     const hasDreamBreaker = group.matches.some(match => {
       const matchType = match.matchTypeLabel || match.matchType || '';
       const lowerMatchType = matchType.toLowerCase();
@@ -633,14 +633,14 @@ export default function TVDisplay() {
                     {/* Match Type Header */}
                     <div className="text-center mb-4">
                       <div className="bg-gray-700 text-white px-3 py-1 rounded text-sm font-bold">
-                        {fixture ? (fixture.matchTypeLabel || fixture.matchType || 'MATCH') : 'MATCH'}
+                        {fixture ? ((fixture.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixture.matchTypeLabel) || fixture.matchType || 'MATCH') : 'MATCH'}
                       </div>
                     </div>
 
                     {fixture ? (
                       <>
                         {(() => {
-                          // Check if this is a dream breaker match
+                          // Check if this is a game breaker match
                           const matchType = fixture.matchTypeLabel || fixture.matchType || '';
                           const lowerMatchType = matchType.toLowerCase();
                           const isDreamBreaker = lowerMatchType.includes("dream breaker") || lowerMatchType.includes("dreambreaker");

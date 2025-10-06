@@ -8,12 +8,13 @@ import MainLayout from '../components/MainLayout';
 export default function TournamentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, isSuperAdmin, isTeamAdmin } = useAuth();
+  const { currentUser, isSuperAdmin, isTeamAdmin, getSuperAdmins } = useAuth();
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [superAdminIds, setSuperAdminIds] = useState([]);
 
   useEffect(() => {
     const fetchTournament = async () => {
@@ -32,10 +33,22 @@ export default function TournamentDetails() {
       }
     };
 
+    const fetchSuperAdmins = async () => {
+      if (isSuperAdmin()) {
+        try {
+          const superAdmins = await getSuperAdmins();
+          setSuperAdminIds(superAdmins.map(admin => admin.id));
+        } catch (error) {
+          console.error('Error fetching super admins:', error);
+        }
+      }
+    };
+
     if (id) {
       fetchTournament();
+      fetchSuperAdmins();
     }
-  }, [id]);
+  }, [id, isSuperAdmin, getSuperAdmins]);
 
   const formatDate = (date) => {
     if (!date) return 'TBD';
@@ -85,7 +98,7 @@ export default function TournamentDetails() {
   };
 
   const handleDeleteTournament = async () => {
-    if (!tournament || !currentUser || tournament.createdBy !== currentUser.uid) {
+    if (!tournament || !currentUser || (!isOwner && !isSuperAdminOwner)) {
       return;
     }
 
@@ -117,6 +130,8 @@ export default function TournamentDetails() {
   };
 
   const isOwner = tournament && currentUser && tournament.createdBy === currentUser.uid;
+  const isSuperAdminOwner = tournament && currentUser && isSuperAdmin() && superAdminIds.includes(tournament.createdBy);
+  const canManage = isOwner || isSuperAdminOwner;
 
   if (loading) {
     return (
@@ -217,8 +232,8 @@ export default function TournamentDetails() {
               </div>
             </div>
 
-            {/* Management Actions - Only show to tournament owner */}
-            {isOwner && (
+            {/* Management Actions - Show to tournament owner or superadmin */}
+            {canManage && (
               <div className="card bg-base-100 shadow-xl">
                 <div className="card-body">
                   <h2 className="card-title text-xl mb-4">Tournament Management</h2>
@@ -265,16 +280,21 @@ export default function TournamentDetails() {
                     <div className="font-semibold">{formatDate(tournament.endDate)}</div>
                   </div>
                   
-                  <div>
-                    <div className="text-sm text-base-content/60 uppercase tracking-wide mb-1">Prize Money</div>
-                    <div className="font-semibold text-success text-lg">{formatCurrency(tournament.prizeMoney)}</div>
-                  </div>
-                  
-                  {tournament.registrationFee > 0 && (
-                    <div>
-                      <div className="text-sm text-base-content/60 uppercase tracking-wide mb-1">Registration Fee</div>
-                      <div className="font-semibold">{formatCurrency(tournament.registrationFee)}</div>
-                    </div>
+                  {/* Prize Money and Registration Fee - Hidden for Team Admins */}
+                  {!isTeamAdmin() && (
+                    <>
+                      <div>
+                        <div className="text-sm text-base-content/60 uppercase tracking-wide mb-1">Prize Money</div>
+                        <div className="font-semibold text-success text-lg">{formatCurrency(tournament.prizeMoney)}</div>
+                      </div>
+                      
+                      {tournament.registrationFee > 0 && (
+                        <div>
+                          <div className="text-sm text-base-content/60 uppercase tracking-wide mb-1">Registration Fee</div>
+                          <div className="font-semibold">{formatCurrency(tournament.registrationFee)}</div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -285,7 +305,7 @@ export default function TournamentDetails() {
               <div className="card-body">
                 <h3 className="card-title text-lg mb-4">Actions</h3>
                 <div className="space-y-3">
-                  {isOwner ? (
+                  {canManage ? (
                     <>
                       <button
                         className="btn btn-outline w-full"

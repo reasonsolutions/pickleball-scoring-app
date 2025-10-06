@@ -5,15 +5,17 @@ import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('WD');
   const [selectedTournament, setSelectedTournament] = useState('');
   const [tournaments, setTournaments] = useState([]);
   const [matches, setMatches] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
   const [currentTournament, setCurrentTournament] = useState(null);
+  const [teamsWithStats, setTeamsWithStats] = useState([]);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [featuredVideos, setFeaturedVideos] = useState([]);
+  const [news, setNews] = useState([]);
+  const [featuredArticles, setFeaturedArticles] = useState([]);
 
   // Fetch tournaments from Firebase
   useEffect(() => {
@@ -84,6 +86,121 @@ export default function Home() {
 
     fetchTournamentAndTeams();
   }, [selectedTournament]);
+
+  // Fetch team statistics for rankings display
+  useEffect(() => {
+    if (!selectedTournament || teams.length === 0) {
+      setTeamsWithStats([]);
+      return;
+    }
+
+    const fetchTeamStats = async () => {
+      try {
+        // Fetch matches to calculate team statistics
+        const matchesQuery = query(
+          collection(db, 'fixtures'),
+          where('tournamentId', '==', selectedTournament)
+        );
+        const matchesSnapshot = await getDocs(matchesQuery);
+        const matchesData = matchesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Calculate team statistics
+        const teamStats = teams.map(team => {
+          const teamMatches = matchesData.filter(match =>
+            match.team1 === team.id || match.team2 === team.id
+          );
+
+          let battleWins = 0;
+          let battleLosses = 0;
+          let points = 0;
+          let gameWins = 0;
+          let gameLosses = 0;
+
+          teamMatches.forEach(match => {
+            if (match.scores && match.status === 'completed') {
+              const isTeam1 = match.team1 === team.id;
+              const team1Scores = match.scores.player1 || {};
+              const team2Scores = match.scores.player2 || {};
+              
+              let team1Games = 0;
+              let team2Games = 0;
+
+              // Count games won
+              for (let i = 1; i <= (match.gamesCount || 3); i++) {
+                const gameKey = `game${i}`;
+                const team1Score = parseInt(team1Scores[gameKey]) || 0;
+                const team2Score = parseInt(team2Scores[gameKey]) || 0;
+                
+                if (team1Score > team2Score) {
+                  team1Games++;
+                } else if (team2Score > team1Score) {
+                  team2Games++;
+                }
+              }
+
+              // Determine match winner
+              const team1Won = team1Games > team2Games;
+              const team2Won = team2Games > team1Games;
+              
+              if (isTeam1) {
+                gameWins += team1Games;
+                gameLosses += team2Games;
+                
+                if (team1Won) {
+                  battleWins++;
+                  points += 3; // 3 points for a win
+                } else if (team2Won) {
+                  battleLosses++;
+                  if (team1Games > 0) {
+                    points += 1; // 1 point for losing but winning at least one game
+                  }
+                }
+              } else {
+                gameWins += team2Games;
+                gameLosses += team1Games;
+                
+                if (team2Won) {
+                  battleWins++;
+                  points += 3; // 3 points for a win
+                } else if (team1Won) {
+                  battleLosses++;
+                  if (team2Games > 0) {
+                    points += 1; // 1 point for losing but winning at least one game
+                  }
+                }
+              }
+            }
+          });
+
+          return {
+            ...team,
+            battleWins,
+            battleLosses,
+            points,
+            gameWins,
+            gameLosses
+          };
+        });
+
+        // Sort teams by points (descending), then by battle wins, then by games difference
+        teamStats.sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          if (b.battleWins !== a.battleWins) return b.battleWins - a.battleWins;
+          return (b.gameWins - b.gameLosses) - (a.gameWins - a.gameLosses);
+        });
+
+        setTeamsWithStats(teamStats);
+      } catch (error) {
+        console.error('Error fetching team statistics:', error);
+        setTeamsWithStats([]);
+      }
+    };
+
+    fetchTeamStats();
+  }, [selectedTournament, teams]);
 
   // Real-time listener for matches in selected tournament
   useEffect(() => {
@@ -227,34 +344,61 @@ export default function Home() {
     fetchPlayersAndMatches();
   }, [selectedTournament, selectedTeam]);
 
-  // Fetch fixtures with YouTube URLs for featured videos
+  // Fetch featured videos from admin-managed collection
   useEffect(() => {
     const fetchFeaturedVideos = async () => {
       try {
-        const fixturesRef = collection(db, 'fixtures');
-        const videosQuery = query(
-          fixturesRef,
-          where('youtubeUrl', '!=', ''),
-          orderBy('youtubeUrl'),
+        // First try to fetch from admin-managed featured videos
+        const featuredVideosQuery = query(
+          collection(db, 'featuredVideos'),
           orderBy('createdAt', 'desc'),
           limit(3)
         );
         
-        const snapshot = await getDocs(videosQuery);
-        const videosData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            player1Name: data.player1Team1 || data.team1Name || 'Team 1',
-            player2Name: data.player1Team2 || data.team2Name || 'Team 2',
-            tournamentName: tournaments.find(t => t.id === data.tournamentId)?.name ||
-                           tournaments.find(t => t.id === data.tournamentId)?.tournamentName ||
-                           'Tournament Match'
-          };
-        });
+        const featuredSnapshot = await getDocs(featuredVideosQuery);
         
-        setFeaturedVideos(videosData);
+        if (featuredSnapshot.docs.length > 0) {
+          // Use admin-managed videos
+          const videosData = featuredSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: data.title,
+              youtubeUrl: data.youtubeUrl,
+              description: data.description,
+              videoId: data.videoId,
+              player1Name: data.title, // Use title as display name
+              player2Name: '', // No opponent for admin videos
+              tournamentName: data.description || 'Featured Video'
+            };
+          });
+          setFeaturedVideos(videosData);
+        } else {
+          // Fallback to fixtures with YouTube URLs if no admin videos exist
+          const fixturesRef = collection(db, 'fixtures');
+          const fixturesQuery = query(
+            fixturesRef,
+            where('youtubeUrl', '!=', ''),
+            orderBy('youtubeUrl'),
+            orderBy('createdAt', 'desc'),
+            limit(3)
+          );
+          
+          const fixturesSnapshot = await getDocs(fixturesQuery);
+          const videosData = fixturesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              player1Name: data.player1Team1 || data.team1Name || 'Team 1',
+              player2Name: data.player1Team2 || data.team2Name || 'Team 2',
+              tournamentName: tournaments.find(t => t.id === data.tournamentId)?.name ||
+                             tournaments.find(t => t.id === data.tournamentId)?.tournamentName ||
+                             'Tournament Match'
+            };
+          });
+          setFeaturedVideos(videosData);
+        }
       } catch (error) {
         console.error('Error fetching featured videos:', error);
         // Fallback to empty array if there's an error
@@ -262,11 +406,80 @@ export default function Home() {
       }
     };
 
-    // Only fetch when tournaments are loaded
-    if (tournaments.length > 0) {
-      fetchFeaturedVideos();
-    }
+    fetchFeaturedVideos();
   }, [tournaments]);
+
+  // Fetch news from admin-managed collection
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const newsQuery = query(
+          collection(db, 'news'),
+          orderBy('publishDate', 'desc'),
+          limit(6)
+        );
+        
+        const snapshot = await getDocs(newsQuery);
+        const newsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setNews(newsData);
+      } catch (error) {
+        console.error('Error fetching news:', error);
+        setNews([]);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  // Fetch featured articles from admin-managed collection
+  useEffect(() => {
+    const fetchFeaturedArticles = async () => {
+      try {
+        const featuredQuery = query(
+          collection(db, 'news'),
+          where('featured', '==', true),
+          orderBy('publishDate', 'desc'),
+          limit(2)
+        );
+        
+        const snapshot = await getDocs(featuredQuery);
+        const featuredData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setFeaturedArticles(featuredData);
+      } catch (error) {
+        console.error('Error fetching featured articles:', error);
+        
+        // Fallback: try to get featured articles without orderBy (in case index is still building)
+        try {
+          const fallbackQuery = query(
+            collection(db, 'news'),
+            where('featured', '==', true),
+            limit(2)
+          );
+          
+          const fallbackSnapshot = await getDocs(fallbackQuery);
+          const fallbackData = fallbackSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          setFeaturedArticles(fallbackData);
+        } catch (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          setFeaturedArticles([]);
+        }
+      }
+    };
+
+    fetchFeaturedArticles();
+  }, []);
 
   // Helper function to extract YouTube video ID
   const extractVideoId = (url) => {
@@ -287,23 +500,6 @@ export default function Home() {
     return null;
   };
 
-  // Dummy data for leaderboard
-  const leaderboardData = {
-    WD: [
-      { rank: 1, name: 'B. Johns', area: 'HYD', points: 16500, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
-      { rank: 2, name: 'F. Staksrud', area: 'HYD', points: 14200, avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face' },
-      { rank: 3, name: 'H. Patriquin', area: 'HYD', points: 13800, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' },
-      { rank: 4, name: 'G. Tardio', area: 'HYD', points: 13300, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face' },
-      { rank: 5, name: 'A. Daescu', area: 'HYD', points: 12400, avatar: 'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=100&h=100&fit=crop&crop=face' },
-      { rank: 6, name: 'C. Alshon', area: 'HYD', points: 11250, avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face' },
-      { rank: 7, name: 'J. Johnson', area: 'HYD', points: 10000, avatar: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=100&h=100&fit=crop&crop=face' },
-      { rank: 8, name: 'C. Klinger', area: 'HYD', points: 9000, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face' },
-      { rank: 9, name: 'C. Johns', area: 'HYD', points: 8750, avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face' },
-      { rank: 10, name: 'D. Frazier', area: 'HYD', points: 7550, avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face' }
-    ]
-  };
-
-  const tabs = ['WD', 'WS', 'WX', 'MX', 'MD', 'MS'];
 
   // Scroll functions for live scores
   const scrollLeft = () => {
@@ -590,68 +786,66 @@ export default function Home() {
       {/* Main Content Grid */}
       <div className="py-8">
         <div className="grid-4-col px-4">
-          {/* Left Sidebar - Leaderboard */}
+          {/* Left Sidebar - Team Rankings */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Leaderboard</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Team Rankings</h2>
             
-            {/* Tabs */}
-            <div className="leaderboard-tabs">
-              {tabs.map(tab => (
-                <button
-                  key={tab}
-                  className={`leaderboard-tab ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {/* Leaderboard Table */}
+            {/* Rankings Table */}
             <div className="space-y-3">
-              <div className="grid grid-cols-4 gap-2 text-sm font-semibold text-gray-600 pb-2 border-b">
+              <div className="grid gap-2 text-sm font-semibold text-gray-600 pb-2 border-b" style={{gridTemplateColumns: '60px 1fr 80px'}}>
                 <span>Rank</span>
-                <span>Player</span>
-                <span>Area</span>
+                <span>Team</span>
                 <span>Points</span>
               </div>
-              {leaderboardData[activeTab]?.map((player) => (
-                <div key={player.rank} className="grid grid-cols-4 gap-2 items-center py-2 hover:bg-gray-50 rounded">
-                  <span className="font-semibold text-gray-900">{player.rank}</span>
-                  <div className="flex items-center space-x-2">
-                    <img src={player.avatar} alt={player.name} className="player-avatar" />
-                    <span className="text-sm font-medium text-gray-900">{player.name}</span>
+              {teamsWithStats.slice(0, 8).map((team, index) => (
+                <div key={team.id} className="grid gap-2 items-center py-2 hover:bg-gray-50 rounded" style={{gridTemplateColumns: '60px 1fr 80px'}}>
+                  <span className="text-sm font-bold text-orange-600">#{index + 1}</span>
+                  <div className="flex items-center space-x-2 min-w-0">
+                    {team.logo?.url ? (
+                      <img src={team.logo.url} alt={team.name} className="w-8 h-8 rounded-full flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-gray-600">
+                          {team.name?.charAt(0) || 'T'}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm font-medium text-gray-900">{team.name}</span>
                   </div>
-                  <span className="text-sm text-gray-600">{player.area}</span>
-                  <span className="text-sm font-semibold text-gray-900">{player.points.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-gray-900">{team.points || 0}</span>
                 </div>
               ))}
+              {teamsWithStats.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No team data available
+                </div>
+              )}
             </div>
 
-            <Link to="/leaderboard" className="block text-center mt-4 text-orange-600 hover:text-orange-700 font-medium">
-              View Full Leaderboard
+            <Link to="/rankings" className="block text-center mt-4 text-orange-600 hover:text-orange-700 font-medium">
+              View Full Rankings
             </Link>
 
             {/* Social Media */}
             <div className="mt-8 pt-6 border-t">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Follow us</h3>
               <div className="flex space-x-4">
-                <a href="#" className="social-icon hover:text-orange-500">
+                <a
+                  href="https://www.instagram.com/hyderabadpickleballleague"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-icon hover:text-orange-500"
+                >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
                 </a>
-                <a href="#" className="social-icon hover:text-orange-500">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                  </svg>
-                </a>
-                <a href="#" className="social-icon hover:text-orange-500">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
-                  </svg>
-                </a>
-                <a href="#" className="social-icon hover:text-orange-500">
+                <a
+                  href="https://www.youtube.com/@centrecourtsports"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-icon hover:text-orange-500"
+                >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                   </svg>
@@ -660,76 +854,146 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Center Content - Quick Access */}
+
+          {/* Center Content - Featured Articles */}
           <div>
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <div className="flex items-center mb-4">
-                <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <h2 className="text-xl font-bold text-gray-900">Quick Access</h2>
-              </div>
-              <img 
-                src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=400&fit=crop" 
-                alt="Pickleball players in action" 
-                className="w-full h-64 object-cover rounded-lg mb-4"
-              />
-            </div>
-
             {/* Featured Articles */}
-            <div className="featured-article">
-              <img 
-                src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=300&fit=crop" 
-                alt="Pickleball match"
-              />
-              <div className="article-content">
-                <h3 className="article-title">
-                  Johnson, Black hand Waters, Bright first loss in three-game battle
-                </h3>
-                <p className="article-excerpt">
-                  The Dallas Flash teammates overcame a Game 1 defeat to advance to their second Championship Sunday on the PPA Tour.
-                </p>
-                <div className="article-meta">
-                  <span>1 day ago</span>
-                  <span>•</span>
-                  <span>Will Daughton</span>
-                </div>
-              </div>
-            </div>
+            {featuredArticles.length > 0 ? (
+              featuredArticles.map((article) => {
+                // Calculate time ago
+                const getTimeAgo = (date) => {
+                  if (!date) return 'Unknown';
+                  
+                  const now = new Date();
+                  const publishDate = date.toDate ? date.toDate() : new Date(date);
+                  const diffInMs = now - publishDate;
+                  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+                  const diffInDays = Math.floor(diffInHours / 24);
+                  
+                  if (diffInDays > 0) {
+                    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+                  } else if (diffInHours > 0) {
+                    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+                  } else {
+                    return 'Just now';
+                  }
+                };
 
-            <div className="featured-article">
-              <img 
-                src="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&h=300&fit=crop" 
-                alt="Men's doubles final"
-              />
-              <div className="article-content">
-                <h3 className="article-title">
-                  Johns and Tardio, Alshon and Daescu book spots in men's doubles final
-                </h3>
-                <p className="article-excerpt">
-                  Two of the top men's doubles teams in the world will face off for the fourth time on Sunday with a gold medal on the line.
-                </p>
-                <div className="article-meta">
-                  <span>1 day ago</span>
-                  <span>•</span>
-                  <span>Will Daughton</span>
+                return (
+                  <Link key={article.id} to={`/news/${article.id}`} className="featured-article block hover:opacity-90 transition-opacity">
+                    <img
+                      src={typeof article.featuredImage === 'string'
+                        ? article.featuredImage
+                        : article.featuredImage?.secure_url || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=300&fit=crop"}
+                      alt={article.title}
+                    />
+                    <div className="article-content">
+                      <h3 className="article-title">
+                        {article.title}
+                      </h3>
+                      <p className="article-excerpt">
+                        {article.subtext}
+                      </p>
+                      <div className="article-meta">
+                        <span>{getTimeAgo(article.publishDate)}</span>
+                        <span>•</span>
+                        <span>Featured Article</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              // Fallback content when no featured articles exist
+              <>
+                <div className="featured-article">
+                  <img
+                    src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=300&fit=crop"
+                    alt="Pickleball match"
+                  />
+                  <div className="article-content">
+                    <h3 className="article-title">
+                      Johnson, Black hand Waters, Bright first loss in three-game battle
+                    </h3>
+                    <p className="article-excerpt">
+                      The Dallas Flash teammates overcame a Game 1 defeat to advance to their second Championship Sunday on the PPA Tour.
+                    </p>
+                    <div className="article-meta">
+                      <span>1 day ago</span>
+                      <span>•</span>
+                      <span>Will Daughton</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                <div className="featured-article">
+                  <img
+                    src="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&h=300&fit=crop"
+                    alt="Men's doubles final"
+                  />
+                  <div className="article-content">
+                    <h3 className="article-title">
+                      Johns and Tardio, Alshon and Daescu book spots in men's doubles final
+                    </h3>
+                    <p className="article-excerpt">
+                      Two of the top men's doubles teams in the world will face off for the fourth time on Sunday with a gold medal on the line.
+                    </p>
+                    <div className="article-meta">
+                      <span>1 day ago</span>
+                      <span>•</span>
+                      <span>Will Daughton</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Right Sidebar - Latest News */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-bold mb-4 text-gray-900">Latest news</h2>
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div key={item} className="news-item">
-                  <h4 className="font-medium text-gray-900 mb-1">
-                    Ankit Sharma Obtains NoC From Puducherry
-                  </h4>
-                  <p className="text-sm text-gray-500">13h ago</p>
-                </div>
-              ))}
+              {news.length > 0 ? (
+                news.map((article) => {
+                  // Calculate time ago
+                  const getTimeAgo = (date) => {
+                    if (!date) return 'Unknown';
+                    
+                    const now = new Date();
+                    const publishDate = date.toDate ? date.toDate() : new Date(date);
+                    const diffInMs = now - publishDate;
+                    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+                    const diffInDays = Math.floor(diffInHours / 24);
+                    
+                    if (diffInDays > 0) {
+                      return `${diffInDays}d ago`;
+                    } else if (diffInHours > 0) {
+                      return `${diffInHours}h ago`;
+                    } else {
+                      return 'Just now';
+                    }
+                  };
+
+                  return (
+                    <Link key={article.id} to={`/news/${article.id}`} className="news-item block hover:bg-gray-50 rounded p-2 -m-2 transition-colors">
+                      <h4 className="font-medium text-gray-900 mb-1 hover:text-orange-600">
+                        {article.title}
+                      </h4>
+                      <p className="text-sm text-gray-500">{getTimeAgo(article.publishDate)}</p>
+                    </Link>
+                  );
+                })
+              ) : (
+                // Fallback content when no admin news exists
+                [1, 2, 3, 4, 5, 6].map((item) => (
+                  <div key={item} className="news-item">
+                    <h4 className="font-medium text-gray-900 mb-1">
+                      Ankit Sharma Obtains NoC From Puducherry
+                    </h4>
+                    <p className="text-sm text-gray-500">13h ago</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -817,12 +1081,6 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Advertisement */}
-            <div className="ad-banner">
-              <h3 className="text-lg font-bold mb-2">Pickleball Australia</h3>
-              <p className="text-sm mb-3">JOINS THE DUPR FAMILY.</p>
-              <div className="text-2xl font-bold">DUPR</div>
-            </div>
           </div>
         </div>
       </div>

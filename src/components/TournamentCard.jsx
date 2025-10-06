@@ -105,18 +105,21 @@ export default function TournamentCard({ tournament }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Prize Money</div>
-            <div className="font-semibold" style={{ color: 'var(--success-green)' }}>{formatCurrency(tournament.prizeMoney)}</div>
-          </div>
-          {tournament.registrationFee && (
+        {/* Prize Money and Entry Fee - Hidden for Team Admins */}
+        {!isTeamAdmin() && (
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Entry Fee</div>
-              <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(tournament.registrationFee)}</div>
+              <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Prize Money</div>
+              <div className="font-semibold" style={{ color: 'var(--success-green)' }}>{formatCurrency(tournament.prizeMoney)}</div>
             </div>
-          )}
-        </div>
+            {tournament.registrationFee && (
+              <div>
+                <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Entry Fee</div>
+                <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(tournament.registrationFee)}</div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="card-actions justify-end">
           {isTeamAdmin() ? (

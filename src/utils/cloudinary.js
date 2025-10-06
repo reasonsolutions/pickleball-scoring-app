@@ -34,8 +34,10 @@ export const uploadPlayerPhoto = async (file) => {
     }
 
     return {
-      url: data.secure_url,
-      publicId: data.public_id
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
     };
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);
@@ -75,11 +77,56 @@ export const uploadTeamLogo = async (file) => {
     }
 
     return {
-      url: data.secure_url,
-      publicId: data.public_id
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
     };
   } catch (error) {
     console.error('Error uploading team logo to Cloudinary:', error);
+    throw error;
+  }
+};
+
+// Upload function for news featured images using unsigned upload
+export const uploadNewsImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/news');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading news image to Cloudinary:', error);
     throw error;
   }
 };

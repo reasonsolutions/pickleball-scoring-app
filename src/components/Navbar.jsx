@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
 import hplLogo from '../assets/hpl_logo.png';
 
 export default function Navbar() {
@@ -46,9 +45,6 @@ export default function Navbar() {
       <div className="navbar-end">
         {currentUser && (
           <>
-            <div className="mr-4">
-              <ThemeToggle />
-            </div>
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
               <div className="w-10 rounded-full">

@@ -6,9 +6,10 @@ import { db } from '../utils/firebase';
 import MainLayout from '../components/MainLayout';
 
 export default function Settings() {
-  const { currentUser, isSuperAdmin, getTeamAdmins, updateTeamAdminPassword, setSuperAdminRole } = useAuth();
+  const { currentUser, isSuperAdmin, isTeamAdmin, getTeamAdmins, updateTeamAdminPassword, setSuperAdminRole, createSuperAdmin, getSuperAdmins, changePassword } = useAuth();
   const navigate = useNavigate();
   const [teamAdmins, setTeamAdmins] = useState([]);
+  const [superAdmins, setSuperAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +19,20 @@ export default function Settings() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [settingRole, setSettingRole] = useState(false);
   
+  // Super admin creation state
+  const [showCreateSuperAdminModal, setShowCreateSuperAdminModal] = useState(false);
+  const [newSuperAdminEmail, setNewSuperAdminEmail] = useState('');
+  const [newSuperAdminPassword, setNewSuperAdminPassword] = useState('');
+  const [newSuperAdminDisplayName, setNewSuperAdminDisplayName] = useState('');
+  const [creatingSuperAdmin, setCreatingSuperAdmin] = useState(false);
+  
+  // Password change state
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  
   // Venue management state
   const [venues, setVenues] = useState([]);
   const [newVenueName, setNewVenueName] = useState('');
@@ -25,15 +40,26 @@ export default function Settings() {
   const [deletingVenue, setDeletingVenue] = useState(null);
 
   useEffect(() => {
-    // Redirect if not super admin
-    if (!isSuperAdmin()) {
+    // Wait for user data to be loaded before checking permissions
+    if (!currentUser) {
+      return;
+    }
+
+    // Allow both super admins and team admins to access settings
+    if (!isSuperAdmin() && !isTeamAdmin()) {
       navigate('/admin');
       return;
     }
 
-    fetchTeamAdmins();
-    fetchVenues();
-  }, [isSuperAdmin, navigate]);
+    // Only fetch admin data if user is super admin
+    if (isSuperAdmin()) {
+      fetchTeamAdmins();
+      fetchSuperAdmins();
+      fetchVenues();
+    } else {
+      setLoading(false);
+    }
+  }, [currentUser, isSuperAdmin, isTeamAdmin, navigate]);
 
   const fetchTeamAdmins = async () => {
     try {
@@ -45,6 +71,16 @@ export default function Settings() {
       setError('Failed to load team admins');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSuperAdmins = async () => {
+    try {
+      const admins = await getSuperAdmins();
+      setSuperAdmins(admins);
+    } catch (error) {
+      console.error('Error fetching super admins:', error);
+      setError('Failed to load super admins');
     }
   };
 
@@ -173,6 +209,115 @@ export default function Settings() {
     }
   };
 
+  const handleCreateSuperAdmin = async (e) => {
+    e.preventDefault();
+    if (!newSuperAdminEmail.trim() || !newSuperAdminPassword.trim()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setCreatingSuperAdmin(true);
+      setError('');
+      
+      const result = await createSuperAdmin(
+        newSuperAdminEmail.trim(),
+        newSuperAdminPassword.trim(),
+        newSuperAdminDisplayName.trim() || newSuperAdminEmail.trim()
+      );
+      
+      if (result.success) {
+        setSuccess('Super admin account created successfully!');
+        setShowCreateSuperAdminModal(false);
+        setNewSuperAdminEmail('');
+        setNewSuperAdminPassword('');
+        setNewSuperAdminDisplayName('');
+        fetchSuperAdmins(); // Refresh the list
+      } else {
+        setError(result.error || 'Failed to create super admin account');
+      }
+    } catch (error) {
+      console.error('Error creating super admin:', error);
+      setError('Failed to create super admin account');
+    } finally {
+      setCreatingSuperAdmin(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!currentPassword.trim() || !newUserPassword.trim() || !confirmPassword.trim()) {
+      setError('Please fill in all password fields');
+      return;
+    }
+
+    if (newUserPassword !== confirmPassword) {
+      setError('New password and confirmation do not match');
+      return;
+    }
+
+    if (newUserPassword.length < 6) {
+      setError('New password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      setError('');
+      
+      const result = await changePassword(currentPassword.trim(), newUserPassword.trim());
+      
+      if (result.success) {
+        setSuccess('Password changed successfully!');
+        setShowChangePasswordModal(false);
+        setCurrentPassword('');
+        setNewUserPassword('');
+        setConfirmPassword('');
+      } else {
+        setError(result.error || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setError('Failed to change password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const openCreateSuperAdminModal = () => {
+    setNewSuperAdminEmail('');
+    setNewSuperAdminPassword('');
+    setNewSuperAdminDisplayName('');
+    setShowCreateSuperAdminModal(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const closeCreateSuperAdminModal = () => {
+    setShowCreateSuperAdminModal(false);
+    setNewSuperAdminEmail('');
+    setNewSuperAdminPassword('');
+    setNewSuperAdminDisplayName('');
+    setError('');
+  };
+
+  const openChangePasswordModal = () => {
+    setCurrentPassword('');
+    setNewUserPassword('');
+    setConfirmPassword('');
+    setShowChangePasswordModal(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const closeChangePasswordModal = () => {
+    setShowChangePasswordModal(false);
+    setCurrentPassword('');
+    setNewUserPassword('');
+    setConfirmPassword('');
+    setError('');
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -190,7 +335,10 @@ export default function Settings() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Settings</h1>
           <p className="text-base-content/70 text-lg">
-            Manage team admin accounts and passwords
+            {isSuperAdmin()
+              ? "Manage super admin accounts, team admin accounts, and system settings"
+              : "Manage your account settings and change your password"
+            }
           </p>
         </div>
 
@@ -212,8 +360,8 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Role Management Section - Show if user doesn't have a role set */}
-        {currentUser && !currentUser.role && (
+        {/* Role Management Section - Show if user doesn't have a role set and is super admin */}
+        {currentUser && !currentUser.role && isSuperAdmin() && (
           <div className="card bg-base-100 shadow-xl mb-6">
             <div className="card-body">
               <h2 className="card-title text-2xl mb-4">Set Your Role</h2>
@@ -254,15 +402,90 @@ export default function Settings() {
                 </label>
                 <div className="text-lg">
                   <span className={`badge ${isSuperAdmin() ? 'badge-primary' : 'badge-secondary'} badge-lg`}>
-                    {currentUser?.role || 'Super Admin (Legacy)'}
+                    {currentUser?.role === 'team_admin' ? 'Team Admin' :
+                     currentUser?.role === 'super_admin' ? 'Super Admin' :
+                     'Super Admin (Legacy)'}
                   </span>
                 </div>
               </div>
             </div>
+            <div className="mt-4">
+              <button
+                className="btn btn-outline btn-primary"
+                onClick={openChangePasswordModal}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v-2H7v-2H4a1 1 0 01-1-1v-4c0-2.632 2.122-5.367 4.688-5.394A6 6 0 0117 9z" />
+                </svg>
+                Change My Password
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Venue Management Section */}
+        {/* Super Admin Management Section - Only for Super Admins */}
+        {isSuperAdmin() && (
+        <div className="card bg-base-100 shadow-xl mb-6">
+          <div className="card-body">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="card-title text-2xl">Super Admin Management</h2>
+              <button
+                className="btn btn-primary"
+                onClick={openCreateSuperAdminModal}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Super Admin
+              </button>
+            </div>
+            
+            {superAdmins.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-base-content/60 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No Super Admins Found</h3>
+                <p className="text-base-content/60">
+                  Create super admin accounts to manage the system.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Created</th>
+                      <th>Created By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {superAdmins.map((admin) => (
+                      <tr key={admin.id}>
+                        <td className="font-medium">{admin.displayName}</td>
+                        <td>{admin.email}</td>
+                        <td>
+                          {admin.createdAt ? new Date(admin.createdAt.seconds * 1000).toLocaleDateString() : '-'}
+                        </td>
+                        <td>
+                          {admin.createdBy === currentUser?.uid ? 'You' : (admin.createdBy ? 'Another Admin' : 'System')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+        )}
+
+        {/* Venue Management Section - Only for Super Admins */}
+        {isSuperAdmin() && (
         <div className="card bg-base-100 shadow-xl mb-6">
           <div className="card-body">
             <h2 className="card-title text-2xl mb-6">Venue Management</h2>
@@ -308,7 +531,7 @@ export default function Settings() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No Venues Added</h3>
                 <p className="text-base-content/60">
-                  Add venues where fixtures will be played. These will be available when creating DreamBreaker fixtures.
+                  Add venues where fixtures will be played. These will be available when creating Game Breaker fixtures.
                 </p>
               </div>
             ) : (
@@ -345,8 +568,10 @@ export default function Settings() {
             )}
           </div>
         </div>
+        )}
 
-        {/* Team Admins Section */}
+        {/* Team Admins Section - Only for Super Admins */}
+        {isSuperAdmin() && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-2xl mb-6">Team Admin Accounts</h2>
@@ -411,6 +636,7 @@ export default function Settings() {
             )}
           </div>
         </div>
+        )}
 
         {/* Password Update Modal */}
         {showPasswordModal && selectedAdmin && (
@@ -478,6 +704,163 @@ export default function Settings() {
                     disabled={updating || !newPassword.trim()}
                   >
                     {updating ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Create Super Admin Modal */}
+        {showCreateSuperAdminModal && (
+          <div className="modal modal-open">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg mb-4">
+                Create New Super Admin
+              </h3>
+              
+              <form onSubmit={handleCreateSuperAdmin} className="space-y-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Email *</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Enter email address"
+                    className="input input-bordered"
+                    value={newSuperAdminEmail}
+                    onChange={(e) => setNewSuperAdminEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Display Name</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter display name (optional)"
+                    className="input input-bordered"
+                    value={newSuperAdminDisplayName}
+                    onChange={(e) => setNewSuperAdminDisplayName(e.target.value)}
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">If not provided, email will be used as display name</span>
+                  </label>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Password *</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter password"
+                    className="input input-bordered"
+                    value={newSuperAdminPassword}
+                    onChange={(e) => setNewSuperAdminPassword(e.target.value)}
+                    required
+                    minLength="6"
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">Minimum 6 characters</span>
+                  </label>
+                </div>
+
+                <div className="modal-action">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={closeCreateSuperAdminModal}
+                    disabled={creatingSuperAdmin}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={`btn btn-primary ${creatingSuperAdmin ? 'loading' : ''}`}
+                    disabled={creatingSuperAdmin || !newSuperAdminEmail.trim() || !newSuperAdminPassword.trim()}
+                  >
+                    {creatingSuperAdmin ? 'Creating...' : 'Create Super Admin'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Change Password Modal */}
+        {showChangePasswordModal && (
+          <div className="modal modal-open">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg mb-4">
+                Change Your Password
+              </h3>
+              
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Current Password *</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter current password"
+                    className="input input-bordered"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">New Password *</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter new password"
+                    className="input input-bordered"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    required
+                    minLength="6"
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">Minimum 6 characters</span>
+                  </label>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Confirm New Password *</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    className="input input-bordered"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength="6"
+                  />
+                </div>
+
+                <div className="modal-action">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={closeChangePasswordModal}
+                    disabled={changingPassword}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={`btn btn-primary ${changingPassword ? 'loading' : ''}`}
+                    disabled={changingPassword || !currentPassword.trim() || !newUserPassword.trim() || !confirmPassword.trim()}
+                  >
+                    {changingPassword ? 'Changing...' : 'Change Password'}
                   </button>
                 </div>
               </form>

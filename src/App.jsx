@@ -26,6 +26,11 @@ import XmlFeed from './pages/XmlFeed';
 import StreamingOverlay from './pages/StreamingOverlay';
 import Rankings from './pages/Rankings';
 import Settings from './pages/Settings';
+import ContentManagement from './pages/ContentManagement';
+import Videos from './pages/Videos';
+import NewsArticle from './pages/NewsArticle';
+import Results from './pages/Results';
+import SuperAdminManagement from './pages/SuperAdminManagement';
 
 function App() {
   return (
@@ -39,6 +44,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<Home />} />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/videos" element={<Videos />} />
+            <Route path="/news/:id" element={<NewsArticle />} />
+            <Route path="/results" element={<Results />} />
             
             {/* Admin Dashboard - Protected Routes */}
             <Route path="/admin" element={
@@ -92,6 +100,18 @@ function App() {
             <Route path="/admin/settings" element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/content" element={
+              <ProtectedRoute>
+                <ContentManagement />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/super-admins" element={
+              <ProtectedRoute>
+                <SuperAdminManagement />
               </ProtectedRoute>
             } />
             

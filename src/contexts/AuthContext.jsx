@@ -5,7 +5,9 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  updatePassword
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
@@ -186,6 +188,137 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Create super admin account (super admin only)
+  async function createSuperAdmin(email, password, displayName) {
+    try {
+      // Store current user to restore later
+      const currentUserBackup = auth.currentUser;
+      
+      try {
+        // Create the user account
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Update profile with display name
+        await updateProfile(user, { displayName: displayName || email });
+        
+        // Create user document in Firestore with super admin role
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          displayName: displayName || email,
+          photoURL: user.photoURL || '',
+          role: 'super_admin',
+          createdAt: new Date(),
+          createdBy: currentUserBackup?.uid
+        });
+        
+        // Sign out the newly created user and restore the original user
+        await signOut(auth);
+        
+        console.log('Super admin account created successfully');
+        return { success: true, uid: user.uid };
+        
+      } catch (authError) {
+        if (authError.code === 'auth/email-already-in-use') {
+          return {
+            success: false,
+            error: 'An account with this email already exists. Please use a different email address.'
+          };
+        } else {
+          throw authError;
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error creating super admin account:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get all super admins (super admin only)
+  async function getSuperAdmins() {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('role', '==', 'super_admin'));
+      const querySnapshot = await getDocs(q);
+      
+      const superAdmins = [];
+      querySnapshot.forEach((doc) => {
+        superAdmins.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return superAdmins;
+    } catch (error) {
+      console.error('Error fetching super admins:', error);
+      return [];
+    }
+  }
+
+  // Get all tournaments created by super admins (super admin only)
+  async function getAllSuperAdminTournaments() {
+    try {
+      // First get all super admins
+      const superAdmins = await getSuperAdmins();
+      const superAdminIds = superAdmins.map(admin => admin.id);
+      
+      if (superAdminIds.length === 0) {
+        return [];
+      }
+      
+      // Get tournaments created by any super admin
+      const tournamentsRef = collection(db, 'tournaments');
+      const q = query(
+        tournamentsRef,
+        where('createdBy', 'in', superAdminIds),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      const tournaments = [];
+      querySnapshot.forEach((doc) => {
+        tournaments.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return tournaments;
+    } catch (error) {
+      console.error('Error fetching super admin tournaments:', error);
+      return [];
+    }
+  }
+
+  // Change current user's password
+  async function changePassword(currentPassword, newPassword) {
+    try {
+      if (!auth.currentUser) {
+        return { success: false, error: 'No user logged in' };
+      }
+
+      // Re-authenticate user with current password
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      
+      // Update password using the fresh Firebase Auth user object
+      await updatePassword(auth.currentUser, newPassword);
+      
+      console.log('Password updated successfully');
+      return { success: true };
+      
+    } catch (error) {
+      console.error('Error changing password:', error);
+      
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        return { success: false, error: 'Current password is incorrect' };
+      } else if (error.code === 'auth/weak-password') {
+        return { success: false, error: 'New password is too weak. Please choose a stronger password.' };
+      } else if (error.code === 'auth/requires-recent-login') {
+        return { success: false, error: 'Please log out and log back in before changing your password' };
+      } else {
+        return { success: false, error: error.message };
+      }
+    }
+  }
+
   // Check if current user is super admin
   function isSuperAdmin() {
     // Hardcoded super admin email
@@ -263,7 +396,11 @@ export function AuthProvider({ children }) {
     getTeamAdmins,
     isSuperAdmin,
     isTeamAdmin,
-    setSuperAdminRole
+    setSuperAdminRole,
+    createSuperAdmin,
+    getSuperAdmins,
+    getAllSuperAdminTournaments,
+    changePassword
   };
 
   return (

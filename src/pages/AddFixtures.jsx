@@ -37,6 +37,10 @@ export default function AddFixtures() {
   const [venues, setVenues] = useState([]);
   const [selectedDateForView, setSelectedDateForView] = useState(null);
   
+  // Mobile date navigation state
+  const [currentDateIndex, setCurrentDateIndex] = useState(0);
+  const [datesPerView] = useState(2); // Show 2 dates at a time on mobile
+  
   // Edit fixture state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingFixture, setEditingFixture] = useState(null);
@@ -315,6 +319,25 @@ export default function AddFixtures() {
     });
   };
 
+  // Mobile navigation functions
+  const goToPreviousDates = () => {
+    setCurrentDateIndex(prev => Math.max(0, prev - datesPerView));
+  };
+
+  const goToNextDates = () => {
+    const dateRange = getDateRangeWithFixtures();
+    setCurrentDateIndex(prev => Math.min(dateRange.length - datesPerView, prev + datesPerView));
+  };
+
+  const canGoToPrevious = () => {
+    return currentDateIndex > 0;
+  };
+
+  const canGoToNext = () => {
+    const dateRange = getDateRangeWithFixtures();
+    return currentDateIndex + datesPerView < dateRange.length;
+  };
+
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -548,22 +571,29 @@ export default function AddFixtures() {
     if (!fixtureToDelete) return;
     
     try {
-      await deleteDoc(doc(db, 'fixtures', fixtureToDelete.id));
-      
-      // Update local state
-      setFixtures(prev => {
-        const updated = { ...prev };
-        const dateKey = fixtureToDelete.dateKey;
+      // Check if this fixture has a fixtureGroupId (meaning it's part of a group)
+      if (fixtureToDelete.fixtureGroupId) {
+        // Delete all fixtures in the group
+        await deleteFixtureGroup(fixtureToDelete.fixtureGroupId);
+      } else {
+        // Delete single fixture
+        await deleteDoc(doc(db, 'fixtures', fixtureToDelete.id));
         
-        if (updated[dateKey]) {
-          updated[dateKey] = updated[dateKey].filter(f => f.id !== fixtureToDelete.id);
-          if (updated[dateKey].length === 0) {
-            delete updated[dateKey];
+        // Update local state for single fixture
+        setFixtures(prev => {
+          const updated = { ...prev };
+          const dateKey = fixtureToDelete.dateKey;
+          
+          if (updated[dateKey]) {
+            updated[dateKey] = updated[dateKey].filter(f => f.id !== fixtureToDelete.id);
+            if (updated[dateKey].length === 0) {
+              delete updated[dateKey];
+            }
           }
-        }
-        
-        return updated;
-      });
+          
+          return updated;
+        });
+      }
       
       setShowDeleteModal(false);
       setFixtureToDelete(null);
@@ -571,6 +601,56 @@ export default function AddFixtures() {
     } catch (error) {
       console.error('Error deleting fixture:', error);
       setError('Failed to delete fixture');
+    }
+  };
+
+  const deleteFixtureGroup = async (fixtureGroupId) => {
+    try {
+      // Query all fixtures with the same fixtureGroupId
+      const fixturesQuery = query(
+        collection(db, 'fixtures'),
+        where('fixtureGroupId', '==', fixtureGroupId)
+      );
+      
+      const fixturesSnapshot = await getDocs(fixturesQuery);
+      
+      // Delete all fixtures in the group
+      const deletePromises = fixturesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      // Update local state - remove all fixtures with this fixtureGroupId
+      setFixtures(prev => {
+        const updated = { ...prev };
+        
+        // Remove fixtures from all dates
+        Object.keys(updated).forEach(dateKey => {
+          updated[dateKey] = updated[dateKey].filter(f => f.fixtureGroupId !== fixtureGroupId);
+          if (updated[dateKey].length === 0) {
+            delete updated[dateKey];
+          }
+        });
+        
+        return updated;
+      });
+      
+      // Update fixture groups state
+      setFixtureGroups(prev => {
+        const updated = { ...prev };
+        
+        // Remove the fixture group
+        Object.keys(updated).forEach(groupKey => {
+          if (updated[groupKey].id === fixtureGroupId) {
+            delete updated[groupKey];
+          }
+        });
+        
+        return updated;
+      });
+      
+      console.log(`Successfully deleted ${fixturesSnapshot.docs.length} fixtures in group ${fixtureGroupId}`);
+    } catch (error) {
+      console.error('Error deleting fixture group:', error);
+      throw error;
     }
   };
 
@@ -702,6 +782,35 @@ export default function AddFixtures() {
 
       await Promise.all(fixturePromises);
       
+      // Automatically create a Dreambreaker match for team picking (as the 7th match)
+      const dreamBreakerMatchData = {
+        tournamentId: id,
+        matchType: 'dreamBreaker',
+        matchTypeLabel: 'Game Breaker',
+        team1: bulkFixtureForm.team1,
+        team2: bulkFixtureForm.team2,
+        team1Name: team1Data?.name || '',
+        team2Name: team2Data?.name || '',
+        date: Timestamp.fromDate(selectedDateObj),
+        time: bulkFixtureForm.time || '10:00',
+        pool: bulkFixtureForm.pool,
+        court: bulkFixtureForm.court,
+        venue: bulkFixtureForm.venue || null,
+        venueName: venueData?.name || null,
+        status: 'scheduled',
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+        fixtureType: 'dreamBreaker',
+        fixtureGroupId: fixtureGroupId,
+        matchNumber: 7, // Make it the 7th match (last one)
+        // Initialize empty player arrays - to be filled by team admins
+        team1Players: [],
+        team2Players: [],
+        youtubeLink: ''
+      };
+
+      await addDoc(collection(db, 'fixtures'), dreamBreakerMatchData);
+      
       // Refresh data from database to get the actual created fixtures
       const fixturesQuery = query(
         collection(db, 'fixtures'),
@@ -831,6 +940,35 @@ export default function AddFixtures() {
       });
 
       await Promise.all(fixturePromises);
+      
+      // Automatically create a Dreambreaker match for team picking (as the 5th match for mini dreambreaker)
+      const dreamBreakerMatchData = {
+        tournamentId: id,
+        matchType: 'dreamBreaker',
+        matchTypeLabel: 'Game Breaker',
+        team1: bulkFixtureForm.team1,
+        team2: bulkFixtureForm.team2,
+        team1Name: team1Data?.name || '',
+        team2Name: team2Data?.name || '',
+        date: Timestamp.fromDate(selectedDateObj),
+        time: bulkFixtureForm.time || '10:00',
+        pool: '', // Mini dreambreaker doesn't use pools
+        court: '', // Mini dreambreaker doesn't use courts
+        venue: bulkFixtureForm.venue || null,
+        venueName: venueData?.name || null,
+        status: 'scheduled',
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+        fixtureType: 'dreamBreaker',
+        fixtureGroupId: fixtureGroupId,
+        matchNumber: 5, // Make it the 5th match (last one for mini dreambreaker)
+        // Initialize empty player arrays - to be filled by team admins
+        team1Players: [],
+        team2Players: [],
+        youtubeLink: ''
+      };
+
+      await addDoc(collection(db, 'fixtures'), dreamBreakerMatchData);
       
       // Refresh data from database to get the actual created fixtures
       const fixturesQuery = query(
@@ -1333,8 +1471,8 @@ export default function AddFixtures() {
       case 'semifinal': return 'Semi Final';
       case 'thirdplace': return 'Third Place';
       case 'final': return 'Final';
-      case 'dreambreaker': return 'DreamBreaker';
-      case 'minidreambreaker': return 'Mini DreamBreaker';
+      case 'dreambreaker': return 'Game Breaker';
+      case 'minidreambreaker': return 'Mini Game Breaker';
       case 'roundrobin': return 'Round Robin';
       case 'custom': return 'Custom';
       case 'playoff': return 'Playoff';
@@ -1479,52 +1617,88 @@ export default function AddFixtures() {
           </div>
         )}
 
-        {/* Date Calendar - Only show for DreamBreaker Team mode, not for Round Robin */}
-        {fixtureStyle === 'dreambreaker' && (
+        {/* Date Calendar - Show for DreamBreaker Team mode and for Team Admins */}
+        {(fixtureStyle === 'dreambreaker' || (isTeamAdmin() && fixtureStyle !== 'roundrobin')) && (
           <div className="card bg-base-100 shadow-xl mb-8 w-full overflow-hidden">
-            <div className="card-body p-4 sm:p-6">
-              <h2 className="card-title text-xl sm:text-2xl mb-4 sm:mb-6 break-words">Tournament Schedule</h2>
+            <div className="card-body p-3 sm:p-4 lg:p-6">
+              <h2 className="card-title text-lg sm:text-xl lg:text-2xl mb-3 sm:mb-4 lg:mb-6 break-words">Tournament Schedule</h2>
               
-              <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100">
-                <div className="flex gap-3 sm:gap-4 pb-4 min-w-max">
-                  {dateRange.map((date, index) => {
+              {/* Mobile: Navigation with arrows */}
+              <div className="block sm:hidden mb-3">
+                <div className="alert alert-info py-2 mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs">Use arrows to navigate dates</span>
+                </div>
+                
+                {/* Mobile Navigation Controls */}
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    className={`btn btn-circle btn-sm ${!canGoToPrevious() ? 'btn-disabled' : 'btn-primary'}`}
+                    onClick={goToPreviousDates}
+                    disabled={!canGoToPrevious()}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  <div className="text-xs text-base-content/60">
+                    {Math.min(currentDateIndex + datesPerView, dateRange.length)} of {dateRange.length} dates
+                  </div>
+                  
+                  <button
+                    className={`btn btn-circle btn-sm ${!canGoToNext() ? 'btn-disabled' : 'btn-primary'}`}
+                    onClick={goToNextDates}
+                    disabled={!canGoToNext()}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Mobile Date Cards */}
+                <div className="grid grid-cols-2 gap-2">
+                  {dateRange.slice(currentDateIndex, currentDateIndex + datesPerView).map((date, index) => {
                     const dateKey = date.toDateString();
                     const dayFixtures = fixtures[dateKey] || [];
                     
                     return (
-                      <div key={index} className="flex-shrink-0 w-40 sm:w-48">
+                      <div key={currentDateIndex + index} className="w-full">
                         <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow h-full">
-                          <div className="card-body p-3 sm:p-4">
-                            <div className="text-center mb-2 sm:mb-3">
-                              <div className="text-sm sm:text-lg font-bold break-words">{formatDate(date)}</div>
-                              <div className="text-xs sm:text-sm text-base-content/60">
+                          <div className="card-body p-3">
+                            <div className="text-center mb-2">
+                              <div className="text-sm font-bold break-words leading-tight">{formatDate(date)}</div>
+                              <div className="text-xs text-base-content/60 mt-1">
                                 {date.toLocaleDateString('en-US', { year: 'numeric' })}
                               </div>
                             </div>
                             
                             {/* Show fixture count for this date */}
-                            <div className="mb-2 sm:mb-3 min-h-[50px] sm:min-h-[60px] flex items-center justify-center">
+                            <div className="mb-2 min-h-[40px] flex items-center justify-center">
                               {dayFixtures.length > 0 ? (
                                 <div className="text-center">
-                                  <div className="badge badge-primary badge-sm sm:badge-lg">
+                                  <div className="badge badge-primary badge-sm text-xs">
                                     {dayFixtures.length} fixture{dayFixtures.length !== 1 ? 's' : ''}
                                   </div>
                                 </div>
                               ) : (
-                                <div className="text-center text-base-content/50 text-xs sm:text-sm">
+                                <div className="text-center text-base-content/50 text-xs leading-tight">
                                   No fixtures
                                 </div>
                               )}
                             </div>
                             
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                               <button
-                                className="btn btn-outline btn-xs sm:btn-sm w-full text-xs sm:text-sm"
+                                className="btn btn-outline btn-xs w-full text-xs leading-tight px-2"
                                 onClick={() => {
                                   setSelectedDateForView(date);
                                 }}
                               >
-                                View Fixtures
+                                View
                               </button>
                             </div>
                           </div>
@@ -1532,6 +1706,65 @@ export default function AddFixtures() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+              
+              {/* Desktop: Horizontal scroll */}
+              <div className="hidden sm:block w-full overflow-x-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-base-100">
+                <div className="flex gap-2 sm:gap-3 lg:gap-4 pb-3 sm:pb-4 min-w-max">
+                  {dateRange.map((date, index) => {
+                    const dateKey = date.toDateString();
+                    const dayFixtures = fixtures[dateKey] || [];
+                    
+                    return (
+                      <div key={index} className="flex-shrink-0 w-32 sm:w-40 lg:w-48">
+                        <div className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow h-full">
+                          <div className="card-body p-2 sm:p-3 lg:p-4">
+                            <div className="text-center mb-2 sm:mb-3">
+                              <div className="text-xs sm:text-sm lg:text-lg font-bold break-words leading-tight">{formatDate(date)}</div>
+                              <div className="text-xs text-base-content/60 mt-1">
+                                {date.toLocaleDateString('en-US', { year: 'numeric' })}
+                              </div>
+                            </div>
+                            
+                            {/* Show fixture count for this date */}
+                            <div className="mb-2 sm:mb-3 min-h-[40px] sm:min-h-[50px] lg:min-h-[60px] flex items-center justify-center">
+                              {dayFixtures.length > 0 ? (
+                                <div className="text-center">
+                                  <div className="badge badge-primary badge-xs sm:badge-sm lg:badge-lg text-xs">
+                                    {dayFixtures.length} fixture{dayFixtures.length !== 1 ? 's' : ''}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center text-base-content/50 text-xs leading-tight">
+                                  No fixtures
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-1 sm:space-y-2">
+                              <button
+                                className="btn btn-outline btn-xs w-full text-xs leading-tight px-2"
+                                onClick={() => {
+                                  setSelectedDateForView(date);
+                                }}
+                              >
+                                <span className="hidden sm:inline">View Fixtures</span>
+                                <span className="sm:hidden">View</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Mobile: Show total count */}
+              <div className="block sm:hidden mt-3 text-center">
+                <div className="text-xs text-base-content/60">
+                  {dateRange.length} tournament day{dateRange.length !== 1 ? 's' : ''}
                 </div>
               </div>
             </div>
@@ -1752,7 +1985,7 @@ export default function AddFixtures() {
                         <div className="flex flex-wrap gap-1 sm:gap-2 mt-4">
                           {group.matches.map((match, index) => (
                             <div key={index} className="badge badge-outline badge-sm sm:badge-md break-words">
-                              {match.matchTypeLabel}
+                              {match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}
                             </div>
                           ))}
                         </div>
@@ -1818,7 +2051,7 @@ export default function AddFixtures() {
                                   </div>
                                 )}
                                 <div className="badge badge-outline badge-sm sm:badge-md">
-                                  {fixture.matchTypeLabel}
+                                  {fixture.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixture.matchTypeLabel}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
@@ -2027,7 +2260,7 @@ export default function AddFixtures() {
                                 Playoff
                               </div>
                               <div className="badge badge-outline badge-sm sm:badge-md">
-                                {fixture.matchTypeLabel}
+                                {fixture.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixture.matchTypeLabel}
                               </div>
                               {fixture.court && (
                                 <div className="badge badge-info badge-sm sm:badge-md">
@@ -2151,7 +2384,7 @@ export default function AddFixtures() {
                                 Playoff
                               </div>
                               <div className="badge badge-outline badge-sm sm:badge-md">
-                                {fixture.matchTypeLabel}
+                                {fixture.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixture.matchTypeLabel}
                               </div>
                               {fixture.court && (
                                 <div className="badge badge-info badge-sm sm:badge-md">
@@ -2273,7 +2506,7 @@ export default function AddFixtures() {
                               Playoff
                             </div>
                             <div className="badge badge-outline badge-sm sm:badge-md">
-                              {fixture.matchTypeLabel}
+                              {fixture.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixture.matchTypeLabel}
                             </div>
                             {fixture.court && (
                               <div className="badge badge-info badge-sm sm:badge-md">
@@ -2391,7 +2624,7 @@ export default function AddFixtures() {
                               Playoff
                             </div>
                             <div className="badge badge-outline badge-sm sm:badge-md">
-                              {fixture.matchTypeLabel}
+                              {fixture.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixture.matchTypeLabel}
                             </div>
                             {fixture.court && (
                               <div className="badge badge-info badge-sm sm:badge-md">
@@ -2772,8 +3005,8 @@ export default function AddFixtures() {
         {showBulkModal && (
           <div className="modal modal-open">
             <div className="modal-box w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="font-bold text-lg mb-4">
-                {fixtureStyle === 'minidreambreaker' ? 'Create Mini DreamBreaker Team Fixture' : 'Create DreamBreaker Team Fixture'}
+              <h3 className="font-bold text-lg sm:text-xl mb-4 break-words">
+                {fixtureStyle === 'minidreambreaker' ? 'Create Mini Game Breaker Team Fixture' : 'Create Game Breaker Team Fixture'}
               </h3>
               
               <div className="alert alert-info mb-6">
@@ -2781,12 +3014,12 @@ export default function AddFixtures() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <h4 className="font-bold">{fixtureStyle === 'minidreambreaker' ? 'Mini DreamBreaker Team Format' : 'DreamBreaker Team Format'}</h4>
-                  <div className="text-sm">
+                  <h4 className="font-bold text-sm sm:text-base">{fixtureStyle === 'minidreambreaker' ? 'Mini Game Breaker Team Format' : 'Game Breaker Team Format'}</h4>
+                  <div className="text-xs sm:text-sm">
                     {fixtureStyle === 'minidreambreaker' ? (
                       <>
                         This will automatically create 4 matches between the selected teams:
-                        <ul className="list-disc list-inside mt-2 ml-4">
+                        <ul className="list-disc list-inside mt-2 ml-2 sm:ml-4 space-y-1">
                           <li>2 Men's Doubles</li>
                           <li>2 Mixed Doubles</li>
                         </ul>
@@ -2794,7 +3027,7 @@ export default function AddFixtures() {
                     ) : (
                       <>
                         This will automatically create 6 matches between the selected teams:
-                        <ul className="list-disc list-inside mt-2 ml-4">
+                        <ul className="list-disc list-inside mt-2 ml-2 sm:ml-4 space-y-1">
                           <li>1 Men's Doubles</li>
                           <li>1 Women's Doubles</li>
                           <li>1 Men's Singles</li>
@@ -2804,21 +3037,21 @@ export default function AddFixtures() {
                         </ul>
                       </>
                     )}
-                    You can update the players later by clicking on edit for each match.
+                    <p className="mt-2">You can update the players later by clicking on edit for each match.</p>
                   </div>
                 </div>
               </div>
               
               <form onSubmit={fixtureStyle === 'minidreambreaker' ? handleCreateMiniBulkFixtures : handleCreateBulkFixtures} className="space-y-4">
                 {/* Teams */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Team 1 *</span>
+                      <span className="label-text font-medium text-sm sm:text-base">Team 1 *</span>
                     </label>
                     <select
                       name="team1"
-                      className="select select-bordered w-full"
+                      className="select select-bordered w-full text-sm sm:text-base"
                       value={bulkFixtureForm.team1}
                       onChange={handleBulkFormChange}
                       required
@@ -2834,11 +3067,11 @@ export default function AddFixtures() {
 
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Team 2 *</span>
+                      <span className="label-text font-medium text-sm sm:text-base">Team 2 *</span>
                     </label>
                     <select
                       name="team2"
-                      className="select select-bordered w-full"
+                      className="select select-bordered w-full text-sm sm:text-base"
                       value={bulkFixtureForm.team2}
                       onChange={handleBulkFormChange}
                       required
@@ -2854,15 +3087,15 @@ export default function AddFixtures() {
                 </div>
 
                 {/* Date, Time, Pool, and Court */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Date *</span>
+                      <span className="label-text font-medium text-sm sm:text-base">Date *</span>
                     </label>
                     <input
                       type="date"
                       name="date"
-                      className="input input-bordered w-full"
+                      className="input input-bordered w-full text-sm sm:text-base"
                       value={bulkFixtureForm.date}
                       onChange={handleBulkFormChange}
                       required
@@ -2871,12 +3104,12 @@ export default function AddFixtures() {
                   
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Start Time (Optional)</span>
+                      <span className="label-text font-medium text-sm sm:text-base">Start Time (Optional)</span>
                     </label>
                     <input
                       type="time"
                       name="time"
-                      className="input input-bordered w-full"
+                      className="input input-bordered w-full text-sm sm:text-base"
                       value={bulkFixtureForm.time}
                       onChange={handleBulkFormChange}
                       placeholder="Can be updated later"
@@ -2887,11 +3120,11 @@ export default function AddFixtures() {
                 {/* Venue Selection */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Venue (Optional)</span>
+                    <span className="label-text font-medium text-sm sm:text-base">Venue (Optional)</span>
                   </label>
                   <select
                     name="venue"
-                    className="select select-bordered w-full"
+                    className="select select-bordered w-full text-sm sm:text-base"
                     value={bulkFixtureForm.venue}
                     onChange={handleBulkFormChange}
                   >
@@ -2904,16 +3137,16 @@ export default function AddFixtures() {
                   </select>
                 </div>
 
-                <div className="modal-action">
+                <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-0">
                   <button
                     type="button"
-                    className="btn btn-outline"
+                    className="btn btn-outline w-full sm:w-auto order-2 sm:order-1"
                     onClick={() => setShowBulkModal(false)}
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary">
-                    Create DreamBreaker Fixture
+                  <button type="submit" className="btn btn-primary w-full sm:w-auto order-1 sm:order-2">
+                    Create Game Breaker Fixture
                   </button>
                 </div>
               </form>
@@ -2930,7 +3163,7 @@ export default function AddFixtures() {
               </h3>
               
               <div className="space-y-4">
-                {/* DreamBreaker Team Option */}
+                {/* Game Breaker Team Option */}
                 <div
                   className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-primary"
                   onClick={() => handleFixtureStyleSelect('dreambreaker')}
@@ -2943,7 +3176,7 @@ export default function AddFixtures() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-lg">DreamBreaker Team</h4>
+                        <h4 className="font-bold text-lg">Game Breaker Team</h4>
                         <p className="text-sm text-base-content/70 mt-1">
                           Automatically creates 6 matches between two teams:
                         </p>
@@ -2960,7 +3193,7 @@ export default function AddFixtures() {
                   </div>
                 </div>
 
-                {/* Mini DreamBreaker Team Option */}
+                {/* Mini Game Breaker Team Option */}
                 <div
                   className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-warning"
                   onClick={() => handleFixtureStyleSelect('minidreambreaker')}
@@ -2973,7 +3206,7 @@ export default function AddFixtures() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-lg">Mini DreamBreaker Team</h4>
+                        <h4 className="font-bold text-lg">Mini Game Breaker Team</h4>
                         <p className="text-sm text-base-content/70 mt-1">
                           Automatically creates 4 matches between two teams:
                         </p>
@@ -3397,9 +3630,14 @@ export default function AddFixtures() {
         {showDeleteModal && fixtureToDelete && (
           <div className="modal modal-open">
             <div className="modal-box">
-              <h3 className="font-bold text-lg mb-4">Delete Fixture</h3>
+              <h3 className="font-bold text-lg mb-4">
+                {fixtureToDelete.fixtureGroupId ? 'Delete Fixture Group' : 'Delete Fixture'}
+              </h3>
               <p className="mb-6">
-                Are you sure you want to delete this fixture?
+                {fixtureToDelete.fixtureGroupId
+                  ? 'Are you sure you want to delete this entire fixture group? This will delete ALL matches between these teams.'
+                  : 'Are you sure you want to delete this fixture?'
+                }
               </p>
               <div className="bg-base-200 p-4 rounded-lg mb-6">
                 <div className="font-semibold">
@@ -3429,8 +3667,23 @@ export default function AddFixtures() {
                   {fixtureToDelete.team1Name} vs {fixtureToDelete.team2Name}
                 </div>
                 <div className="text-sm text-base-content/70">
-                  {fixtureToDelete.matchTypeLabel}
+                  {fixtureToDelete.fixtureGroupId
+                    ? `${formatFixtureType(fixtureToDelete.fixtureType)} - All matches in this group will be deleted`
+                    : fixtureToDelete.matchTypeLabel
+                  }
                 </div>
+                {fixtureToDelete.fixtureGroupId && (
+                  <div className="alert alert-warning mt-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm">
+                        This action will delete multiple matches and cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="modal-action">
                 <button
@@ -3446,7 +3699,7 @@ export default function AddFixtures() {
                   className="btn btn-error"
                   onClick={handleDeleteConfirm}
                 >
-                  Yes, Delete
+                  {fixtureToDelete.fixtureGroupId ? 'Yes, Delete All Matches' : 'Yes, Delete'}
                 </button>
               </div>
             </div>

@@ -73,13 +73,28 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
-    // Users collection rules - Simplified for debugging
+    // Users collection rules - Enhanced for super admin management
     match /users/{userId} {
       // Users can read/write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
-      // Super admins can do everything with user documents
-      allow read, write, create, update, delete, list: if request.auth != null && isSuperAdminSimple();
+      // Super admins can read all user documents
+      allow read, list: if request.auth != null && isSuperAdminSimple();
+      
+      // Super admins can create new user documents with valid data
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidUserData(request.resource.data);
+      
+      // Super admins can update user documents with valid data
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidUserData(request.resource.data);
+      
+      // Super admins can delete user documents (except their own)
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   request.auth.uid != userId;
     }
     
     // Venues collection rules
@@ -98,6 +113,71 @@ service cloud.firestore {
       
       allow delete: if request.auth != null &&
                    isSuperAdminSimple();
+    }
+    
+    // Featured Videos collection rules
+    match /featuredVideos/{videoId} {
+      // Allow public read access for featured videos (needed for home page)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete featured videos
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidFeaturedVideoData(request.resource.data);
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidFeaturedVideoData(request.resource.data);
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // News collection rules
+    match /news/{newsId} {
+      // Allow public read access for news (needed for home page)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete news
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidNewsData(request.resource.data);
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidNewsData(request.resource.data);
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Function to validate news data structure
+    function isValidNewsData(data) {
+      return data.keys().hasAll(['title', 'subtext', 'publishDate']) &&
+             data.title is string &&
+             data.subtext is string &&
+             data.publishDate is timestamp &&
+             (data.description == null || data.description is string) &&
+             (data.featuredImage == null ||
+              data.featuredImage is string ||
+              (data.featuredImage is map &&
+               (('url' in data.featuredImage && data.featuredImage.url is string) ||
+                ('secure_url' in data.featuredImage && data.featuredImage.secure_url is string)) &&
+               (!('public_id' in data.featuredImage) || data.featuredImage.public_id is string))) &&
+             (data.featured == null || data.featured is bool) &&
+             (data.createdAt == null || data.createdAt is timestamp) &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
+    }
+    
+    // Function to validate featured video data structure
+    function isValidFeaturedVideoData(data) {
+      return data.keys().hasAll(['title', 'youtubeUrl', 'videoId']) &&
+             data.title is string &&
+             data.youtubeUrl is string &&
+             data.videoId is string &&
+             (data.description == null || data.description is string) &&
+             (data.createdAt == null || data.createdAt is timestamp) &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
     }
     
     // Function to validate venue data structure
@@ -160,10 +240,29 @@ service cloud.firestore {
               (data.logo.publicId == null || data.logo.publicId is string)));
     }
     
-    // Simplified function to check if current user is super admin
+    // Enhanced function to check if current user is super admin
     function isSuperAdminSimple() {
-      // Hardcoded super admin email - simplified check
-      return request.auth != null && request.auth.token.email == 'siddharth@318digital.com';
+      // Check hardcoded super admin email for backward compatibility OR custom claims role
+      return request.auth != null &&
+             (request.auth.token.email == 'siddharth@318digital.com' ||
+              request.auth.token.role == 'super_admin');
+    }
+    
+    // Function to validate user data structure for super admin creation
+    function isValidUserData(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role is string &&
+             data.role in ['super_admin', 'team_admin'] &&
+             (data.displayName == null || data.displayName is string) &&
+             (data.photoURL == null || data.photoURL is string) &&
+             (data.teamName == null || data.teamName is string) &&
+             (data.tournamentId == null || data.tournamentId is string) &&
+             (data.tempPassword == null || data.tempPassword is string) &&
+             (data.createdAt == null || data.createdAt is timestamp) &&
+             (data.updatedAt == null || data.updatedAt is timestamp) &&
+             (data.createdBy == null || data.createdBy is string);
     }
   }
 }
