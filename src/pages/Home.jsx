@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, query, where, onSnapshot, orderBy, limit, doc, getDoc } from 'firebase/firestore';
-import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
+import {
+  fetchTournamentsOptimized,
+  fetchMinimalTournamentData,
+  fetchLiveMatchesOnly,
+  fetchTeamsAndPlayersOptimized,
+  fetchHomePageContentOptimized,
+  fetchTournamentStatsOptimized
+} from '../services/optimizedFirebaseService';
 
 export default function Home() {
   const [selectedTournament, setSelectedTournament] = useState('');
@@ -17,16 +23,11 @@ export default function Home() {
   const [news, setNews] = useState([]);
   const [featuredArticles, setFeaturedArticles] = useState([]);
 
-  // Fetch tournaments from Firebase
+  // Fetch tournaments with caching
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const tournamentsRef = collection(db, 'tournaments');
-        const snapshot = await getDocs(tournamentsRef);
-        const tournamentsList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const tournamentsList = await fetchTournamentsOptimized();
         setTournaments(tournamentsList);
         
         // Set first tournament as default if available
@@ -49,139 +50,20 @@ export default function Home() {
     fetchTournaments();
   }, []);
 
-  // Fetch all tournament-related data in parallel when tournament changes
+  // Fetch minimal tournament data when tournament changes
   useEffect(() => {
     if (!selectedTournament) return;
 
-    const fetchAllTournamentData = async () => {
+    const fetchTournamentData = async () => {
       try {
-        // Fetch all tournament-related data in parallel
-        const [tournamentDoc, teamsSnapshot, matchesSnapshot, playersSnapshot] = await Promise.all([
-          getDoc(doc(db, 'tournaments', selectedTournament)),
-          getDocs(query(collection(db, 'teams'), where('tournamentId', '==', selectedTournament))),
-          getDocs(query(collection(db, 'fixtures'), where('tournamentId', '==', selectedTournament))),
-          getDocs(query(collection(db, 'players'), where('tournamentId', '==', selectedTournament)))
-        ]);
-
-        if (tournamentDoc.exists()) {
-          const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
-          setCurrentTournament(tournamentData);
-
-          // Process teams data
-          const teamsData = teamsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setTeams(teamsData);
-
-          // Process matches data for team statistics
-          const matchesData = matchesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-
-          // Process players data for photo mapping
-          const playersData = playersSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-
-          // Create a mapping from player name to photo URL
-          const playerPhotoMap = {};
-          playersData.forEach(player => {
-            if (player.name && player.photo?.url) {
-              playerPhotoMap[player.name] = player.photo.url;
-            }
-          });
-
-          // Calculate team statistics
-          if (teamsData.length > 0) {
-            const teamStats = teamsData.map(team => {
-              const teamMatches = matchesData.filter(match =>
-                match.team1 === team.id || match.team2 === team.id
-              );
-
-              let battleWins = 0;
-              let battleLosses = 0;
-              let points = 0;
-              let gameWins = 0;
-              let gameLosses = 0;
-
-              teamMatches.forEach(match => {
-                if (match.scores && match.status === 'completed') {
-                  const isTeam1 = match.team1 === team.id;
-                  const team1Scores = match.scores.player1 || {};
-                  const team2Scores = match.scores.player2 || {};
-                  
-                  let team1Games = 0;
-                  let team2Games = 0;
-
-                  // Count games won
-                  for (let i = 1; i <= (match.gamesCount || 3); i++) {
-                    const gameKey = `game${i}`;
-                    const team1Score = parseInt(team1Scores[gameKey]) || 0;
-                    const team2Score = parseInt(team2Scores[gameKey]) || 0;
-                    
-                    if (team1Score > team2Score) {
-                      team1Games++;
-                    } else if (team2Score > team1Score) {
-                      team2Games++;
-                }
-              }
-
-              // Determine match winner
-              const team1Won = team1Games > team2Games;
-              const team2Won = team2Games > team1Games;
-              
-              if (isTeam1) {
-                gameWins += team1Games;
-                gameLosses += team2Games;
-                
-                if (team1Won) {
-                  battleWins++;
-                  points += 3; // 3 points for a win
-                } else if (team2Won) {
-                  battleLosses++;
-                  if (team1Games > 0) {
-                    points += 1; // 1 point for losing but winning at least one game
-                  }
-                }
-              } else {
-                gameWins += team2Games;
-                gameLosses += team1Games;
-                
-                if (team2Won) {
-                  battleWins++;
-                  points += 3; // 3 points for a win
-                } else if (team1Won) {
-                  battleLosses++;
-                  if (team2Games > 0) {
-                    points += 1; // 1 point for losing but winning at least one game
-                  }
-                }
-              }
-            }
-          });
-
-          return {
-            ...team,
-            battleWins,
-            battleLosses,
-            points,
-            gameWins,
-            gameLosses
-          };
-            });
-
-            // Sort teams by points (descending), then by battle wins, then by games difference
-            teamStats.sort((a, b) => {
-              if (b.points !== a.points) return b.points - a.points;
-              if (b.battleWins !== a.battleWins) return b.battleWins - a.battleWins;
-              return (b.gameWins - b.gameLosses) - (a.gameWins - a.gameLosses);
-            });
-
-            setTeamsWithStats(teamStats);
-          }
+        const tournamentData = await fetchMinimalTournamentData(selectedTournament);
+        
+        if (tournamentData.tournament) {
+          setCurrentTournament(tournamentData.tournament);
+          
+          // Process initial matches (live + recent)
+          const allMatches = [...tournamentData.liveMatches, ...tournamentData.recentMatches];
+          processMatchesForDisplay(allMatches);
         }
         
         // Reset team selection when tournament changes
@@ -189,264 +71,222 @@ export default function Home() {
       } catch (error) {
         console.error('Error fetching tournament data:', error);
         setCurrentTournament(null);
-        setTeams([]);
+        setMatches([]);
         setSelectedTeam('');
         setTeamsWithStats([]);
       }
     };
 
-    fetchAllTournamentData();
+    fetchTournamentData();
   }, [selectedTournament]);
 
-  // Real-time listener for matches in selected tournament
+  // Process matches for display (helper function)
+  const processMatchesForDisplay = useCallback(async (fixturesData, playerPhotoMap = {}) => {
+    try {
+      // Transform Firebase fixtures to match the expected format for live scores
+      const transformedMatches = fixturesData
+        .filter(fixture => {
+          // Only show matches that have scores (completed or in-progress) or are currently live
+          return fixture.scores || fixture.status === 'in-progress' || fixture.status === 'live';
+        })
+        .map(fixture => {
+          // Get player names and create display format
+          const player1Name = fixture.player1Team1 || fixture.team1Name || 'Team 1';
+          const player1Partner = fixture.player2Team1 || null;
+          const player2Name = fixture.player1Team2 || fixture.team2Name || 'Team 2';
+          const player2Partner = fixture.player2Team2 || null;
+
+          // Transform scores from Firebase format to display format
+          const actualGamesCount = fixture.gamesCount || 3;
+          let scores = Array(actualGamesCount).fill('-');
+          let opponentScores = Array(actualGamesCount).fill('-');
+          
+          if (fixture.scores) {
+            const player1Scores = fixture.scores.player1 || {};
+            const player2Scores = fixture.scores.player2 || {};
+            
+            // Extract scores for each game
+            for (let i = 1; i <= (fixture.gamesCount || 3); i++) {
+              const gameKey = `game${i}`;
+              if (player1Scores[gameKey] !== undefined) {
+                scores[i - 1] = player1Scores[gameKey];
+              }
+              if (player2Scores[gameKey] !== undefined) {
+                opponentScores[i - 1] = player2Scores[gameKey];
+              }
+            }
+          }
+
+          // Determine if match is live
+          const isLive = fixture.status === 'live';
+          
+          // Format time
+          let displayTime = '';
+          if (fixture.time) {
+            displayTime = fixture.time;
+          } else if (fixture.date && fixture.date.toDate) {
+            displayTime = fixture.date.toDate().toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+          }
+
+          return {
+            id: fixture.id,
+            team1Id: fixture.team1,
+            team2Id: fixture.team2,
+            team1Name: fixture.team1Name,
+            team2Name: fixture.team2Name,
+            player1: {
+              name: player1Name,
+              partner: player1Partner,
+              avatar: playerPhotoMap[player1Name] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
+              partnerAvatar: player1Partner ? (playerPhotoMap[player1Partner] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face') : null
+            },
+            player2: {
+              name: player2Name,
+              partner: player2Partner,
+              avatar: playerPhotoMap[player2Name] || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face',
+              partnerAvatar: player2Partner ? (playerPhotoMap[player2Partner] || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face') : null
+            },
+            scores: scores,
+            opponentScores: opponentScores,
+            time: displayTime,
+            status: fixture.matchTypeLabel || fixture.matchType || 'Match',
+            isLive: isLive
+          };
+        });
+
+      // Apply team filtering if a team is selected
+      const filteredMatches = selectedTeam
+        ? transformedMatches.filter(match =>
+            match.team1Id === selectedTeam || match.team2Id === selectedTeam
+          )
+        : transformedMatches;
+
+      setMatches(filteredMatches);
+    } catch (error) {
+      console.error('Error processing match updates:', error);
+      setMatches([]);
+    }
+  }, [selectedTeam]);
+
+  // Periodic fetching for live matches (replaces real-time listener)
   useEffect(() => {
     if (!selectedTournament) return;
 
-    // Set up real-time listener for fixtures (players data already fetched in main useEffect)
-    const fixturesQuery = query(
-      collection(db, 'fixtures'),
-      where('tournamentId', '==', selectedTournament)
-    );
+    let intervalId;
+    let playerPhotoMap = {};
 
-    const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
-          try {
-            const fixturesData = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-
-            // Transform Firebase fixtures to match the expected format for live scores
-            const transformedMatches = fixturesData
-              .filter(fixture => {
-                // Only show matches that have scores (completed or in-progress) or are currently live
-                return fixture.scores || fixture.status === 'in-progress' || fixture.status === 'live';
-              })
-              .map(fixture => {
-            // Get player names and create display format
-            const player1Name = fixture.player1Team1 || fixture.team1Name || 'Team 1';
-            const player1Partner = fixture.player2Team1 || null;
-            const player2Name = fixture.player1Team2 || fixture.team2Name || 'Team 2';
-            const player2Partner = fixture.player2Team2 || null;
-
-            // Transform scores from Firebase format to display format
-            const actualGamesCount = fixture.gamesCount || 3;
-            let scores = Array(actualGamesCount).fill('-');
-            let opponentScores = Array(actualGamesCount).fill('-');
-            
-            if (fixture.scores) {
-              const player1Scores = fixture.scores.player1 || {};
-              const player2Scores = fixture.scores.player2 || {};
-              
-              // Extract scores for each game
-              for (let i = 1; i <= (fixture.gamesCount || 3); i++) {
-                const gameKey = `game${i}`;
-                if (player1Scores[gameKey] !== undefined) {
-                  scores[i - 1] = player1Scores[gameKey];
-                }
-                if (player2Scores[gameKey] !== undefined) {
-                  opponentScores[i - 1] = player2Scores[gameKey];
-                }
-              }
-            }
-
-            // Determine if match is live
-            const isLive = fixture.status === 'live';
-            
-            // Format time
-            let displayTime = '';
-            if (fixture.time) {
-              displayTime = fixture.time;
-            } else if (fixture.date && fixture.date.toDate) {
-              displayTime = fixture.date.toDate().toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              });
-            }
-
-            return {
-              id: fixture.id,
-              team1Id: fixture.team1,
-              team2Id: fixture.team2,
-              team1Name: fixture.team1Name,
-              team2Name: fixture.team2Name,
-              player1: {
-                name: player1Name,
-                partner: player1Partner,
-                avatar: playerPhotoMap[player1Name] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face',
-                partnerAvatar: player1Partner ? (playerPhotoMap[player1Partner] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face') : null
-              },
-              player2: {
-                name: player2Name,
-                partner: player2Partner,
-                avatar: playerPhotoMap[player2Name] || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face',
-                partnerAvatar: player2Partner ? (playerPhotoMap[player2Partner] || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=50&h=50&fit=crop&crop=face') : null
-              },
-              scores: scores,
-              opponentScores: opponentScores,
-              time: displayTime,
-              status: fixture.matchTypeLabel || fixture.matchType || 'Match',
-              isLive: isLive
-            };
-          });
-
-        // Apply team filtering if a team is selected
-        const filteredMatches = selectedTeam
-          ? transformedMatches.filter(match =>
-              match.team1Id === selectedTeam || match.team2Id === selectedTeam
-            )
-          : transformedMatches;
-
-        setMatches(filteredMatches);
-      } catch (error) {
-        console.error('Error processing real-time match updates:', error);
-        setMatches([]);
-      }
-        }, (error) => {
-          console.error('Error with real-time listener:', error);
-          setMatches([]);
-        });
-
-      // Cleanup listener on unmount or tournament change
-      return () => unsubscribe();
-  }, [selectedTournament, selectedTeam]);
-
-  // Fetch featured videos from admin-managed collection
-  useEffect(() => {
-    const fetchFeaturedVideos = async () => {
+    const fetchLiveUpdates = async () => {
       try {
-        // First try to fetch from admin-managed featured videos
-        const featuredVideosQuery = query(
-          collection(db, 'featuredVideos'),
-          orderBy('createdAt', 'desc'),
-          limit(3)
-        );
+        // Fetch live matches only
+        const liveMatches = await fetchLiveMatchesOnly(selectedTournament);
         
-        const featuredSnapshot = await getDocs(featuredVideosQuery);
+        // If we have live matches and need player photos, fetch them
+        if (liveMatches.length > 0 && Object.keys(playerPhotoMap).length === 0) {
+          try {
+            const { players } = await fetchTeamsAndPlayersOptimized(selectedTournament);
+            playerPhotoMap = {};
+            players.forEach(player => {
+              if (player.name && player.photo?.url) {
+                playerPhotoMap[player.name] = player.photo.url;
+              }
+            });
+          } catch (error) {
+            console.warn('Could not fetch player photos:', error);
+          }
+        }
         
-        if (featuredSnapshot.docs.length > 0) {
-          // Use admin-managed videos
-          const videosData = featuredSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              title: data.title,
-              youtubeUrl: data.youtubeUrl,
-              description: data.description,
-              videoId: data.videoId,
-              player1Name: data.title, // Use title as display name
-              player2Name: '', // No opponent for admin videos
-              tournamentName: data.description || 'Featured Video'
-            };
-          });
+        processMatchesForDisplay(liveMatches, playerPhotoMap);
+      } catch (error) {
+        console.error('Error fetching live match updates:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchLiveUpdates();
+
+    // Set up periodic fetching every 30 seconds for live matches
+    intervalId = setInterval(fetchLiveUpdates, 30000);
+
+    // Cleanup interval on unmount or tournament change
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [selectedTournament, processMatchesForDisplay]);
+
+  // Fetch home page content (videos, news, featured articles) with caching
+  useEffect(() => {
+    const fetchHomeContent = async () => {
+      try {
+        const content = await fetchHomePageContentOptimized();
+        
+        // Set videos (admin videos or fallback to fixture videos)
+        if (content.videos.length > 0) {
+          const videosData = content.videos.map(video => ({
+            id: video.id,
+            title: video.title,
+            youtubeUrl: video.youtubeUrl,
+            description: video.description,
+            videoId: video.videoId,
+            player1Name: video.title, // Use title as display name
+            player2Name: '', // No opponent for admin videos
+            tournamentName: video.description || 'Featured Video'
+          }));
+          setFeaturedVideos(videosData);
+        } else if (content.fallbackVideos.length > 0) {
+          const videosData = content.fallbackVideos.map(video => ({
+            id: video.id,
+            ...video,
+            player1Name: video.player1Team1 || video.team1Name || 'Team 1',
+            player2Name: video.player1Team2 || video.team2Name || 'Team 2',
+            tournamentName: tournaments.find(t => t.id === video.tournamentId)?.name ||
+                           tournaments.find(t => t.id === video.tournamentId)?.tournamentName ||
+                           'Tournament Match'
+          }));
           setFeaturedVideos(videosData);
         } else {
-          // Fallback to fixtures with YouTube URLs if no admin videos exist
-          const fixturesRef = collection(db, 'fixtures');
-          const fixturesQuery = query(
-            fixturesRef,
-            where('youtubeUrl', '!=', ''),
-            orderBy('youtubeUrl'),
-            orderBy('createdAt', 'desc'),
-            limit(3)
-          );
-          
-          const fixturesSnapshot = await getDocs(fixturesQuery);
-          const videosData = fixturesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              player1Name: data.player1Team1 || data.team1Name || 'Team 1',
-              player2Name: data.player1Team2 || data.team2Name || 'Team 2',
-              tournamentName: tournaments.find(t => t.id === data.tournamentId)?.name ||
-                             tournaments.find(t => t.id === data.tournamentId)?.tournamentName ||
-                             'Tournament Match'
-            };
-          });
-          setFeaturedVideos(videosData);
+          setFeaturedVideos([]);
         }
+        
+        // Set news and featured articles
+        setNews(content.news);
+        setFeaturedArticles(content.featuredArticles);
+        
       } catch (error) {
-        console.error('Error fetching featured videos:', error);
-        // Fallback to empty array if there's an error
+        console.error('Error fetching home page content:', error);
         setFeaturedVideos([]);
+        setNews([]);
+        setFeaturedArticles([]);
       }
     };
 
-    fetchFeaturedVideos();
+    fetchHomeContent();
   }, [tournaments]);
 
-  // Fetch news from admin-managed collection
+  // Lazy load team statistics when needed
+  const loadTeamStatistics = useCallback(async () => {
+    if (!selectedTournament || teamsWithStats.length > 0) return;
+    
+    try {
+      const stats = await fetchTournamentStatsOptimized(selectedTournament);
+      setTeamsWithStats(stats.teams);
+      setTeams(stats.teams);
+    } catch (error) {
+      console.error('Error loading team statistics:', error);
+    }
+  }, [selectedTournament, teamsWithStats.length]);
+
+  // Load team statistics when tournament is selected (lazy loading)
   useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const newsQuery = query(
-          collection(db, 'news'),
-          orderBy('publishDate', 'desc'),
-          limit(6)
-        );
-        
-        const snapshot = await getDocs(newsQuery);
-        const newsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        setNews(newsData);
-      } catch (error) {
-        console.error('Error fetching news:', error);
-        setNews([]);
-      }
-    };
-
-    fetchNews();
-  }, []);
-
-  // Fetch featured articles from admin-managed collection
-  useEffect(() => {
-    const fetchFeaturedArticles = async () => {
-      try {
-        const featuredQuery = query(
-          collection(db, 'news'),
-          where('featured', '==', true),
-          orderBy('publishDate', 'desc'),
-          limit(2)
-        );
-        
-        const snapshot = await getDocs(featuredQuery);
-        const featuredData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        setFeaturedArticles(featuredData);
-      } catch (error) {
-        console.error('Error fetching featured articles:', error);
-        
-        // Fallback: try to get featured articles without orderBy (in case index is still building)
-        try {
-          const fallbackQuery = query(
-            collection(db, 'news'),
-            where('featured', '==', true),
-            limit(2)
-          );
-          
-          const fallbackSnapshot = await getDocs(fallbackQuery);
-          const fallbackData = fallbackSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          
-          setFeaturedArticles(fallbackData);
-        } catch (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
-          setFeaturedArticles([]);
-        }
-      }
-    };
-
-    fetchFeaturedArticles();
-  }, []);
+    if (selectedTournament) {
+      loadTeamStatistics();
+    }
+  }, [selectedTournament, loadTeamStatistics]);
 
   // Helper function to extract YouTube video ID
   const extractVideoId = (url) => {
