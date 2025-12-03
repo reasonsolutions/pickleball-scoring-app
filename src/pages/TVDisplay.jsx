@@ -16,8 +16,6 @@ import raptorsLogo from '../assets/raptors.png';
 
 export default function TVDisplay() {
   const { matchId, tournamentId: routeTournamentId } = useParams();
-  // Use tournamentId from route if available, otherwise use matchId
-  const tournamentId = routeTournamentId || matchId;
   const [tournament, setTournament] = useState(null);
   const [fixtures, setFixtures] = useState([]);
   const [teams, setTeams] = useState({});
@@ -25,6 +23,7 @@ export default function TVDisplay() {
   const [error, setError] = useState('');
   const [scrollPosition, setScrollPosition] = useState(0);
   const [selectedStage, setSelectedStage] = useState('all'); // 'all', 'quarterfinal', 'semifinal', 'thirdplace', 'final'
+  const [actualTournamentId, setActualTournamentId] = useState(null);
 
   // Team logo mapping with multiple variations
   const teamLogos = {
@@ -97,19 +96,50 @@ export default function TVDisplay() {
   };
 
   useEffect(() => {
-    if (!tournamentId) {
-      setError('No tournament ID provided in URL');
+    if (!routeTournamentId && !matchId) {
+      setError('No tournament ID or match ID provided in URL');
       setLoading(false);
       return;
     }
-
-    let unsubscribeTournament = null;
-    let unsubscribeFixtures = null;
 
     const setupRealtimeListeners = async () => {
       try {
         setLoading(true);
         setError('');
+
+        let tournamentId = routeTournamentId;
+
+        // If we don't have a direct tournament ID, fetch the match to get the tournament ID
+        if (!tournamentId && matchId) {
+          try {
+            const matchDoc = await getDoc(doc(db, 'fixtures', matchId));
+            if (matchDoc.exists()) {
+              const matchData = matchDoc.data();
+              tournamentId = matchData.tournamentId;
+              setActualTournamentId(tournamentId);
+            } else {
+              setError(`Match not found with ID: ${matchId}`);
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error('Error fetching match:', error);
+            setError(`Failed to load match data: ${error.message}`);
+            setLoading(false);
+            return;
+          }
+        } else {
+          setActualTournamentId(tournamentId);
+        }
+
+        if (!tournamentId) {
+          setError('Could not determine tournament ID');
+          setLoading(false);
+          return;
+        }
+
+        let unsubscribeTournament = null;
+        let unsubscribeFixtures = null;
 
         // Set up real-time listener for tournament details
         unsubscribeTournament = onSnapshot(
@@ -159,6 +189,16 @@ export default function TVDisplay() {
           }
         );
 
+        // Cleanup function to unsubscribe from listeners
+        return () => {
+          if (unsubscribeTournament) {
+            unsubscribeTournament();
+          }
+          if (unsubscribeFixtures) {
+            unsubscribeFixtures();
+          }
+        };
+
       } catch (error) {
         console.error('Error setting up listeners:', error);
         setError(`Failed to setup real-time updates: ${error.message}`);
@@ -167,17 +207,7 @@ export default function TVDisplay() {
     };
 
     setupRealtimeListeners();
-
-    // Cleanup function to unsubscribe from listeners
-    return () => {
-      if (unsubscribeTournament) {
-        unsubscribeTournament();
-      }
-      if (unsubscribeFixtures) {
-        unsubscribeFixtures();
-      }
-    };
-  }, [tournamentId]);
+  }, [routeTournamentId, matchId]);
 
 
   const getTeamLogo = (teamId, teamName) => {

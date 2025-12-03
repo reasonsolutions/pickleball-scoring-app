@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, onSnapshot, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
+import Footer from '../components/Footer';
 
 export default function MatchDetails() {
   const { matchId } = useParams();
@@ -909,6 +910,9 @@ export default function MatchDetails() {
           </div>
         </div>
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

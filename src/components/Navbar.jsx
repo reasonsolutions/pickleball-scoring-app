@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import hplLogo from '../assets/hpl_logo.png';
@@ -6,6 +6,7 @@ import hplLogo from '../assets/hpl_logo.png';
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   async function handleLogout() {
     try {
@@ -20,15 +21,27 @@ export default function Navbar() {
     <div className="navbar bg-base-100 shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
       <div className="navbar-start">
         <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
+          <div
+            tabIndex={0}
+            role="button"
+            className="btn btn-ghost lg:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16"></path>
             </svg>
           </div>
-          <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-            <li><a href="/admin">Dashboard</a></li>
-            <li><a href="/admin/tournaments">My Tournaments</a></li>
-          </ul>
+          {isMobileMenuOpen && (
+            <ul
+              tabIndex={0}
+              className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <li><a href="/admin">Dashboard</a></li>
+              <li><a href="/admin/tournaments">My Tournaments</a></li>
+              <li><a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer">Fantasy HPL</a></li>
+            </ul>
+          )}
         </div>
         <a className="btn btn-ghost text-xl font-bold text-primary" href="/admin" style={{ color: 'var(--primary-green)' }}>
           <img src={hplLogo} alt="HPL Logo" style={{ height: '6rem', width: 'auto' }} />
@@ -39,6 +52,7 @@ export default function Navbar() {
         <ul className="menu menu-horizontal px-1">
           <li><a href="/admin" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">Dashboard</a></li>
           <li><a href="/admin/tournaments" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">My Tournaments</a></li>
+          <li><a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">Fantasy HPL</a></li>
         </ul>
       </div>
 

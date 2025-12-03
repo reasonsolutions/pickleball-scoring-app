@@ -38,6 +38,18 @@ export default function UmpireScoring() {
   const [selectedPlayer, setSelectedPlayer] = useState(null); // player to be substituted
   const [substitutePlayer, setSubstitutePlayer] = useState(''); // new player name
 
+  // Timeout states
+  const [showTimeoutModal, setShowTimeoutModal] = useState(false);
+  const [timeoutTeam, setTimeoutTeam] = useState(null); // 'team1' or 'team2'
+  const [timeoutsUsed, setTimeoutsUsed] = useState({ team1: 0, team2: 0 }); // track which teams used timeout (0 = not used, 1 = used)
+
+  // DRS (Decision Review System) states
+  const [showDRSModal, setShowDRSModal] = useState(false);
+  const [drsStep, setDrsStep] = useState('team'); // 'team', 'outcome'
+  const [drsTeam, setDrsTeam] = useState(null); // 'team1' or 'team2'
+  const [drsReviewsLeft, setDrsReviewsLeft] = useState({ team1: 1, team2: 1 }); // each team gets 1 review per match
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -45,6 +57,10 @@ export default function UmpireScoring() {
         const matchDoc = await getDoc(doc(db, 'fixtures', matchId));
         if (matchDoc.exists()) {
           const matchData = { id: matchDoc.id, ...matchDoc.data() };
+          console.log('🎥 Full match data:', matchData);
+          console.log('🎥 Available fields:', Object.keys(matchData));
+          console.log('🎥 youtubeLink:', matchData.youtubeLink);
+          console.log('🎥 youtubeLiveLink:', matchData.youtubeLiveLink);
           setMatch(matchData);
           
           // Check if match has been set up (has scores, status is live/completed, or has game configuration)
@@ -61,6 +77,14 @@ export default function UmpireScoring() {
             setServingPlayer(matchData.servingPlayer || 'player1');
             setServeSequence(matchData.serveSequence || 0);
             setTeamServeCount(matchData.teamServeCount || 0);
+            
+            // Initialize timeout state from match data
+            const matchTimeoutsUsed = matchData.timeoutsUsed || { team1: 0, team2: 0 };
+            setTimeoutsUsed(matchTimeoutsUsed);
+            
+            // Initialize DRS state from match data
+            const matchDrsReviewsLeft = matchData.drsReviewsLeft || { team1: 1, team2: 1 };
+            setDrsReviewsLeft(matchDrsReviewsLeft);
             
             if (matchData.scores) {
               setScores(matchData.scores);
@@ -90,11 +114,12 @@ export default function UmpireScoring() {
             ...doc.data()
           }));
 
-          // Filter matches from the same fixture (tournament)
+          // Filter matches from the same fixture group (not the entire tournament)
           const fixtureMatches = fixturesSnapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
             .filter(fixtureMatch =>
               fixtureMatch.tournamentId === matchData.tournamentId &&
+              fixtureMatch.fixtureGroupId === matchData.fixtureGroupId &&
               fixtureMatch.id !== matchData.id
             );
 
@@ -160,6 +185,7 @@ export default function UmpireScoring() {
     setSetupStep('scoring');
     
     // Set match status to 'live' when scoring starts
+    console.log('🏓 STARTING MATCH - Updating status to live');
     try {
       await updateDoc(doc(db, 'fixtures', matchId), {
         status: 'live',
@@ -170,6 +196,7 @@ export default function UmpireScoring() {
         teamServeCount,
         startedAt: serverTimestamp()
       });
+      console.log('✅ MATCH STATUS UPDATED TO LIVE');
     } catch (error) {
       console.error('Error setting match to live:', error);
     }
@@ -372,6 +399,8 @@ export default function UmpireScoring() {
     try {
       const matchResult = calculateMatchWinner();
       
+      console.log('🏓 ENDING MATCH - Updating status to completed');
+      
       await updateDoc(doc(db, 'fixtures', matchId), {
         status: 'completed',
         scores,
@@ -388,11 +417,67 @@ export default function UmpireScoring() {
         finalScore: matchResult?.finalScore || null,
         gamesWon: matchResult?.gamesWon || null
       });
+      
+      console.log('✅ MATCH STATUS UPDATED TO COMPLETED');
       setMatchEnded(true);
     } catch (error) {
       console.error('Error ending match:', error);
       setError('Failed to end match');
     }
+  };
+
+  // Timeout functions
+  const handleTimeoutClick = () => {
+    setShowTimeoutModal(true);
+    setTimeoutTeam(null);
+  };
+
+  const handleTimeoutTeamSelection = async (team) => {
+    setTimeoutTeam(team);
+    
+    try {
+      // Update match with timeout information
+      const currentTimeoutsUsed = match.timeoutsUsed || { team1: 0, team2: 0 };
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        timeoutsUsed: {
+          ...currentTimeoutsUsed,
+          [team]: 1
+        },
+        timeoutInProgress: {
+          team: team,
+          startTime: serverTimestamp(),
+          duration: 90000 // 90 seconds in milliseconds
+        }
+      });
+      
+      console.log(`⏰ TIMEOUT STARTED for ${team}`);
+      
+      // Mark timeout as used for this team
+      setTimeoutsUsed(prev => ({ ...prev, [team]: 1 }));
+      
+      // Close modal
+      setShowTimeoutModal(false);
+      
+      // Set timeout to end after 1 min 30 seconds (90 seconds)
+      setTimeout(async () => {
+        try {
+          await updateDoc(doc(db, 'fixtures', matchId), {
+            timeoutInProgress: null
+          });
+          console.log(`⏰ TIMEOUT ENDED for ${team}`);
+        } catch (error) {
+          console.error('Error ending timeout:', error);
+        }
+      }, 90000); // 90 seconds = 1 min 30 sec
+      
+    } catch (error) {
+      console.error('Error starting timeout:', error);
+      alert('Error starting timeout: ' + error.message);
+    }
+  };
+
+  const canTeamTakeTimeout = (team) => {
+    return timeoutsUsed[team] === 0;
   };
 
   // Substitution functions
@@ -410,6 +495,142 @@ export default function UmpireScoring() {
     
     const teamId = team === 'team1' ? match.team1 : match.team2;
     return !hasTeamMadeSubstitutionsInFixture(teamId);
+  };
+
+  // Check if a team can request DRS (has reviews left)
+  const canTeamRequestDRS = (team) => {
+    return drsReviewsLeft[team] > 0;
+  };
+
+  // Handle DRS button click
+  const handleDRSClick = () => {
+    setDrsStep('team');
+    setDrsTeam(null);
+    setShowDRSModal(true);
+  };
+
+  // Handle DRS team selection
+  const handleDRSTeamSelection = async (team) => {
+    setDrsTeam(team);
+    setDrsStep('outcome');
+    
+    // Start playing YouTube video on MainDisplay using fixture's youtubeLiveLink
+    console.log('🎥 DRS Team Selected:', team);
+    console.log('🎥 Match YouTube Live Link:', match?.youtubeLiveLink);
+    console.log('🎥 Match YouTube Link:', match?.youtubeLink);
+    
+    const youtubeUrl = match?.youtubeLiveLink || match?.youtubeLink;
+    console.log('🎥 Using YouTube URL:', youtubeUrl);
+    
+    if (youtubeUrl) {
+      await playVideoOnMainDisplay();
+    } else {
+      console.error('🎥 No YouTube Live Link found for this match');
+      alert('No YouTube Live Link found for this match. Please add one in the fixture settings.');
+    }
+  };
+
+  // Play YouTube video on MainDisplay by updating Firestore
+  const playVideoOnMainDisplay = async () => {
+    if (!match?.tournamentId || !match?.date) return;
+    
+    try {
+      const youtubeUrl = match.youtubeLiveLink || match.youtubeLink;
+      console.log('🎥 Starting DRS video with URL:', youtubeUrl);
+      
+      // Update the match document with DRS video state
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        drsVideoActive: true,
+        drsVideoUrl: youtubeUrl,
+        drsStartedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log('🎥 DRS video state updated in Firestore');
+      setIsVideoPlaying(true);
+    } catch (error) {
+      console.error('Error starting DRS video:', error);
+      setError('Failed to start DRS video');
+    }
+  };
+
+  // Handle DRS outcome selection
+  const handleDRSOutcome = async (successful) => {
+    if (!drsTeam) return;
+    
+    try {
+      // Stop video on MainDisplay
+      stopVideoOnMainDisplay();
+      
+      // If unsuccessful, reduce the team's reviews left
+      if (!successful) {
+        setDrsReviewsLeft(prev => ({
+          ...prev,
+          [drsTeam]: Math.max(0, prev[drsTeam] - 1)
+        }));
+      }
+      
+      // Update match data with DRS usage
+      const updatedMatch = {
+        ...match,
+        drsReviewsLeft: successful ? drsReviewsLeft : {
+          ...drsReviewsLeft,
+          [drsTeam]: Math.max(0, drsReviewsLeft[drsTeam] - 1)
+        },
+        drsHistory: [
+          ...(match.drsHistory || []),
+          {
+            team: drsTeam,
+            successful,
+            timestamp: new Date(),
+            game: currentGame + 1
+          }
+        ]
+      };
+      
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        drsReviewsLeft: updatedMatch.drsReviewsLeft,
+        drsHistory: updatedMatch.drsHistory,
+        updatedAt: serverTimestamp()
+      });
+      
+      setMatch(updatedMatch);
+      
+    } catch (error) {
+      console.error('Error updating DRS data:', error);
+      setError('Failed to update DRS data');
+    }
+    
+    // Close modal
+    closeDRSModal();
+  };
+
+  // Stop video on MainDisplay by updating Firestore
+  const stopVideoOnMainDisplay = async () => {
+    try {
+      // Update the match document to stop DRS video
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        drsVideoActive: false,
+        drsVideoUrl: null,
+        drsEndedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      setIsVideoPlaying(false);
+    } catch (error) {
+      console.error('Error stopping DRS video:', error);
+      setError('Failed to stop DRS video');
+    }
+  };
+
+  // Close DRS modal
+  const closeDRSModal = () => {
+    setShowDRSModal(false);
+    setDrsStep('team');
+    setDrsTeam(null);
+    if (isVideoPlaying) {
+      stopVideoOnMainDisplay();
+    }
   };
 
   const handleTeamSelection = (team) => {
@@ -483,6 +704,19 @@ export default function UmpireScoring() {
       await updateDoc(doc(db, 'fixtures', matchId), updates);
       
       console.log('Substitution successful');
+      
+      // Always trigger ads video playback for substitutions (does NOT consume timeout)
+      const timeoutUpdates = {
+        timeoutInProgress: {
+          team: selectedTeam,
+          startTime: serverTimestamp(),
+          duration: 60000, // 60 seconds = 1 minute
+          type: 'substitution' // Mark this as a substitution-triggered timeout
+        }
+      };
+      
+      await updateDoc(doc(db, 'fixtures', matchId), timeoutUpdates);
+      console.log('Substitution ads video triggered for team:', selectedTeam, '(timeout not consumed)');
       
       // Update local match state
       setMatch(prev => ({
@@ -806,7 +1040,45 @@ export default function UmpireScoring() {
               </button>
             ))}
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end gap-2">
+            <button
+              className={`btn btn-sm ${
+                canTeamTakeTimeout('team1') || canTeamTakeTimeout('team2')
+                  ? 'btn-outline hover:btn-secondary'
+                  : 'btn-disabled opacity-50 cursor-not-allowed'
+              }`}
+              onClick={handleTimeoutClick}
+              disabled={!canTeamTakeTimeout('team1') && !canTeamTakeTimeout('team2')}
+              title={
+                canTeamTakeTimeout('team1') || canTeamTakeTimeout('team2')
+                  ? "Team Timeout (1 min 30 sec)"
+                  : "Both teams have used their timeout"
+              }
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Timeout
+            </button>
+            <button
+              className={`btn btn-sm ${
+                canTeamRequestDRS('team1') || canTeamRequestDRS('team2')
+                  ? 'btn-outline hover:btn-warning'
+                  : 'btn-disabled opacity-50 cursor-not-allowed'
+              }`}
+              onClick={handleDRSClick}
+              disabled={!canTeamRequestDRS('team1') && !canTeamRequestDRS('team2')}
+              title={
+                canTeamRequestDRS('team1') || canTeamRequestDRS('team2')
+                  ? "Decision Review System"
+                  : "Both teams have used their review"
+              }
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              DRS
+            </button>
             <button
               className={`btn btn-sm ${
                 canTeamMakeSubstitution('team1') || canTeamMakeSubstitution('team2')
@@ -1207,6 +1479,189 @@ export default function UmpireScoring() {
                     >
                       Confirm Substitution
                     </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeout Modal */}
+      {showTimeoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Team Timeout</h3>
+                <button
+                  className="btn btn-sm btn-circle btn-ghost"
+                  onClick={() => setShowTimeoutModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Team Selection */}
+              <div className="space-y-4">
+                <p className="text-base-content/70 mb-4">
+                  Which team is taking the timeout? (1 min 30 sec)
+                </p>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    className={`btn btn-lg ${
+                      canTeamTakeTimeout('team1')
+                        ? 'btn-primary'
+                        : 'btn-disabled opacity-50'
+                    }`}
+                    onClick={() => handleTimeoutTeamSelection('team1')}
+                    disabled={!canTeamTakeTimeout('team1')}
+                  >
+                    <div className="text-center">
+                      <div className="font-bold">{match?.team1Name || 'Team 1'}</div>
+                      {!canTeamTakeTimeout('team1') && (
+                        <div className="text-xs opacity-70">Timeout already used</div>
+                      )}
+                    </div>
+                  </button>
+                  
+                  <button
+                    className={`btn btn-lg ${
+                      canTeamTakeTimeout('team2')
+                        ? 'btn-secondary'
+                        : 'btn-disabled opacity-50'
+                    }`}
+                    onClick={() => handleTimeoutTeamSelection('team2')}
+                    disabled={!canTeamTakeTimeout('team2')}
+                  >
+                    <div className="text-center">
+                      <div className="font-bold">{match?.team2Name || 'Team 2'}</div>
+                      {!canTeamTakeTimeout('team2') && (
+                        <div className="text-xs opacity-70">Timeout already used</div>
+                      )}
+                    </div>
+                  </button>
+                </div>
+                
+                <div className="mt-4 p-3 bg-base-200 rounded-lg">
+                  <p className="text-sm text-base-content/70">
+                    ⏰ Timeout duration: 1 minute 30 seconds<br/>
+                    📺 Ads videos will play on main display during timeout
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRS Modal */}
+      {showDRSModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-100 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Decision Review System (DRS)</h3>
+                <button
+                  className="btn btn-sm btn-circle btn-ghost"
+                  onClick={closeDRSModal}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Team Selection Step */}
+              {drsStep === 'team' && (
+                <div className="space-y-4">
+                  <p className="text-base-content/70 mb-4">
+                    Which team is requesting the review?
+                  </p>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <button
+                      className={`btn btn-lg ${
+                        canTeamRequestDRS('team1')
+                          ? 'btn-primary'
+                          : 'btn-disabled opacity-50'
+                      }`}
+                      onClick={() => handleDRSTeamSelection('team1')}
+                      disabled={!canTeamRequestDRS('team1')}
+                    >
+                      <div className="text-center">
+                        <div className="font-bold">{match?.team1Name || 'Team 1'}</div>
+                        <div className="text-xs opacity-70">
+                          {drsReviewsLeft.team1} review{drsReviewsLeft.team1 !== 1 ? 's' : ''} left
+                        </div>
+                      </div>
+                    </button>
+                    
+                    <button
+                      className={`btn btn-lg ${
+                        canTeamRequestDRS('team2')
+                          ? 'btn-secondary'
+                          : 'btn-disabled opacity-50'
+                      }`}
+                      onClick={() => handleDRSTeamSelection('team2')}
+                      disabled={!canTeamRequestDRS('team2')}
+                    >
+                      <div className="text-center">
+                        <div className="font-bold">{match?.team2Name || 'Team 2'}</div>
+                        <div className="text-xs opacity-70">
+                          {drsReviewsLeft.team2} review{drsReviewsLeft.team2 !== 1 ? 's' : ''} left
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-base-200 rounded-lg">
+                    <p className="text-sm text-base-content/70">
+                      📹 Video replay will be shown on main display<br/>
+                      ⚖️ Each team gets 1 review per match
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Outcome Selection Step */}
+              {drsStep === 'outcome' && (
+                <div className="space-y-4">
+                  <p className="text-base-content/70 mb-4">
+                    <strong>{drsTeam === 'team1' ? (match?.team1Name || 'Team 1') : (match?.team2Name || 'Team 2')}</strong> requested a review.
+                  </p>
+                  
+                  <p className="text-lg font-semibold mb-4">
+                    Was the review successful?
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      className="btn btn-lg btn-success"
+                      onClick={() => handleDRSOutcome(true)}
+                    >
+                      <div className="text-center">
+                        <div className="font-bold">✓ Successful</div>
+                        <div className="text-xs opacity-70">Team keeps review</div>
+                      </div>
+                    </button>
+                    
+                    <button
+                      className="btn btn-lg btn-error"
+                      onClick={() => handleDRSOutcome(false)}
+                    >
+                      <div className="text-center">
+                        <div className="font-bold">✗ Not Successful</div>
+                        <div className="text-xs opacity-70">Team loses review</div>
+                      </div>
+                    </button>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <p className="text-sm text-warning-content">
+                      ⚠️ If unsuccessful, the team will lose their review for this match
+                    </p>
                   </div>
                 </div>
               )}

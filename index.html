@@ -3,15 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/src/assets/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- Instagram Browser Compatibility -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Open Graph Meta Tags for Social Sharing -->
+    <meta property="og:title" content="Hyderabad Pickleball League" />
+    <meta property="og:description" content="Latest news and updates from Hyderabad Pickleball League" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Hyderabad Pickleball League" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hyderabad Pickleball League" />
+    <meta name="twitter:description" content="Latest news and updates from Hyderabad Pickleball League" />
+    
     <title>Hyderabad Pickleball League</title>
-    <!-- Google Fonts - Manrope -->
+    
+    <!-- Google Fonts - Manrope with fallback for Instagram browser -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Fallback CSS for Instagram browser -->
+    <style>
+      /* Ensure basic styling works even if external fonts fail */
+      body {
+        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Instagram browser specific fixes */
+      @media screen and (-webkit-min-device-pixel-ratio: 0) {
+        body {
+          -webkit-overflow-scrolling: touch;
+        }
+      }
+      
+      /* Prevent zoom on input focus in Instagram browser */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Instagram browser detection script -->
+    <script>
+      // Early detection of Instagram browser for immediate compatibility adjustments
+      if (/Instagram|FBAN|FBAV/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add('instagram-browser');
+        console.log('Instagram browser detected');
+      }
+    </script>
   </body>
 </html>

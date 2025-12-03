@@ -17,6 +17,8 @@ import AdminCleanup from './pages/AdminCleanup';
 import UmpireScoring from './pages/UmpireScoring';
 import UmpireMatchList from './pages/UmpireMatchList';
 import UmpireFixtureMatches from './pages/UmpireFixtureMatches';
+import ApiMatchList from './pages/ApiMatchList';
+import ApiFixtureMatches from './pages/ApiFixtureMatches';
 import StreamingMatchList from './pages/StreamingMatchList';
 import StreamingFixtureMatches from './pages/StreamingFixtureMatches';
 import TVDisplay from './pages/TVDisplay';
@@ -24,13 +26,26 @@ import BasicScore from './pages/BasicScore';
 import MatchDetails from './pages/MatchDetails';
 import XmlFeed from './pages/XmlFeed';
 import StreamingOverlay from './pages/StreamingOverlay';
+import StreamingOverlayController from './pages/StreamingOverlayController';
 import Rankings from './pages/Rankings';
 import Settings from './pages/Settings';
 import ContentManagement from './pages/ContentManagement';
 import Videos from './pages/Videos';
+import News from './pages/News';
 import NewsArticle from './pages/NewsArticle';
 import Results from './pages/Results';
+import Teams from './pages/Teams';
+import TeamDetail from './pages/TeamDetail';
 import SuperAdminManagement from './pages/SuperAdminManagement';
+import ScreenDisplay from './pages/ScreenDisplay';
+import MainDisplay from './pages/MainDisplay';
+import SideDisplay from './pages/SideDisplay';
+import OutsideDisplay from './pages/OutsideDisplay';
+import DisplayController from './pages/DisplayController';
+import FirebaseDebug from './pages/FirebaseDebug';
+import LogosManager from './pages/LogosManager';
+import CloudinaryTest from './pages/CloudinaryTest';
+import Players from './pages/Players';
 
 function App() {
   return (
@@ -45,8 +60,11 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/videos" element={<Videos />} />
+            <Route path="/news" element={<News />} />
             <Route path="/news/:id" element={<NewsArticle />} />
             <Route path="/results" element={<Results />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/teams/:tournamentId/:teamId" element={<TeamDetail />} />
             
             {/* Admin Dashboard - Protected Routes */}
             <Route path="/admin" element={
@@ -115,6 +133,30 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/admin/logos" element={
+              <ProtectedRoute>
+                <LogosManager />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/cloudinary-test" element={
+              <ProtectedRoute>
+                <CloudinaryTest />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/tournaments/:id/players" element={
+              <ProtectedRoute>
+                <Players />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/players" element={
+              <ProtectedRoute>
+                <Players />
+              </ProtectedRoute>
+            } />
+            
             {/* Umpire Scoring Route - Public access for umpires */}
             <Route path="/umpire/:matchId" element={<UmpireScoring />} />
             
@@ -123,6 +165,12 @@ function App() {
             
             {/* Umpire Fixture Matches Route - Public access for umpires to see matches in a fixture */}
             <Route path="/umpire-matches/:tournamentId/fixture/:fixtureGroupId" element={<UmpireFixtureMatches />} />
+            
+            {/* API Match List Route - Public access for API JSON data */}
+            <Route path="/api-matches/:tournamentId" element={<ApiMatchList />} />
+            
+            {/* API Fixture Matches Route - Public access for API JSON data */}
+            <Route path="/api-matches/:tournamentId/fixture/:fixtureGroupId" element={<ApiFixtureMatches />} />
             
             {/* Streaming Match List Route - Public access for streaming overlays */}
             <Route path="/streaming-matches/:tournamentId" element={<StreamingMatchList />} />
@@ -136,6 +184,21 @@ function App() {
             {/* Tournament Display Route - Public access for tournament display */}
             <Route path="/tournament-display/:tournamentId" element={<TVDisplay />} />
             
+            {/* Screen Display Route - Public access for screen display */}
+            <Route path="/screen-display/:tournamentId" element={<ScreenDisplay />} />
+            
+            {/* Main Display Route - Public access for main display */}
+            <Route path="/main-display/:tournamentId/:dateString" element={<MainDisplay />} />
+            
+            {/* Side Display Route - Public access for side display */}
+            <Route path="/side-display/:tournamentId/:dateString" element={<SideDisplay />} />
+            
+            {/* Outside Display Route - Public access for outside display */}
+            <Route path="/outside-display/:tournamentId/:dateString" element={<OutsideDisplay />} />
+            
+            {/* Display Controller Route - Public access for display management */}
+            <Route path="/display-controller/:tournamentId" element={<DisplayController />} />
+            
             {/* Basic Score JSON API Route - Public access for JSON API endpoint */}
             <Route path="/basic-score/:matchId" element={<BasicScore />} />
             
@@ -144,6 +207,12 @@ function App() {
             
             {/* Streaming Overlay Route - Public access for streaming overlay */}
             <Route path="/streaming-overlay/:matchId" element={<StreamingOverlay />} />
+            
+            {/* Streaming Overlay Controller Route - Public access for overlay control */}
+            <Route path="/streaming-overlay-controller/:matchId" element={<StreamingOverlayController />} />
+
+            {/* Firebase Debug Route - Public access for debugging */}
+            <Route path="/firebase-debug" element={<FirebaseDebug />} />
 
             {/* Match Details Route - Public access for viewers */}
             <Route path="/match/:matchId" element={<MatchDetails />} />

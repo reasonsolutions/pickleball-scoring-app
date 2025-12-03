@@ -24,7 +24,13 @@ export default function AddPlayersTeams() {
     age: '',
     gender: '',
     duprId: '',
-    photo: null
+    photo: null,
+    doublesRating: '',
+    doublesWins: '',
+    doublesLosses: '',
+    singlesRating: '',
+    singlesWins: '',
+    singlesLosses: ''
   });
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -60,7 +66,13 @@ export default function AddPlayersTeams() {
     age: '',
     gender: '',
     duprId: '',
-    photo: null
+    photo: null,
+    doublesRating: '',
+    doublesWins: '',
+    doublesLosses: '',
+    singlesRating: '',
+    singlesWins: '',
+    singlesLosses: ''
   });
 
   useEffect(() => {
@@ -71,8 +83,19 @@ export default function AddPlayersTeams() {
           const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
           setTournament(tournamentData);
           
-          // Check if user is the owner
-          if (tournamentData.createdBy !== currentUser.uid) {
+          // Debug logging
+          console.log('Tournament data:', tournamentData);
+          console.log('Current user:', currentUser);
+          console.log('Tournament createdBy:', tournamentData.createdBy);
+          console.log('Current user UID:', currentUser?.uid);
+          console.log('User role:', currentUser?.role);
+          console.log('User email:', currentUser?.email);
+          
+          // Check if user is the owner or super admin
+          const isTournamentOwner = tournamentData.createdBy === currentUser.uid;
+          const isSuperAdmin = currentUser?.role === 'super_admin' || currentUser?.email === 'siddharth@318digital.com';
+          
+          if (!isTournamentOwner && !isSuperAdmin) {
             setError('You are not authorized to manage this tournament');
             return;
           }
@@ -87,10 +110,10 @@ export default function AddPlayersTeams() {
       }
     };
 
-    if (id) {
+    if (id && currentUser) {
       fetchTournament();
     }
-  }, [id, currentUser.uid]);
+  }, [id, currentUser]);
 
   useEffect(() => {
     if (format === 'team') {
@@ -172,6 +195,17 @@ export default function AddPlayersTeams() {
 
     try {
       setSubmitting(true);
+      
+      // Debug logging
+      console.log('Current user:', currentUser);
+      console.log('Current user UID:', currentUser?.uid);
+      console.log('Tournament ID:', id);
+      
+      // Check if user is authenticated
+      if (!currentUser || !currentUser.uid) {
+        throw new Error('User not authenticated. Please log in again.');
+      }
+      
       const playerData = {
         name: playerForm.name.trim(),
         age: playerForm.age ? parseInt(playerForm.age) : null,
@@ -181,10 +215,18 @@ export default function AddPlayersTeams() {
           url: playerForm.photo.url,
           publicId: playerForm.photo.publicId
         } : null,
+        doublesRating: playerForm.doublesRating ? parseFloat(playerForm.doublesRating) : null,
+        doublesWins: playerForm.doublesWins ? parseInt(playerForm.doublesWins) : null,
+        doublesLosses: playerForm.doublesLosses ? parseInt(playerForm.doublesLosses) : null,
+        singlesRating: playerForm.singlesRating ? parseFloat(playerForm.singlesRating) : null,
+        singlesWins: playerForm.singlesWins ? parseInt(playerForm.singlesWins) : null,
+        singlesLosses: playerForm.singlesLosses ? parseInt(playerForm.singlesLosses) : null,
         tournamentId: id,
         createdBy: currentUser.uid,
         createdAt: serverTimestamp()
       };
+      
+      console.log('Player data to be added:', playerData);
 
       await addDoc(collection(db, 'players'), playerData);
       
@@ -194,7 +236,13 @@ export default function AddPlayersTeams() {
         age: '',
         gender: '',
         duprId: '',
-        photo: null
+        photo: null,
+        doublesRating: '',
+        doublesWins: '',
+        doublesLosses: '',
+        singlesRating: '',
+        singlesWins: '',
+        singlesLosses: ''
       });
       
       // Refresh players list if in team format
@@ -205,7 +253,15 @@ export default function AddPlayersTeams() {
       setError('');
     } catch (error) {
       console.error('Error adding player:', error);
-      setError('Failed to add player. Please try again.');
+      
+      // More specific error handling
+      if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
+        setError('Permission denied. Please ensure you are logged in and have the necessary permissions to add players.');
+      } else if (error.message.includes('User not authenticated')) {
+        setError('You are not logged in. Please log in and try again.');
+      } else {
+        setError(`Failed to add player: ${error.message}`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -243,6 +299,12 @@ export default function AddPlayersTeams() {
             gender: (row.gender || row.Gender || '').toString().trim(),
             duprId: (row.duprId || row['DUPR ID'] || row.dupr_id || '').toString().trim(),
             photo: photoData,
+            doublesRating: (row.doublesRating || row['Doubles Rating'] || row['Rating (Doubles)'] || row.doubles_rating || '') ? parseFloat(row.doublesRating || row['Doubles Rating'] || row['Rating (Doubles)'] || row.doubles_rating) : null,
+            doublesWins: (row.doublesWins || row['Doubles Wins'] || row['Wins (Doubles)'] || row.doubles_wins || '') ? parseInt(row.doublesWins || row['Doubles Wins'] || row['Wins (Doubles)'] || row.doubles_wins) : null,
+            doublesLosses: (row.doublesLosses || row['Doubles Losses'] || row['Losses (Doubles)'] || row.doubles_losses || '') ? parseInt(row.doublesLosses || row['Doubles Losses'] || row['Losses (Doubles)'] || row.doubles_losses) : null,
+            singlesRating: (row.singlesRating || row['Singles Rating'] || row['Rating (Singles)'] || row.singles_rating || '') ? parseFloat(row.singlesRating || row['Singles Rating'] || row['Rating (Singles)'] || row.singles_rating) : null,
+            singlesWins: (row.singlesWins || row['Singles Wins'] || row['Wins (Singles)'] || row.singles_wins || '') ? parseInt(row.singlesWins || row['Singles Wins'] || row['Wins (Singles)'] || row.singles_wins) : null,
+            singlesLosses: (row.singlesLosses || row['Singles Losses'] || row['Losses (Singles)'] || row.singles_losses || '') ? parseInt(row.singlesLosses || row['Singles Losses'] || row['Losses (Singles)'] || row.singles_losses) : null,
             tournamentId: id,
             createdBy: currentUser.uid,
             createdAt: serverTimestamp()
@@ -273,6 +335,137 @@ export default function AddPlayersTeams() {
       setSubmitting(false);
       e.target.value = ''; // Reset file input
     }
+  };
+
+  // Bulk update function to update existing players with new statistics
+  const handleBulkUpdatePlayers = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setSubmitting(true);
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      let updatedCount = 0;
+      let notFoundCount = 0;
+      const notFoundPlayers = [];
+
+      for (const row of jsonData) {
+        const playerName = (row.name || row.Name || '').toString().trim();
+        if (!playerName) continue;
+
+        // Find existing player by name in current tournament
+        const existingPlayer = players.find(p =>
+          p.name.toLowerCase() === playerName.toLowerCase()
+        );
+
+        if (existingPlayer) {
+          // Prepare update data with only the new statistics fields
+          const updateData = {
+            updatedAt: serverTimestamp()
+          };
+
+          // Add new fields if they exist in the row
+          if (row.doublesRating || row['Doubles Rating'] || row['Rating (Doubles)'] || row.doubles_rating) {
+            updateData.doublesRating = parseFloat(row.doublesRating || row['Doubles Rating'] || row['Rating (Doubles)'] || row.doubles_rating);
+          }
+          if (row.doublesWins || row['Doubles Wins'] || row['Wins (Doubles)'] || row.doubles_wins) {
+            updateData.doublesWins = parseInt(row.doublesWins || row['Doubles Wins'] || row['Wins (Doubles)'] || row.doubles_wins);
+          }
+          if (row.doublesLosses || row['Doubles Losses'] || row['Losses (Doubles)'] || row.doubles_losses) {
+            updateData.doublesLosses = parseInt(row.doublesLosses || row['Doubles Losses'] || row['Losses (Doubles)'] || row.doubles_losses);
+          }
+          if (row.singlesRating || row['Singles Rating'] || row['Rating (Singles)'] || row.singles_rating) {
+            updateData.singlesRating = parseFloat(row.singlesRating || row['Singles Rating'] || row['Rating (Singles)'] || row.singles_rating);
+          }
+          if (row.singlesWins || row['Singles Wins'] || row['Wins (Singles)'] || row.singles_wins) {
+            updateData.singlesWins = parseInt(row.singlesWins || row['Singles Wins'] || row['Wins (Singles)'] || row.singles_wins);
+          }
+          if (row.singlesLosses || row['Singles Losses'] || row['Losses (Singles)'] || row.singles_losses) {
+            updateData.singlesLosses = parseInt(row.singlesLosses || row['Singles Losses'] || row['Losses (Singles)'] || row.singles_losses);
+          }
+
+          // Only update if we have at least one new field to update
+          if (Object.keys(updateData).length > 1) { // More than just updatedAt
+            await updateDoc(doc(db, 'players', existingPlayer.id), updateData);
+            updatedCount++;
+          }
+        } else {
+          notFoundCount++;
+          notFoundPlayers.push(playerName);
+        }
+      }
+
+      // Refresh players list
+      if (format === 'team') {
+        fetchPlayers();
+      }
+
+      setError('');
+      let message = `Successfully updated ${updatedCount} players!`;
+      if (notFoundCount > 0) {
+        message += `\n\n${notFoundCount} players not found: ${notFoundPlayers.slice(0, 5).join(', ')}${notFoundPlayers.length > 5 ? '...' : ''}`;
+      }
+      alert(message);
+    } catch (error) {
+      console.error('Error updating players:', error);
+      setError('Failed to update players. Please check your file format.');
+    } finally {
+      setSubmitting(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  // Function to download sample bulk update file
+  const handleDownloadBulkUpdateSample = () => {
+    // Create sample data with current players' names
+    const sampleData = players.length > 0
+      ? players.slice(0, 5).map(player => ({
+          'Name': player.name,
+          'Doubles Rating': '',
+          'Doubles Wins': '',
+          'Doubles Losses': '',
+          'Singles Rating': '',
+          'Singles Wins': '',
+          'Singles Losses': ''
+        }))
+      : [
+          {
+            'Name': 'John Smith',
+            'Doubles Rating': '4.235',
+            'Doubles Wins': '15',
+            'Doubles Losses': '8',
+            'Singles Rating': '3.847',
+            'Singles Wins': '12',
+            'Singles Losses': '10'
+          },
+          {
+            'Name': 'Sarah Johnson',
+            'Doubles Rating': '4.567',
+            'Doubles Wins': '20',
+            'Doubles Losses': '5',
+            'Singles Rating': '4.123',
+            'Singles Wins': '18',
+            'Singles Losses': '7'
+          }
+        ];
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Bulk Update Sample');
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `Bulk_Update_Players_Sample_${timestamp}.xlsx`;
+    
+    // Download the file
+    XLSX.writeFile(workbook, filename);
   };
 
   const handleTeamFormChange = (e) => {
@@ -551,7 +744,13 @@ export default function AddPlayersTeams() {
       age: player.age || '',
       gender: player.gender || '',
       duprId: player.duprId || '',
-      photo: player.photo || null
+      photo: player.photo || null,
+      doublesRating: player.doublesRating || '',
+      doublesWins: player.doublesWins || '',
+      doublesLosses: player.doublesLosses || '',
+      singlesRating: player.singlesRating || '',
+      singlesWins: player.singlesWins || '',
+      singlesLosses: player.singlesLosses || ''
     });
     setShowEditPlayerModal(true);
   };
@@ -565,6 +764,7 @@ export default function AddPlayersTeams() {
 
     try {
       setSubmitting(true);
+      
       const playerData = {
         name: editPlayerForm.name.trim(),
         age: editPlayerForm.age ? parseInt(editPlayerForm.age) : null,
@@ -574,6 +774,14 @@ export default function AddPlayersTeams() {
           url: editPlayerForm.photo.url,
           publicId: editPlayerForm.photo.publicId
         } : null,
+        doublesRating: editPlayerForm.doublesRating ? parseFloat(editPlayerForm.doublesRating) : null,
+        doublesWins: editPlayerForm.doublesWins ? parseInt(editPlayerForm.doublesWins) : null,
+        doublesLosses: editPlayerForm.doublesLosses ? parseInt(editPlayerForm.doublesLosses) : null,
+        singlesRating: editPlayerForm.singlesRating ? parseFloat(editPlayerForm.singlesRating) : null,
+        singlesWins: editPlayerForm.singlesWins ? parseInt(editPlayerForm.singlesWins) : null,
+        singlesLosses: editPlayerForm.singlesLosses ? parseInt(editPlayerForm.singlesLosses) : null,
+        tournamentId: id, // Ensure tournamentId is included
+        createdBy: editingPlayer.createdBy, // Preserve the original creator
         updatedAt: serverTimestamp()
       };
 
@@ -585,7 +793,13 @@ export default function AddPlayersTeams() {
         age: '',
         gender: '',
         duprId: '',
-        photo: null
+        photo: null,
+        doublesRating: '',
+        doublesWins: '',
+        doublesLosses: '',
+        singlesRating: '',
+        singlesWins: '',
+        singlesLosses: ''
       });
       setShowEditPlayerModal(false);
       setEditingPlayer(null);
@@ -644,6 +858,12 @@ export default function AddPlayersTeams() {
                 'Gender': player.gender || '',
                 'DUPR ID': player.duprId || '',
                 'Photo URL': player.photo?.url || '',
+                'Doubles Rating': player.doublesRating || '',
+                'Doubles Wins': player.doublesWins || '',
+                'Doubles Losses': player.doublesLosses || '',
+                'Singles Rating': player.singlesRating || '',
+                'Singles Wins': player.singlesWins || '',
+                'Singles Losses': player.singlesLosses || '',
                 'Team Name': team.name,
                 'Team Description': team.description || '',
                 'Team Logo URL': team.logo?.url || ''
@@ -657,6 +877,12 @@ export default function AddPlayersTeams() {
               'Gender': player.gender || '',
               'DUPR ID': player.duprId || '',
               'Photo URL': player.photo?.url || '',
+              'Doubles Rating': player.doublesRating || '',
+              'Doubles Wins': player.doublesWins || '',
+              'Doubles Losses': player.doublesLosses || '',
+              'Singles Rating': player.singlesRating || '',
+              'Singles Wins': player.singlesWins || '',
+              'Singles Losses': player.singlesLosses || '',
               'Team Name': 'No Team',
               'Team Description': '',
               'Team Logo URL': ''
@@ -671,7 +897,13 @@ export default function AddPlayersTeams() {
             'Age': player.age || '',
             'Gender': player.gender || '',
             'DUPR ID': player.duprId || '',
-            'Photo URL': player.photo?.url || ''
+            'Photo URL': player.photo?.url || '',
+            'Doubles Rating': player.doublesRating || '',
+            'Doubles Wins': player.doublesWins || '',
+            'Doubles Losses': player.doublesLosses || '',
+            'Singles Rating': player.singlesRating || '',
+            'Singles Wins': player.singlesWins || '',
+            'Singles Losses': player.singlesLosses || ''
           });
         });
       }
@@ -853,6 +1085,12 @@ export default function AddPlayersTeams() {
             gender: genderValue,
             duprId: duprValue,
             photo: photoData,
+            doublesRating: (row['Doubles Rating'] || row['Rating (Doubles)'] || row.doubles_rating || '') ? parseFloat(row['Doubles Rating'] || row['Rating (Doubles)'] || row.doubles_rating) : null,
+            doublesWins: (row['Doubles Wins'] || row['Wins (Doubles)'] || row.doubles_wins || '') ? parseInt(row['Doubles Wins'] || row['Wins (Doubles)'] || row.doubles_wins) : null,
+            doublesLosses: (row['Doubles Losses'] || row['Losses (Doubles)'] || row.doubles_losses || '') ? parseInt(row['Doubles Losses'] || row['Losses (Doubles)'] || row.doubles_losses) : null,
+            singlesRating: (row['Singles Rating'] || row['Rating (Singles)'] || row.singles_rating || '') ? parseFloat(row['Singles Rating'] || row['Rating (Singles)'] || row.singles_rating) : null,
+            singlesWins: (row['Singles Wins'] || row['Wins (Singles)'] || row.singles_wins || '') ? parseInt(row['Singles Wins'] || row['Wins (Singles)'] || row.singles_wins) : null,
+            singlesLosses: (row['Singles Losses'] || row['Losses (Singles)'] || row.singles_losses || '') ? parseInt(row['Singles Losses'] || row['Losses (Singles)'] || row.singles_losses) : null,
             tournamentId: id,
             createdBy: currentUser.uid,
             createdAt: serverTimestamp()
@@ -1184,6 +1422,106 @@ export default function AddPlayersTeams() {
                       />
                     </div>
 
+                    {/* Doubles Statistics */}
+                    <div className="divider">Doubles Statistics</div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium text-xs">Rating</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="doublesRating"
+                          placeholder="0.000"
+                          className="input input-bordered input-sm"
+                          value={playerForm.doublesRating}
+                          onChange={handlePlayerFormChange}
+                          step="0.001"
+                          min="0"
+                          max="10"
+                        />
+                      </div>
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium text-xs">Wins</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="doublesWins"
+                          placeholder="0"
+                          className="input input-bordered input-sm"
+                          value={playerForm.doublesWins}
+                          onChange={handlePlayerFormChange}
+                          min="0"
+                        />
+                      </div>
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium text-xs">Losses</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="doublesLosses"
+                          placeholder="0"
+                          className="input input-bordered input-sm"
+                          value={playerForm.doublesLosses}
+                          onChange={handlePlayerFormChange}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Singles Statistics */}
+                    <div className="divider">Singles Statistics</div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium text-xs">Rating</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="singlesRating"
+                          placeholder="0.000"
+                          className="input input-bordered input-sm"
+                          value={playerForm.singlesRating}
+                          onChange={handlePlayerFormChange}
+                          step="0.001"
+                          min="0"
+                          max="10"
+                        />
+                      </div>
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium text-xs">Wins</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="singlesWins"
+                          placeholder="0"
+                          className="input input-bordered input-sm"
+                          value={playerForm.singlesWins}
+                          onChange={handlePlayerFormChange}
+                          min="0"
+                        />
+                      </div>
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium text-xs">Losses</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="singlesLosses"
+                          placeholder="0"
+                          className="input input-bordered input-sm"
+                          value={playerForm.singlesLosses}
+                          onChange={handlePlayerFormChange}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       className={`btn btn-primary w-full ${submitting ? 'loading' : ''}`}
@@ -1206,7 +1544,7 @@ export default function AddPlayersTeams() {
                       </svg>
                       <div>
                         <h4 className="font-bold">Excel Format Required</h4>
-                        <p className="text-sm">Columns: Name, Age, Gender, DUPR ID, Photo URL (optional)</p>
+                        <p className="text-sm">Columns: Name, Age, Gender, DUPR ID, Photo URL, Doubles Rating, Doubles Wins, Doubles Losses, Singles Rating, Singles Wins, Singles Losses (all optional except Name)</p>
                       </div>
                     </div>
 
@@ -1227,6 +1565,57 @@ export default function AddPlayersTeams() {
                       <div className="flex items-center gap-2">
                         <span className="loading loading-spinner loading-sm"></span>
                         <span>Processing file...</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bulk Update Players */}
+              <div className="card bg-base-100 shadow-xl">
+                <div className="card-body">
+                  <h3 className="card-title mb-4">Bulk Update Player Statistics</h3>
+                  <div className="space-y-4">
+                    <div className="alert alert-warning">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <div>
+                        <h4 className="font-bold">Update Existing Players</h4>
+                        <p className="text-sm">This will update statistics for existing players by matching their names. Required: Name column. Optional: Doubles Rating, Doubles Wins, Doubles Losses, Singles Rating, Singles Wins, Singles Losses</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm flex-1"
+                        onClick={handleDownloadBulkUpdateSample}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download Sample File
+                      </button>
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">Upload Excel File</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleBulkUpdatePlayers}
+                        className="file-input file-input-bordered w-full"
+                        disabled={submitting}
+                      />
+                    </div>
+
+                    {submitting && (
+                      <div className="flex items-center gap-2">
+                        <span className="loading loading-spinner loading-sm"></span>
+                        <span>Updating players...</span>
                       </div>
                     )}
                   </div>
@@ -1335,6 +1724,106 @@ export default function AddPlayersTeams() {
                         />
                       </div>
 
+                      {/* Doubles Statistics */}
+                      <div className="divider">Doubles Statistics</div>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-medium text-xs">Rating</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="doublesRating"
+                            placeholder="0.000"
+                            className="input input-bordered input-sm"
+                            value={playerForm.doublesRating}
+                            onChange={handlePlayerFormChange}
+                            step="0.001"
+                            min="0"
+                            max="10"
+                          />
+                        </div>
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-medium text-xs">Wins</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="doublesWins"
+                            placeholder="0"
+                            className="input input-bordered input-sm"
+                            value={playerForm.doublesWins}
+                            onChange={handlePlayerFormChange}
+                            min="0"
+                          />
+                        </div>
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-medium text-xs">Losses</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="doublesLosses"
+                            placeholder="0"
+                            className="input input-bordered input-sm"
+                            value={playerForm.doublesLosses}
+                            onChange={handlePlayerFormChange}
+                            min="0"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Singles Statistics */}
+                      <div className="divider">Singles Statistics</div>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-medium text-xs">Rating</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="singlesRating"
+                            placeholder="0.000"
+                            className="input input-bordered input-sm"
+                            value={playerForm.singlesRating}
+                            onChange={handlePlayerFormChange}
+                            step="0.001"
+                            min="0"
+                            max="10"
+                          />
+                        </div>
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-medium text-xs">Wins</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="singlesWins"
+                            placeholder="0"
+                            className="input input-bordered input-sm"
+                            value={playerForm.singlesWins}
+                            onChange={handlePlayerFormChange}
+                            min="0"
+                          />
+                        </div>
+                        <div className="form-control">
+                          <label className="label">
+                            <span className="label-text font-medium text-xs">Losses</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="singlesLosses"
+                            placeholder="0"
+                            className="input input-bordered input-sm"
+                            value={playerForm.singlesLosses}
+                            onChange={handlePlayerFormChange}
+                            min="0"
+                          />
+                        </div>
+                      </div>
+
                       <CloudinaryImageUpload
                         onImageUpload={handlePlayerPhotoUpload}
                         currentImage={playerForm.photo?.url}
@@ -1363,7 +1852,7 @@ export default function AddPlayersTeams() {
                         </svg>
                         <div>
                           <h4 className="font-bold">Excel Format Required</h4>
-                          <p className="text-sm">Columns: Name, Age, Gender, DUPR ID, Photo URL (optional)</p>
+                          <p className="text-sm">Columns: Name, Age, Gender, DUPR ID, Photo URL, Doubles Rating, Doubles Wins, Doubles Losses, Singles Rating, Singles Wins, Singles Losses (all optional except Name)</p>
                         </div>
                       </div>
 
@@ -1384,6 +1873,57 @@ export default function AddPlayersTeams() {
                         <div className="flex items-center gap-2">
                           <span className="loading loading-spinner loading-sm"></span>
                           <span>Processing file...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bulk Update Players */}
+                <div className="card bg-base-100 shadow-xl">
+                  <div className="card-body">
+                    <h3 className="card-title mb-4">Bulk Update Player Statistics</h3>
+                    <div className="space-y-4">
+                      <div className="alert alert-warning">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <div>
+                          <h4 className="font-bold">Update Existing Players</h4>
+                          <p className="text-sm">This will update statistics for existing players by matching their names. Required: Name column. Optional: Doubles Rating, Doubles Wins, Doubles Losses, Singles Rating, Singles Wins, Singles Losses</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mb-4">
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm flex-1"
+                          onClick={handleDownloadBulkUpdateSample}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Download Sample File
+                        </button>
+                      </div>
+
+                      <div className="form-control">
+                        <label className="label">
+                          <span className="label-text font-medium">Upload Excel File</span>
+                        </label>
+                        <input
+                          type="file"
+                          accept=".xlsx,.xls,.csv"
+                          onChange={handleBulkUpdatePlayers}
+                          className="file-input file-input-bordered w-full"
+                          disabled={submitting}
+                        />
+                      </div>
+
+                      {submitting && (
+                        <div className="flex items-center gap-2">
+                          <span className="loading loading-spinner loading-sm"></span>
+                          <span>Updating players...</span>
                         </div>
                       )}
                     </div>
@@ -1948,6 +2488,106 @@ export default function AddPlayersTeams() {
                   />
                 </div>
 
+                {/* Doubles Statistics */}
+                <div className="divider">Doubles Statistics</div>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium text-xs">Rating</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="doublesRating"
+                      placeholder="0.000"
+                      className="input input-bordered input-sm"
+                      value={editPlayerForm.doublesRating}
+                      onChange={handleEditPlayerFormChange}
+                      step="0.001"
+                      min="0"
+                      max="10"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium text-xs">Wins</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="doublesWins"
+                      placeholder="0"
+                      className="input input-bordered input-sm"
+                      value={editPlayerForm.doublesWins}
+                      onChange={handleEditPlayerFormChange}
+                      min="0"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium text-xs">Losses</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="doublesLosses"
+                      placeholder="0"
+                      className="input input-bordered input-sm"
+                      value={editPlayerForm.doublesLosses}
+                      onChange={handleEditPlayerFormChange}
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Singles Statistics */}
+                <div className="divider">Singles Statistics</div>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium text-xs">Rating</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="singlesRating"
+                      placeholder="0.000"
+                      className="input input-bordered input-sm"
+                      value={editPlayerForm.singlesRating}
+                      onChange={handleEditPlayerFormChange}
+                      step="0.001"
+                      min="0"
+                      max="10"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium text-xs">Wins</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="singlesWins"
+                      placeholder="0"
+                      className="input input-bordered input-sm"
+                      value={editPlayerForm.singlesWins}
+                      onChange={handleEditPlayerFormChange}
+                      min="0"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium text-xs">Losses</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="singlesLosses"
+                      placeholder="0"
+                      className="input input-bordered input-sm"
+                      value={editPlayerForm.singlesLosses}
+                      onChange={handleEditPlayerFormChange}
+                      min="0"
+                    />
+                  </div>
+                </div>
+
                 <CloudinaryImageUpload
                   onImageUpload={handleEditPlayerPhotoUpload}
                   currentImage={editPlayerForm.photo?.url}
@@ -1966,7 +2606,13 @@ export default function AddPlayersTeams() {
                         age: '',
                         gender: '',
                         duprId: '',
-                        photo: null
+                        photo: null,
+                        doublesRating: '',
+                        doublesWins: '',
+                        doublesLosses: '',
+                        singlesRating: '',
+                        singlesWins: '',
+                        singlesLosses: ''
                       });
                     }}
                   >

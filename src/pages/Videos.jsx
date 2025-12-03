@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
+import Footer from '../components/Footer';
 
 export default function Videos() {
   const [videos, setVideos] = useState([]);
@@ -244,6 +245,9 @@ export default function Videos() {
           </div>
         )}
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

@@ -26,6 +26,8 @@ export default function StreamingOverlay() {
   const [error, setError] = useState('');
   const [serveTicker, setServeTicker] = useState(null);
   const [previousServer, setPreviousServer] = useState(null);
+  const [activePlayerCard, setActivePlayerCard] = useState(null);
+  const [playerCardTimer, setPlayerCardTimer] = useState(null);
 
   // Team logo mapping
   const teamLogos = {
@@ -45,8 +47,48 @@ export default function StreamingOverlay() {
   useEffect(() => {
     if (!matchId) return;
 
+    // Set up real-time listener for overlay controls
+    const overlayControlId = `overlay_${matchId}`;
+    const unsubscribeOverlayControl = onSnapshot(
+      doc(db, 'overlay_controls', overlayControlId),
+      (controlDoc) => {
+        if (controlDoc.exists()) {
+          const controlData = controlDoc.data();
+          const newPlayerCard = controlData.activePlayerCard;
+          
+          // Clear existing timer if there is one
+          if (playerCardTimer) {
+            clearTimeout(playerCardTimer);
+          }
+          
+          if (newPlayerCard) {
+            setActivePlayerCard(newPlayerCard);
+            
+            // Set timer to hide card after 8 seconds
+            const timer = setTimeout(() => {
+              setActivePlayerCard(null);
+            }, 8000);
+            
+            setPlayerCardTimer(timer);
+          } else {
+            setActivePlayerCard(null);
+            setPlayerCardTimer(null);
+          }
+        } else {
+          setActivePlayerCard(null);
+          if (playerCardTimer) {
+            clearTimeout(playerCardTimer);
+            setPlayerCardTimer(null);
+          }
+        }
+      },
+      (error) => {
+        console.error('Error listening to overlay controls:', error);
+      }
+    );
+
     // Set up real-time listener for the match
-    const unsubscribe = onSnapshot(
+    const unsubscribeMatch = onSnapshot(
       doc(db, 'fixtures', matchId),
       async (matchDoc) => {
         try {
@@ -174,7 +216,13 @@ export default function StreamingOverlay() {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeMatch();
+      unsubscribeOverlayControl();
+      if (playerCardTimer) {
+        clearTimeout(playerCardTimer);
+      }
+    };
   }, [matchId]);
 
   if (loading) {
@@ -346,12 +394,6 @@ export default function StreamingOverlay() {
 
           {/* Right Team Card */}
           <div className="absolute right-0 top-0 h-full bg-gradient-to-l from-amber-50 to-amber-100 rounded-full shadow-2xl border-2 border-amber-200 flex items-center justify-end px-6 pl-20" style={{ width: '45%' }}>
-            {/* Court indicator for Team 2 */}
-            {match.court && (
-              <div className="bg-yellow-400 text-black px-2 py-1 rounded-full font-bold text-sm flex-shrink-0 mr-2">
-                Court {match.court}
-              </div>
-            )}
             
             {/* Team 2 Info */}
             <div className="flex flex-col min-w-0 flex-1 text-right">
@@ -393,50 +435,12 @@ export default function StreamingOverlay() {
 
           {/* Center Section */}
           <div className="absolute left-1/2 top-0 transform -translate-x-1/2 h-full flex flex-col items-center justify-center space-y-1 z-10">
-            {/* Fixture Type */}
+            {/* Match Number */}
             <div className="text-xs sm:text-sm lg:text-base font-bold text-white uppercase tracking-wider bg-black px-3 py-1 rounded">
               {(() => {
-                // Priority 1: Use playoffName if available
-                if (match.playoffName) {
-                  return match.playoffName;
-                }
-                
-                // Priority 2: Use playoffStage with number if available
-                if (match.playoffStage) {
-                  return formatFixtureType(match.playoffStage) + (match.playoffNumber ? ` ${match.playoffNumber}` : '');
-                }
-                
-                // Priority 3: Check if fixtureType indicates a main tournament stage (highest priority)
-                if (match.fixtureType && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(match.fixtureType)) {
-                  return formatFixtureType(match.fixtureType);
-                }
-                
-                // Priority 4: Handle minidreambreaker matches - they should inherit the fixture stage
-                if (match.fixtureType === 'minidreambreaker') {
-                  // Check fixture context determined from related matches
-                  if (fixtureContext && fixtureContext.stage) {
-                    return formatFixtureType(fixtureContext.stage);
-                  }
-                  
-                  // If we can't determine the context, show as Mini Game Breaker
-                  return 'Mini Game Breaker';
-                }
-                
-                // Priority 5: Check other possible tournament stage fields
-                if (match.stage && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(match.stage)) {
-                  return formatFixtureType(match.stage);
-                }
-                if (match.tournamentStage && ['quarterfinal', 'semifinal', 'thirdplace', 'third-place', 'final'].includes(match.tournamentStage)) {
-                  return formatFixtureType(match.tournamentStage);
-                }
-                
-                // Priority 6: Use formatted fixtureType for other cases
-                if (match.fixtureType) {
-                  return formatFixtureType(match.fixtureType);
-                }
-                
-                // Fallback
-                return 'Round Robin';
+                // Use matchNumber if available, otherwise default to Match 1
+                const matchNumber = match.matchNumber || 1;
+                return `Match ${matchNumber}`;
               })()}
             </div>
             
@@ -462,6 +466,111 @@ export default function StreamingOverlay() {
           </div>
         </div>
       </div>
+
+      {/* Player Info Card Overlay */}
+      {activePlayerCard && (() => {
+        // Determine which team the player belongs to
+        const isTeam1Player = match.player1Team1 === activePlayerCard.name || match.player2Team1 === activePlayerCard.name;
+        const isTeam2Player = match.player1Team2 === activePlayerCard.name || match.player2Team2 === activePlayerCard.name;
+        
+        // Position the card above the correct team name area, not overlapping the center score
+        const positionClass = isTeam1Player ? 'left-4' : isTeam2Player ? 'right-4' : 'left-1/2 transform -translate-x-1/2';
+        
+        return (
+          <div className={`absolute bottom-40 ${positionClass} z-30`}>
+            <div className="rounded-2xl shadow-2xl overflow-hidden animate-fade-in" style={{ width: '550px', height: '350px', background: 'linear-gradient(135deg, #ffffff 0%, #FE7743 100%)' }}>
+              <div className="flex h-full">
+                {/* Left side - Large Player Photo */}
+                <div className="w-1/2 relative overflow-hidden">
+                  <img
+                    src={activePlayerCard.photo || 'https://via.placeholder.com/275x350/cccccc/666666?text=No+Photo'}
+                    alt={activePlayerCard.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/275x350/cccccc/666666?text=No+Photo';
+                    }}
+                  />
+                  {/* Team Logo overlay on photo */}
+                  <div className="absolute top-4 left-4">
+                    <div className="w-12 h-12 bg-white/90 rounded-full shadow-lg flex items-center justify-center">
+                      <img
+                        src={isTeam1Player ? getTeamLogo('team1') : isTeam2Player ? getTeamLogo('team2') : getTeamLogo('team1')}
+                        alt="Team Logo"
+                        className="w-8 h-8 object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right side - Player Stats */}
+                <div className="w-1/2 p-5 flex flex-col justify-center space-y-3">
+                  {/* Player Name */}
+                  <div className="text-right mb-2">
+                    <h2 className="text-2xl font-black text-gray-800 uppercase tracking-wider leading-tight font-sporty-pro">
+                      {activePlayerCard.name.split(' ').map((word, index) => (
+                        <div key={index} className="block">{word}</div>
+                      ))}
+                    </h2>
+                  </div>
+
+                  {/* First Row - Rating */}
+                  <div className="bg-white/95 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-black text-black leading-none font-sporty-pro">
+                      {activePlayerCard.matchType && activePlayerCard.matchType.toLowerCase().includes('doubles')
+                        ? (activePlayerCard.doublesRating || 'N/A')
+                        : (activePlayerCard.singlesRating || 'N/A')
+                      }
+                    </div>
+                    <div className="text-xs text-gray-700 uppercase font-bold tracking-wide mt-1 font-sporty-pro">
+                      {activePlayerCard.matchType && activePlayerCard.matchType.toLowerCase().includes('doubles') ? 'DOUBLES' : 'SINGLES'} RATING
+                    </div>
+                  </div>
+
+                  {/* Second Row - Wins and Losses */}
+                  <div className="flex space-x-2">
+                    <div className="bg-white/95 rounded-lg p-3 text-center flex-1">
+                      <div className="text-xl font-black text-green-600 leading-none font-sporty-pro">
+                        {activePlayerCard.matchType && activePlayerCard.matchType.toLowerCase().includes('doubles')
+                          ? (activePlayerCard.doublesWins || 0)
+                          : (activePlayerCard.singlesWins || 0)
+                        }
+                      </div>
+                      <div className="text-xs text-gray-700 uppercase font-bold tracking-wide mt-1 font-sporty-pro">WINS</div>
+                    </div>
+                    <div className="bg-white/95 rounded-lg p-3 text-center flex-1">
+                      <div className="text-xl font-black text-red-600 leading-none font-sporty-pro">
+                        {activePlayerCard.matchType && activePlayerCard.matchType.toLowerCase().includes('doubles')
+                          ? (activePlayerCard.doublesLosses || 0)
+                          : (activePlayerCard.singlesLosses || 0)
+                        }
+                      </div>
+                      <div className="text-xs text-gray-700 uppercase font-bold tracking-wide mt-1 font-sporty-pro">LOSSES</div>
+                    </div>
+                  </div>
+
+                  {/* Third Row - Win Rate */}
+                  <div className="bg-white/95 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-black text-blue-600 leading-none font-sporty-pro">
+                      {(() => {
+                        const wins = activePlayerCard.matchType && activePlayerCard.matchType.toLowerCase().includes('doubles')
+                          ? (activePlayerCard.doublesWins || 0)
+                          : (activePlayerCard.singlesWins || 0);
+                        const losses = activePlayerCard.matchType && activePlayerCard.matchType.toLowerCase().includes('doubles')
+                          ? (activePlayerCard.doublesLosses || 0)
+                          : (activePlayerCard.singlesLosses || 0);
+                        const total = wins + losses;
+                        if (total === 0) return '0%';
+                        return Math.round((wins / total) * 100) + '%';
+                      })()}
+                    </div>
+                    <div className="text-xs text-gray-700 uppercase font-bold tracking-wide mt-1 font-sporty-pro">WIN RATE</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

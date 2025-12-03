@@ -54,30 +54,36 @@ export const fetchMinimalTournamentData = async (tournamentId) => {
 
   console.log('🔥 Fetching minimal tournament data from Firebase');
   
-  // Only fetch tournament details and recent/live matches
-  const [tournamentDoc, liveMatches, recentMatches] = await Promise.all([
+  // Fetch tournament details and all matches, then filter in JavaScript
+  const [tournamentDoc, allMatches] = await Promise.all([
     getDoc(doc(db, 'tournaments', tournamentId)),
-    // Live matches
+    // Get all matches for this tournament
     getDocs(query(
       collection(db, 'fixtures'),
-      where('tournamentId', '==', tournamentId),
-      where('status', 'in', ['live', 'in-progress']),
-      limit(10)
-    )),
-    // Recent completed matches (last 15)
-    getDocs(query(
-      collection(db, 'fixtures'),
-      where('tournamentId', '==', tournamentId),
-      where('status', '==', 'completed'),
-      orderBy('updatedAt', 'desc'),
-      limit(15)
+      where('tournamentId', '==', tournamentId)
     ))
   ]);
 
+  const allMatchesData = allMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Filter in JavaScript to avoid composite index requirements
+  const liveMatches = allMatchesData
+    .filter(match => match.status === 'live' || match.status === 'in-progress')
+    .slice(0, 10);
+    
+  const recentMatches = allMatchesData
+    .filter(match => match.status === 'completed')
+    .sort((a, b) => {
+      const aTime = a.updatedAt?.toDate?.() || new Date(0);
+      const bTime = b.updatedAt?.toDate?.() || new Date(0);
+      return bTime - aTime;
+    })
+    .slice(0, 15);
+
   const tournamentData = {
     tournament: tournamentDoc.exists() ? { id: tournamentDoc.id, ...tournamentDoc.data() } : null,
-    liveMatches: liveMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-    recentMatches: recentMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    liveMatches,
+    recentMatches
   };
 
   dataCache.set(cacheKey, tournamentData, 'tournamentData');
@@ -241,85 +247,208 @@ export const fetchTournamentStatsOptimized = async (tournamentId) => {
 
   console.log('🔥 Fetching tournament stats from Firebase');
   
-  const [teamsSnapshot, completedMatchesSnapshot] = await Promise.all([
+  const [teamsSnapshot, allMatchesSnapshot] = await Promise.all([
     getDocs(query(collection(db, 'teams'), where('tournamentId', '==', tournamentId))),
     getDocs(query(
       collection(db, 'fixtures'),
-      where('tournamentId', '==', tournamentId),
-      where('status', '==', 'completed')
+      where('tournamentId', '==', tournamentId)
     ))
   ]);
 
   const teams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const completedMatches = completedMatchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const allMatches = allMatchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-  // Calculate team statistics
+  // Group matches by fixtureGroupId to create fixtures
+  const fixtureGroups = {};
+  allMatches.forEach(match => {
+    const groupId = match.fixtureGroupId || match.id;
+    if (!fixtureGroups[groupId]) {
+      fixtureGroups[groupId] = {
+        id: groupId,
+        team1: match.team1,
+        team2: match.team2,
+        team1Name: match.team1Name,
+        team2Name: match.team2Name,
+        date: match.date,
+        time: match.time,
+        matches: [],
+        status: 'scheduled'
+      };
+    }
+    fixtureGroups[groupId].matches.push(match);
+  });
+
+  // Determine fixture status
+  Object.values(fixtureGroups).forEach(fixture => {
+    const completedMatches = fixture.matches.filter(m => m.status === 'completed').length;
+    const totalMatches = fixture.matches.length;
+    
+    if (completedMatches === totalMatches && totalMatches > 0) {
+      fixture.status = 'completed';
+    } else if (completedMatches > 0) {
+      fixture.status = 'in-progress';
+    } else {
+      fixture.status = 'scheduled';
+    }
+  });
+
+  // Calculate team statistics based on fixtures
   const teamsWithStats = teams.map(team => {
-    const teamMatches = completedMatches.filter(match =>
-      match.team1 === team.id || match.team2 === team.id
+    // Get all fixtures involving this team
+    const teamFixtures = Object.values(fixtureGroups).filter(fixture =>
+      fixture.team1 === team.id || fixture.team2 === team.id
     );
 
-    let battleWins = 0;
-    let battleLosses = 0;
-    let points = 0;
-    let gameWins = 0;
-    let gameLosses = 0;
+    let battleWins = 0; // Number of fixtures won
+    let battleLosses = 0; // Number of fixtures lost
+    let points = 0; // 3 points for each fixture win
+    let gameWins = 0; // Total games won across all matches (excluding gamebreaker)
+    let gameLosses = 0; // Total games lost across all matches (excluding gamebreaker)
+    let pointsWon = 0; // Total points won across all matches (excluding gamebreaker)
+    let pointsLost = 0; // Total points lost across all matches (excluding gamebreaker)
 
-    teamMatches.forEach(match => {
-      if (match.scores) {
-        const isTeam1 = match.team1 === team.id;
-        const team1Scores = match.scores.player1 || {};
-        const team2Scores = match.scores.player2 || {};
-        
-        let team1Games = 0;
-        let team2Games = 0;
+    teamFixtures.forEach(fixture => {
+      // Process fixtures that are completed OR in-progress (for real-time updates)
+      if (fixture.status === 'completed' || fixture.status === 'in-progress') {
+        const isTeam1 = fixture.team1 === team.id;
+        let team1MatchWins = 0;
+        let team2MatchWins = 0;
+        let team1TotalGames = 0;
+        let team2TotalGames = 0;
+        let team1TotalPoints = 0;
+        let team2TotalPoints = 0;
+        let completedMatches = 0;
+        let totalMatches = fixture.matches.length;
 
-        // Count games won
-        for (let i = 1; i <= (match.gamesCount || 3); i++) {
-          const gameKey = `game${i}`;
-          const team1Score = parseInt(team1Scores[gameKey]) || 0;
-          const team2Score = parseInt(team2Scores[gameKey]) || 0;
-          
-          if (team1Score > team2Score) {
-            team1Games++;
-          } else if (team2Score > team1Score) {
-            team2Games++;
+        // Process each match in the fixture
+        fixture.matches.forEach(match => {
+          if (match.scores && match.status === 'completed') {
+            completedMatches++;
+            
+            // Skip gamebreaker matches entirely for game wins/losses and points won/lost
+            if (match.matchType !== 'dreamBreaker' && match.matchTypeLabel !== 'Dream Breaker' && match.matchTypeLabel !== 'Game Breaker') {
+              const team1Scores = match.scores.player1 || {};
+              const team2Scores = match.scores.player2 || {};
+              
+              let team1Games = 0;
+              let team2Games = 0;
+              let team1MatchPoints = 0;
+              let team2MatchPoints = 0;
+
+              // Count games and points for regular matches only
+              const totalGames = match.gamesCount || 3;
+              
+              for (let i = 1; i <= totalGames; i++) {
+                const gameKey = `game${i}`;
+                const team1Score = parseInt(team1Scores[gameKey]) || 0;
+                const team2Score = parseInt(team2Scores[gameKey]) || 0;
+                
+                team1MatchPoints += team1Score;
+                team2MatchPoints += team2Score;
+                
+                if (team1Score > team2Score) {
+                  team1Games++;
+                } else if (team2Score > team1Score) {
+                  team2Games++;
+                }
+              }
+
+              // Add to fixture totals (only for non-gamebreaker matches)
+              team1TotalGames += team1Games;
+              team2TotalGames += team2Games;
+              team1TotalPoints += team1MatchPoints;
+              team2TotalPoints += team2MatchPoints;
+            }
+
+            // Determine match winner for fixture calculation (includes all matches)
+            const team1Scores = match.scores.player1 || {};
+            const team2Scores = match.scores.player2 || {};
+            let team1Games = 0;
+            let team2Games = 0;
+            
+            const totalGames = match.gamesCount || 3;
+            for (let i = 1; i <= totalGames; i++) {
+              const gameKey = `game${i}`;
+              const team1Score = parseInt(team1Scores[gameKey]) || 0;
+              const team2Score = parseInt(team2Scores[gameKey]) || 0;
+              
+              if (team1Score > team2Score) {
+                team1Games++;
+              } else if (team2Score > team1Score) {
+                team2Games++;
+              }
+            }
+            
+            if (team1Games > team2Games) {
+              team1MatchWins++;
+            } else if (team2Games > team1Games) {
+              team2MatchWins++;
+            }
           }
-        }
+        });
 
-        // Determine match winner and update stats
-        const team1Won = team1Games > team2Games;
-        const team2Won = team2Games > team1Games;
+        // Determine fixture winner - can be determined early if one team has already won majority
+        const remainingMatches = totalMatches - completedMatches;
+        const matchesNeededToWin = Math.ceil(totalMatches / 2);
+        
+        let team1WonFixture = false;
+        let team2WonFixture = false;
+        let fixtureDecided = false;
+
+        // Check if fixture is already decided (one team has won enough matches)
+        if (team1MatchWins >= matchesNeededToWin) {
+          team1WonFixture = true;
+          fixtureDecided = true;
+        } else if (team2MatchWins >= matchesNeededToWin) {
+          team2WonFixture = true;
+          fixtureDecided = true;
+        } else if (fixture.status === 'completed') {
+          // If fixture is completed but no clear winner by majority, use simple comparison
+          team1WonFixture = team1MatchWins > team2MatchWins;
+          team2WonFixture = team2MatchWins > team1MatchWins;
+          fixtureDecided = true;
+        }
         
         if (isTeam1) {
-          gameWins += team1Games;
-          gameLosses += team2Games;
+          // Add games and points for this team
+          gameWins += team1TotalGames;
+          gameLosses += team2TotalGames;
+          pointsWon += team1TotalPoints;
+          pointsLost += team2TotalPoints;
           
-          if (team1Won) {
-            battleWins++;
-            points += 3;
-          } else if (team2Won) {
-            battleLosses++;
-            if (team1Games > 0) {
-              points += 1;
+          // Award fixture points only if fixture winner is decided
+          if (fixtureDecided) {
+            if (team1WonFixture) {
+              battleWins++;
+              points += 3; // 3 points for winning the fixture
+            } else if (team2WonFixture) {
+              battleLosses++;
+              // No points for losing a fixture
             }
           }
         } else {
-          gameWins += team2Games;
-          gameLosses += team1Games;
+          // Add games and points for this team
+          gameWins += team2TotalGames;
+          gameLosses += team1TotalGames;
+          pointsWon += team2TotalPoints;
+          pointsLost += team1TotalPoints;
           
-          if (team2Won) {
-            battleWins++;
-            points += 3;
-          } else if (team1Won) {
-            battleLosses++;
-            if (team2Games > 0) {
-              points += 1;
+          // Award fixture points only if fixture winner is decided
+          if (fixtureDecided) {
+            if (team2WonFixture) {
+              battleWins++;
+              points += 3; // 3 points for winning the fixture
+            } else if (team1WonFixture) {
+              battleLosses++;
+              // No points for losing a fixture
             }
           }
         }
       }
     });
+
+    const gamesDifference = gameWins - gameLosses;
+    const pointsDifference = pointsWon - pointsLost;
 
     return {
       ...team,
@@ -327,20 +456,25 @@ export const fetchTournamentStatsOptimized = async (tournamentId) => {
       battleLosses,
       points,
       gameWins,
-      gameLosses
+      gameLosses,
+      pointsWon,
+      pointsLost,
+      gamesDifference,
+      pointsDifference
     };
   });
 
-  // Sort teams by points
+  // Sort teams by points (descending), then by battle wins, then by games difference, then by points difference
   teamsWithStats.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.battleWins !== a.battleWins) return b.battleWins - a.battleWins;
-    return (b.gameWins - b.gameLosses) - (a.gameWins - a.gameLosses);
+    if (b.gamesDifference !== a.gamesDifference) return b.gamesDifference - a.gamesDifference;
+    return b.pointsDifference - a.pointsDifference;
   });
 
   const stats = {
     teams: teamsWithStats,
-    totalMatches: completedMatches.length,
+    totalMatches: allMatches.length,
     totalTeams: teams.length
   };
 

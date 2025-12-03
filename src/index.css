@@ -1,6 +1,12 @@
+@import url('https://use.typekit.net/your-kit-id.css'); /* Replace with your Adobe Fonts kit ID */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Sporty Pro Font Family */
+.font-sporty-pro {
+  font-family: 'sporty-pro', 'Manrope', sans-serif;
+}
 
 /* Set default theme to FitMove */
 html {
@@ -42,6 +48,155 @@ body {
   --league-white: #FFFFFF;
   --league-text-dark: #2C3E50;
   --league-text-light: #7F8C8D;
+}
+
+/* Electricity Animation for Playoff Fixtures */
+@keyframes electricity {
+  0% {
+    box-shadow: 0 0 5px #4FC3F7, 0 0 10px #4FC3F7, 0 0 15px #4FC3F7, 0 0 20px #4FC3F7;
+  }
+  25% {
+    box-shadow: 0 0 10px #9AFF00, 0 0 20px #9AFF00, 0 0 30px #9AFF00, 0 0 40px #9AFF00;
+  }
+  50% {
+    box-shadow: 0 0 5px #FFD93D, 0 0 10px #FFD93D, 0 0 15px #FFD93D, 0 0 20px #FFD93D;
+  }
+  75% {
+    box-shadow: 0 0 10px #FF6B35, 0 0 20px #FF6B35, 0 0 30px #FF6B35, 0 0 40px #FF6B35;
+  }
+  100% {
+    box-shadow: 0 0 5px #4FC3F7, 0 0 10px #4FC3F7, 0 0 15px #4FC3F7, 0 0 20px #4FC3F7;
+  }
+}
+
+.playoff-fixture-card {
+  position: relative;
+  animation: electricity 3s ease-in-out infinite;
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(45deg, #4FC3F7, #9AFF00, #FFD93D, #FF6B35) border-box;
+}
+
+.playoff-fixture-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #4FC3F7, #9AFF00, #FFD93D, #FF6B35);
+  border-radius: inherit;
+  z-index: -1;
+  animation: electricity-border 2s linear infinite;
+}
+
+@keyframes electricity-border {
+  0% {
+    background: linear-gradient(45deg, #4FC3F7, #9AFF00, #FFD93D, #FF6B35);
+  }
+  25% {
+    background: linear-gradient(45deg, #9AFF00, #FFD93D, #FF6B35, #4FC3F7);
+  }
+  50% {
+    background: linear-gradient(45deg, #FFD93D, #FF6B35, #4FC3F7, #9AFF00);
+  }
+  75% {
+    background: linear-gradient(45deg, #FF6B35, #4FC3F7, #9AFF00, #FFD93D);
+  }
+  100% {
+    background: linear-gradient(45deg, #4FC3F7, #9AFF00, #FFD93D, #FF6B35);
+  }
+}
+
+/* Instagram Browser Compatibility Styles */
+.instagram-browser {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+}
+
+.instagram-browser * {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.instagram-browser input,
+.instagram-browser textarea,
+.instagram-browser select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Fix for Instagram browser image loading */
+.instagram-browser img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Instagram browser specific aspect ratio fix */
+.instagram-browser .aspect-video {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%;
+  overflow: hidden;
+}
+
+.instagram-browser .aspect-video img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Prevent zoom on input focus in Instagram browser */
+.instagram-browser input,
+.instagram-browser select,
+.instagram-browser textarea {
+  font-size: 16px !important;
+  transform: translateZ(0);
+  -webkit-appearance: none;
+}
+
+/* Instagram browser loading states */
+.instagram-browser .loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Instagram browser button improvements */
+.instagram-browser button {
+  -webkit-appearance: none;
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Instagram browser link improvements */
+.instagram-browser a {
+  -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+  touch-action: manipulation;
+}
+
+/* Instagram browser scroll improvements */
+.instagram-browser .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.instagram-browser .overflow-x-auto::-webkit-scrollbar {
+  display: none;
 }
 
 /* FitMove Gradients */
@@ -1997,4 +2152,20 @@ html:has(.tv-display-pro) {
     min-width: 100px;
     padding: 12px;
   }
+}
+
+/* Player Info Card Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
 }

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp, updateDoc, deleteDoc, Timestamp, or, and } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, query, where, getDocs, serverTimestamp, updateDoc, deleteDoc, Timestamp, or, and, writeBatch } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
+import CloudinaryImageUpload from '../components/CloudinaryImageUpload';
 
 export default function AddFixtures() {
   const { id } = useParams();
@@ -47,14 +48,17 @@ export default function AddFixtures() {
   const [editForm, setEditForm] = useState({
     date: '',
     time: '',
-    fixtureType: '',
+    playingTime: '18:00', // Default to 6:00 PM
     pool: '',
     court: '',
     player1Team1: '',
     player2Team1: '',
     player1Team2: '',
     player2Team2: '',
-    youtubeLink: ''
+    youtubeLink: '',
+    youtubeLiveLink: '',
+    featuredImage: null,
+    fixtureType: 'League' // Default value
   });
   
   // Delete confirmation state
@@ -427,9 +431,10 @@ export default function AddFixtures() {
     setEditForm({
       date: dateString,
       time: fixture.time || '',
-      fixtureType: fixture.fixtureType || 'league',
+      playingTime: fixture.playingTime || fixture.time || '18:00', // Use existing time or default to 6:00 PM
       pool: poolValue,
       court: fixture.court || '',
+      fixtureType: fixture.fixtureType || 'League', // Initialize with existing value or default
       // For playoff fixtures, include team selection
       team1: fixture.team1 || '',
       team2: fixture.team2 || '',
@@ -439,7 +444,9 @@ export default function AddFixtures() {
       player2Team1: fixture.player2Team1 || '',
       player1Team2: fixture.player1Team2 || '',
       player2Team2: fixture.player2Team2 || '',
-      youtubeLink: fixture.youtubeLink || ''
+      youtubeLink: fixture.youtubeLink || '',
+      youtubeLiveLink: fixture.youtubeLiveLink || '',
+      featuredImage: fixture.featuredImage || null
     });
     setShowEditModal(true);
   };
@@ -449,6 +456,13 @@ export default function AddFixtures() {
     setEditForm(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleFeaturedImageUpload = (imageResult) => {
+    setEditForm(prev => ({
+      ...prev,
+      featuredImage: imageResult
     }));
   };
 
@@ -469,18 +483,20 @@ export default function AddFixtures() {
         status: editingFixture.status,
         createdBy: editingFixture.createdBy,
         createdAt: editingFixture.createdAt,
-        // Preserve existing fields
-        pool: editingFixture.pool,
-        court: editingFixture.court,
-        player1Team1: editingFixture.player1Team1,
-        player2Team1: editingFixture.player2Team1,
-        player1Team2: editingFixture.player1Team2,
-        player2Team2: editingFixture.player2Team2,
-        youtubeLink: editingFixture.youtubeLink,
         // Only editable fields from the form
         time: editForm.time,
-        fixtureType: editForm.fixtureType,
-        // Optional fields that might exist
+        playingTime: editForm.playingTime,
+        court: editForm.court,
+        // Optional fields that might exist - use conditional spreading to avoid undefined values
+        ...(editingFixture.pool && { pool: editingFixture.pool }),
+        ...(editingFixture.player1Team1 && { player1Team1: editingFixture.player1Team1 }),
+        ...(editingFixture.player2Team1 && { player2Team1: editingFixture.player2Team1 }),
+        ...(editingFixture.player1Team2 && { player1Team2: editingFixture.player1Team2 }),
+        ...(editingFixture.player2Team2 && { player2Team2: editingFixture.player2Team2 }),
+        ...(editingFixture.youtubeLink && { youtubeLink: editingFixture.youtubeLink }),
+        ...(editForm.youtubeLiveLink && { youtubeLiveLink: editForm.youtubeLiveLink }),
+        ...(editForm.featuredImage && { featuredImage: editForm.featuredImage }),
+        fixtureType: editForm.fixtureType, // Save fixtureType from form
         ...(editingFixture.fixtureGroupId && { fixtureGroupId: editingFixture.fixtureGroupId }),
         ...(editingFixture.matchNumber && { matchNumber: editingFixture.matchNumber }),
         ...(editingFixture.playoffStage && { playoffStage: editingFixture.playoffStage }),
@@ -488,7 +504,57 @@ export default function AddFixtures() {
         updatedAt: serverTimestamp()
       };
 
+      console.log('🔧 DEBUG: Saving fixture with playingTime:', updatedFixture.playingTime);
       await updateDoc(doc(db, 'fixtures', editingFixture.id), updatedFixture);
+      console.log('✅ DEBUG: Fixture saved successfully');
+      
+      // Update all matches in this fixture group with the same court, time, and playingTime values
+      if ((editForm.court || editForm.time || editForm.playingTime) && editingFixture.fixtureGroupId) {
+        try {
+          // Query all matches in the same fixture group
+          const fixtureGroupQuery = query(
+            collection(db, 'fixtures'),
+            where('fixtureGroupId', '==', editingFixture.fixtureGroupId)
+          );
+          
+          const fixtureGroupSnapshot = await getDocs(fixtureGroupQuery);
+          const batch = writeBatch(db);
+          
+          fixtureGroupSnapshot.docs.forEach((docSnapshot) => {
+            // Update each match in the fixture group with the court value, time, and YouTube Live Link
+            const updateData = {
+              updatedAt: serverTimestamp()
+            };
+            
+            // Add court if provided
+            if (editForm.court) {
+              updateData.court = editForm.court;
+            }
+            
+            // Add time if provided
+            if (editForm.time) {
+              updateData.time = editForm.time;
+            }
+            
+            // Add playingTime if provided
+            if (editForm.playingTime) {
+              updateData.playingTime = editForm.playingTime;
+            }
+            
+            // Add YouTube Live Link if provided
+            if (editForm.youtubeLiveLink) {
+              updateData.youtubeLink = editForm.youtubeLiveLink;
+            }
+            
+            batch.update(docSnapshot.ref, updateData);
+          });
+          
+          await batch.commit();
+        } catch (batchError) {
+          console.error('Error updating fixture group matches with court and time:', batchError);
+          // Don't fail the main update if batch update fails
+        }
+      }
       
       // Update local state
       const newDateKey = new Date(editForm.date).toDateString();
@@ -1575,17 +1641,32 @@ export default function AddFixtures() {
                 <button
                   className="btn btn-secondary btn-sm sm:btn-md flex-shrink-0"
                   onClick={() => {
-                    const tournamentDisplayUrl = `${window.location.origin}/tournament-display/${id}`;
-                    window.open(tournamentDisplayUrl, '_blank');
+                    const screenDisplayUrl = `${window.location.origin}/screen-display/${id}`;
+                    window.open(screenDisplayUrl, '_blank');
                   }}
-                  title="Open tournament display view in new window"
+                  title="Open screen display with date selection"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  <span className="hidden sm:inline">Display View</span>
-                  <span className="sm:hidden">Display</span>
+                  <span className="hidden sm:inline">Screen Display</span>
+                  <span className="sm:hidden">Screen</span>
+                </button>
+                
+                <button
+                  className="btn btn-info btn-sm sm:btn-md flex-shrink-0"
+                  onClick={() => {
+                    const apiUrl = `${window.location.origin}/api-matches/${id}`;
+                    window.open(apiUrl, '_blank');
+                  }}
+                  title="Open API matches with JSON data access"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">API</span>
+                  <span className="sm:hidden">API</span>
                 </button>
               </div>
             )}
@@ -1945,6 +2026,11 @@ export default function AddFixtures() {
                                 day: 'numeric'
                               })}
                             </div>
+                            {group.matches[0]?.court && (
+                              <div className="badge badge-info badge-sm sm:badge-md">
+                                {group.matches[0].court}
+                              </div>
+                            )}
                             <div className="badge badge-primary badge-sm sm:badge-lg">
                               {formatFixtureType(group.matches[0]?.fixtureType)}
                             </div>
@@ -2036,6 +2122,11 @@ export default function AddFixtures() {
                                 <div className="text-sm sm:text-base font-medium">
                                   {fixture.time}
                                 </div>
+                                {fixture.court && (
+                                  <div className="badge badge-info badge-sm sm:badge-md">
+                                    {fixture.court}
+                                  </div>
+                                )}
                                 <div className="badge badge-accent badge-sm sm:badge-lg">
                                   {formatFixtureType(fixture.fixtureType)}
                                 </div>
@@ -2258,7 +2349,7 @@ export default function AddFixtures() {
                               </div>
                               {fixture.court && (
                                 <div className="badge badge-info badge-sm sm:badge-md">
-                                  Court {fixture.court}
+                                  {fixture.court}
                                 </div>
                               )}
                             </div>
@@ -2382,7 +2473,7 @@ export default function AddFixtures() {
                               </div>
                               {fixture.court && (
                                 <div className="badge badge-info badge-sm sm:badge-md">
-                                  Court {fixture.court}
+                                  {fixture.court}
                                 </div>
                               )}
                             </div>
@@ -2504,7 +2595,7 @@ export default function AddFixtures() {
                             </div>
                             {fixture.court && (
                               <div className="badge badge-info badge-sm sm:badge-md">
-                                Court {fixture.court}
+                                {fixture.court}
                               </div>
                             )}
                           </div>
@@ -2622,7 +2713,7 @@ export default function AddFixtures() {
                             </div>
                             {fixture.court && (
                               <div className="badge badge-info badge-sm sm:badge-md">
-                                Court {fixture.court}
+                                {fixture.court}
                               </div>
                             )}
                           </div>
@@ -3322,22 +3413,82 @@ export default function AddFixtures() {
                 {/* Fixture Type */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Fixture Type *</span>
+                    <span className="label-text font-medium">Fixture Type</span>
                   </label>
                   <select
                     name="fixtureType"
                     className="select select-bordered w-full"
                     value={editForm.fixtureType}
                     onChange={handleEditFormChange}
+                  >
+                    <option value="League">League</option>
+                    <option value="Qualifier 1">Qualifier 1</option>
+                    <option value="Qualifier 2">Qualifier 2</option>
+                    <option value="Eliminator">Eliminator</option>
+                    <option value="Final">Final</option>
+                  </select>
+                </div>
+
+                {/* Playing Time */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Playing Time *</span>
+                  </label>
+                  <input
+                    type="time"
+                    name="playingTime"
+                    className="input input-bordered w-full"
+                    value={editForm.playingTime}
+                    onChange={handleEditFormChange}
+                    required
+                  />
+                </div>
+
+                {/* Court */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Court *</span>
+                  </label>
+                  <select
+                    name="court"
+                    className="select select-bordered w-full"
+                    value={editForm.court}
+                    onChange={handleEditFormChange}
                     required
                   >
-                    <option value="">Select Fixture Type</option>
-                    <option value="league">League</option>
-                    <option value="quarterfinal">Quarter Final</option>
-                    <option value="semifinal">Semi Final</option>
-                    <option value="thirdplace">Third Place</option>
-                    <option value="final">Final</option>
+                    <option value="">Select Court</option>
+                    <option value="Center Court">Center Court</option>
+                    <option value="Side Court">Side Court</option>
                   </select>
+                </div>
+
+                {/* YouTube Live Link */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">YouTube Live Link</span>
+                  </label>
+                  <input
+                    type="url"
+                    name="youtubeLiveLink"
+                    className="input input-bordered w-full"
+                    value={editForm.youtubeLiveLink}
+                    onChange={handleEditFormChange}
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">This link will apply to all matches in this fixture</span>
+                  </label>
+                </div>
+
+                {/* Featured Image */}
+                <div className="form-control">
+                  <CloudinaryImageUpload
+                    onImageUpload={handleFeaturedImageUpload}
+                    currentImage={editForm.featuredImage?.url}
+                    label="Featured Image"
+                    uploadType="news"
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-0">

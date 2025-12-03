@@ -12,7 +12,9 @@ export default function UmpireMatchList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [teams, setTeams] = useState([]);
+  const [availableDates, setAvailableDates] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +40,25 @@ export default function UmpireMatchList() {
           ...doc.data()
         }));
 
-        // Sort fixtures by date and time
+        // Define match type order
+        const getMatchTypeOrder = (matchType) => {
+          const order = {
+            "Men's Doubles": 1,
+            "Mens Doubles": 1,
+            "Women's Doubles": 2,
+            "Womens Doubles": 2,
+            "Men's Singles": 3,
+            "Mens Singles": 3,
+            "Women's Singles": 4,
+            "Womens Singles": 4,
+            "Men's Doubles (2)": 5,
+            "Mens Doubles (2)": 5,
+            "Mixed Doubles": 6
+          };
+          return order[matchType] || 999;
+        };
+
+        // Sort fixtures by date, time, match type, and match order
         fixturesData.sort((a, b) => {
           const dateA = new Date(a.date?.toDate ? a.date.toDate() : a.date || '1970-01-01');
           const dateB = new Date(b.date?.toDate ? b.date.toDate() : b.date || '1970-01-01');
@@ -48,18 +68,38 @@ export default function UmpireMatchList() {
           // If dates are the same, sort by time
           const timeA = a.time || '00:00';
           const timeB = b.time || '00:00';
-          return timeA.localeCompare(timeB);
+          if (timeA !== timeB) {
+            return timeA.localeCompare(timeB);
+          }
+          // If time is also the same, sort by match type order
+          const matchTypeA = a.matchTypeLabel || a.matchType || '';
+          const matchTypeB = b.matchTypeLabel || b.matchType || '';
+          const typeOrderA = getMatchTypeOrder(matchTypeA);
+          const typeOrderB = getMatchTypeOrder(matchTypeB);
+          if (typeOrderA !== typeOrderB) {
+            return typeOrderA - typeOrderB;
+          }
+          // If match type is also the same, sort by match order/sequence/number
+          const orderA = a.matchOrder || a.sequence || a.matchNumber || 0;
+          const orderB = b.matchOrder || b.sequence || b.matchNumber || 0;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          // Final tie-breaker: document ID for absolute consistency
+          return a.id.localeCompare(b.id);
         });
 
         setFixtures(fixturesData);
 
-        // Group fixtures by team matchups
+        // Group fixtures by team matchups and date, including all match types within each fixture
         const groupedFixtures = {};
         fixturesData.forEach(fixture => {
-          // Create a unique key for team matchup
+          // Create a unique key for team matchup including date and court
           const team1 = fixture.team1Name || 'TBD';
           const team2 = fixture.team2Name || 'TBD';
-          const matchupKey = `${team1}_vs_${team2}`;
+          const fixtureDate = fixture.date?.toDate ? fixture.date.toDate().toISOString().split('T')[0] : 'no-date';
+          const court = fixture.court || 'no-court';
+          const matchupKey = `${team1}_vs_${team2}_${fixtureDate}_${court}`;
           
           if (!groupedFixtures[matchupKey]) {
             groupedFixtures[matchupKey] = {
@@ -70,7 +110,8 @@ export default function UmpireMatchList() {
               team2: fixture.team2,
               matches: [],
               date: fixture.date,
-              pool: fixture.pool
+              pool: fixture.pool,
+              court: court
             };
           }
           
@@ -95,6 +136,29 @@ export default function UmpireMatchList() {
         
         setTeams([...uniqueTeams].sort());
 
+        // Extract unique dates and find closest to today
+        const uniqueDates = [...new Set(fixturesData.map(fixture => {
+          const date = fixture.date?.toDate ? fixture.date.toDate() : new Date(fixture.date || '1970-01-01');
+          return date.toISOString().split('T')[0];
+        }))].sort();
+
+        setAvailableDates(uniqueDates);
+
+        // Find the date closest to today
+        const today = new Date().toISOString().split('T')[0];
+        let closestDate = uniqueDates[0];
+        let minDiff = Math.abs(new Date(today) - new Date(uniqueDates[0]));
+
+        uniqueDates.forEach(date => {
+          const diff = Math.abs(new Date(today) - new Date(date));
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestDate = date;
+          }
+        });
+
+        setDateFilter(closestDate || '');
+
       } catch (error) {
         console.error('Error fetching data:', error);
         console.error('Tournament ID:', tournamentId);
@@ -115,7 +179,14 @@ export default function UmpireMatchList() {
       fixtureGroup.team1Name === teamFilter ||
       fixtureGroup.team2Name === teamFilter;
     
-    return teamMatch;
+    // Filter by date
+    const dateMatch = !dateFilter || (() => {
+      const fixtureDate = fixtureGroup.date?.toDate ? fixtureGroup.date.toDate() : new Date(fixtureGroup.date || '1970-01-01');
+      const fixtureDateString = fixtureDate.toISOString().split('T')[0];
+      return fixtureDateString === dateFilter;
+    })();
+    
+    return teamMatch && dateMatch;
   });
 
   const handleFixtureClick = (fixtureGroup) => {
@@ -196,17 +267,44 @@ export default function UmpireMatchList() {
                 </select>
               </div>
 
+              {/* Date Filter */}
+              <div className="form-control flex-1">
+                <label className="label">
+                  <span className="label-text font-semibold">Filter by Date</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                >
+                  <option value="">All Dates</option>
+                  {availableDates.map(date => (
+                    <option key={date} value={date}>
+                      {new Date(date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Clear Filters */}
-              {teamFilter && (
+              {(teamFilter || dateFilter) && (
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">&nbsp;</span>
                   </label>
                   <button
                     className="btn btn-outline"
-                    onClick={() => setTeamFilter('')}
+                    onClick={() => {
+                      setTeamFilter('');
+                      setDateFilter('');
+                    }}
                   >
-                    Clear Filter
+                    Clear Filters
                   </button>
                 </div>
               )}
@@ -221,7 +319,13 @@ export default function UmpireMatchList() {
               <div className="stat-title">Total Fixtures</div>
               <div className="stat-value text-primary">{filteredFixtureGroups.length}</div>
               <div className="stat-desc">
-                {teamFilter ? `Showing fixtures for: ${teamFilter}` : 'Showing all fixtures'}
+                {teamFilter || dateFilter ? (
+                  <>
+                    {teamFilter && `Team: ${teamFilter}`}
+                    {teamFilter && dateFilter && ' • '}
+                    {dateFilter && `Date: ${new Date(dateFilter).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
+                  </>
+                ) : 'Showing all fixtures'}
               </div>
             </div>
           </div>
@@ -233,7 +337,7 @@ export default function UmpireMatchList() {
             <div className="text-6xl mb-4">🏓</div>
             <h3 className="text-2xl font-bold mb-2">No fixtures found</h3>
             <p className="text-base-content/70">
-              {teamFilter ? 'No fixtures found for the selected team' : 'No fixtures scheduled yet'}
+              {teamFilter || dateFilter ? 'No fixtures found for the selected filters' : 'No fixtures scheduled yet'}
             </p>
           </div>
         ) : (
@@ -248,10 +352,23 @@ export default function UmpireMatchList() {
                   {/* Fixture Header */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="badge badge-primary badge-lg">
-                      {fixtureGroup.pool || 'No Pool'}
+                      {fixtureGroup.court !== 'no-court' ? fixtureGroup.court : (fixtureGroup.matches[0]?.court || 'Court TBD')}
                     </div>
                     <div className="badge badge-secondary">
                       {fixtureGroup.matches.length} match{fixtureGroup.matches.length !== 1 ? 'es' : ''}
+                    </div>
+                  </div>
+
+                  {/* Match Types Preview */}
+                  <div className="text-center mb-3">
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {[...new Set(fixtureGroup.matches.map(match => match.fixtureType || 'League'))].map(type => (
+                        type !== 'League' && (
+                          <div key={type} className="badge badge-accent badge-sm">
+                            {type}
+                          </div>
+                        )
+                      ))}
                     </div>
                   </div>
 

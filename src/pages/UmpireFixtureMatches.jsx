@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { shouldShowPlayerNames } from '../utils/dateTimeUtils';
 
 export default function UmpireFixtureMatches() {
   const { tournamentId, fixtureGroupId } = useParams();
   const navigate = useNavigate();
   const [tournament, setTournament] = useState(null);
   const [matches, setMatches] = useState([]);
+  const [allMatches, setAllMatches] = useState([]);
+  const [filteredMatches, setFilteredMatches] = useState([]);
   const [fixtureInfo, setFixtureInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [availableDates, setAvailableDates] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,23 +36,56 @@ export default function UmpireFixtureMatches() {
         );
         
         const matchesSnapshot = await getDocs(matchesQuery);
-        const allMatches = matchesSnapshot.docs.map(doc => ({
+        const allMatchesData = matchesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
 
         // Filter matches that belong to this fixture group
-        const team1 = fixtureGroupId.split('_vs_')[0];
-        const team2 = fixtureGroupId.split('_vs_')[1];
+        // Parse the new format: team1_vs_team2_date_court
+        const parts = fixtureGroupId.split('_vs_');
+        const team1 = parts[0];
+        const remainingParts = parts[1].split('_');
+        // Extract date and court from the remaining parts
+        const fixtureDate = remainingParts[remainingParts.length - 2]; // Second to last part is date
+        const court = remainingParts[remainingParts.length - 1]; // Last part is court
+        // Remove the last two parts (date and court) to get team2
+        const team2 = remainingParts.slice(0, -2).join('_');
         
-        const fixtureMatches = allMatches.filter(match => {
+        const fixtureMatches = allMatchesData.filter(match => {
           const matchTeam1 = match.team1Name || 'TBD';
           const matchTeam2 = match.team2Name || 'TBD';
-          return (matchTeam1 === team1 && matchTeam2 === team2) ||
-                 (matchTeam1 === team2 && matchTeam2 === team1);
+          const matchDate = match.date?.toDate ? match.date.toDate().toISOString().split('T')[0] : 'no-date';
+          const matchCourt = match.court || 'no-court';
+          
+          // Filter by teams, date, and court
+          const teamsMatch = (matchTeam1 === team1 && matchTeam2 === team2) ||
+                            (matchTeam1 === team2 && matchTeam2 === team1);
+          const dateMatch = matchDate === fixtureDate;
+          const courtMatch = matchCourt === court;
+          
+          return teamsMatch && dateMatch && courtMatch;
         });
 
-        // Sort matches by date and time
+        // Define match type order (identical to UmpireMatchList)
+        const getMatchTypeOrder = (matchType) => {
+          const order = {
+            "Men's Doubles": 1,
+            "Mens Doubles": 1,
+            "Women's Doubles": 2,
+            "Womens Doubles": 2,
+            "Men's Singles": 3,
+            "Mens Singles": 3,
+            "Women's Singles": 4,
+            "Womens Singles": 4,
+            "Men's Doubles (2)": 5,
+            "Mens Doubles (2)": 5,
+            "Mixed Doubles": 6
+          };
+          return order[matchType] || 999;
+        };
+
+        // Sort matches by date, time, match type, and match order (identical to UmpireMatchList)
         fixtureMatches.sort((a, b) => {
           const dateA = new Date(a.date?.toDate ? a.date.toDate() : a.date || '1970-01-01');
           const dateB = new Date(b.date?.toDate ? b.date.toDate() : b.date || '1970-01-01');
@@ -57,10 +95,52 @@ export default function UmpireFixtureMatches() {
           // If dates are the same, sort by time
           const timeA = a.time || '00:00';
           const timeB = b.time || '00:00';
-          return timeA.localeCompare(timeB);
+          if (timeA !== timeB) {
+            return timeA.localeCompare(timeB);
+          }
+          // If time is also the same, sort by match type order
+          const matchTypeA = a.matchTypeLabel || a.matchType || '';
+          const matchTypeB = b.matchTypeLabel || b.matchType || '';
+          const typeOrderA = getMatchTypeOrder(matchTypeA);
+          const typeOrderB = getMatchTypeOrder(matchTypeB);
+          if (typeOrderA !== typeOrderB) {
+            return typeOrderA - typeOrderB;
+          }
+          // If match type is also the same, sort by match order/sequence/number
+          const orderA = a.matchOrder || a.sequence || a.matchNumber || 0;
+          const orderB = b.matchOrder || b.sequence || b.matchNumber || 0;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          // Final tie-breaker: document ID for absolute consistency
+          return a.id.localeCompare(b.id);
         });
 
+        setAllMatches(fixtureMatches);
         setMatches(fixtureMatches);
+
+        // Extract unique dates and find closest to today
+        const uniqueDates = [...new Set(fixtureMatches.map(match => {
+          const date = match.date?.toDate ? match.date.toDate() : new Date(match.date || '1970-01-01');
+          return date.toISOString().split('T')[0];
+        }))].sort();
+
+        setAvailableDates(uniqueDates);
+
+        // Find the date closest to today
+        const today = new Date().toISOString().split('T')[0];
+        let closestDate = uniqueDates[0];
+        let minDiff = Math.abs(new Date(today) - new Date(uniqueDates[0]));
+
+        uniqueDates.forEach(date => {
+          const diff = Math.abs(new Date(today) - new Date(date));
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestDate = date;
+          }
+        });
+
+        setSelectedDate(closestDate || '');
 
         // Set fixture info from first match
         if (fixtureMatches.length > 0) {
@@ -85,6 +165,20 @@ export default function UmpireFixtureMatches() {
       fetchData();
     }
   }, [tournamentId, fixtureGroupId]);
+
+  // Filter matches based on selected date
+  useEffect(() => {
+    if (selectedDate && allMatches.length > 0) {
+      const filtered = allMatches.filter(match => {
+        const matchDate = match.date?.toDate ? match.date.toDate() : new Date(match.date || '1970-01-01');
+        const matchDateString = matchDate.toISOString().split('T')[0];
+        return matchDateString === selectedDate;
+      });
+      setFilteredMatches(filtered);
+    } else {
+      setFilteredMatches(allMatches);
+    }
+  }, [selectedDate, allMatches]);
 
   const handleMatchClick = (matchId) => {
     const umpireUrl = `${window.location.origin}/umpire/${matchId}`;
@@ -171,27 +265,70 @@ export default function UmpireFixtureMatches() {
           )}
         </div>
 
+        {/* Date Filter */}
+        {availableDates.length > 1 && (
+          <div className="mb-6">
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h3 className="card-title text-lg mb-4">Filter by Date</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className={`btn btn-sm ${selectedDate === '' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setSelectedDate('')}
+                  >
+                    All Dates
+                  </button>
+                  {availableDates.map(date => (
+                    <button
+                      key={date}
+                      className={`btn btn-sm ${selectedDate === date ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setSelectedDate(date)}
+                    >
+                      {new Date(date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Match Count */}
         <div className="text-center mb-6">
           <div className="stats shadow">
             <div className="stat">
-              <div className="stat-title">Total Matches</div>
-              <div className="stat-value text-primary">{matches.length}</div>
+              <div className="stat-title">
+                {selectedDate ? 'Matches on Selected Date' : 'Total Matches'}
+              </div>
+              <div className="stat-value text-primary">
+                {selectedDate ? filteredMatches.length : matches.length}
+              </div>
               <div className="stat-desc">Click on any match to open umpire scoring</div>
             </div>
           </div>
         </div>
 
         {/* Matches Grid */}
-        {matches.length === 0 ? (
+        {(selectedDate ? filteredMatches : matches).length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🏓</div>
-            <h3 className="text-2xl font-bold mb-2">No matches found</h3>
-            <p className="text-base-content/70">No matches scheduled for this fixture yet</p>
+            <h3 className="text-2xl font-bold mb-2">
+              {selectedDate ? 'No matches found for selected date' : 'No matches found'}
+            </h3>
+            <p className="text-base-content/70">
+              {selectedDate
+                ? 'Try selecting a different date or view all dates'
+                : 'No matches scheduled for this fixture yet'
+              }
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {matches.map((match, index) => (
+            {(selectedDate ? filteredMatches : matches).map((match, index) => (
               <div
                 key={match.id}
                 className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105"
@@ -220,10 +357,24 @@ export default function UmpireFixtureMatches() {
                     <div className="bg-base-200 rounded-lg p-3">
                       <div className="text-sm text-base-content/70 mb-1">Team 1</div>
                       <div className="font-semibold">
-                        {match.player1Team1 && match.player2Team1 
-                          ? `${match.player1Team1} & ${match.player2Team1}`
-                          : match.team1Name || 'TBD'
-                        }
+                        {(() => {
+                          // Check if we should show player names using utility function
+                          const showPlayerNames = shouldShowPlayerNames(match, fixtureInfo);
+                          
+                          // If it's too early to show player names
+                          if (!showPlayerNames) {
+                            return (
+                              <div className="text-base-content/50 italic">
+                                Players will be revealed at 5:05PM Matchday
+                              </div>
+                            );
+                          }
+                          
+                          // Show player names
+                          return match.player1Team1 && match.player2Team1
+                            ? `${match.player1Team1} & ${match.player2Team1}`
+                            : match.player1Team1 || match.team1Name || 'TBD';
+                        })()}
                       </div>
                     </div>
 
@@ -234,10 +385,24 @@ export default function UmpireFixtureMatches() {
                     <div className="bg-base-200 rounded-lg p-3">
                       <div className="text-sm text-base-content/70 mb-1">Team 2</div>
                       <div className="font-semibold">
-                        {match.player1Team2 && match.player2Team2 
-                          ? `${match.player1Team2} & ${match.player2Team2}`
-                          : match.team2Name || 'TBD'
-                        }
+                        {(() => {
+                          // Check if we should show player names using utility function
+                          const showPlayerNames = shouldShowPlayerNames(match, fixtureInfo);
+                          
+                          // If it's too early to show player names
+                          if (!showPlayerNames) {
+                            return (
+                              <div className="text-base-content/50 italic">
+                                Players will be revealed at 5:05PM Matchday
+                              </div>
+                            );
+                          }
+                          
+                          // Show player names
+                          return match.player1Team2 && match.player2Team2
+                            ? `${match.player1Team2} & ${match.player2Team2}`
+                            : match.player1Team2 || match.team2Name || 'TBD';
+                        })()}
                       </div>
                     </div>
                   </div>

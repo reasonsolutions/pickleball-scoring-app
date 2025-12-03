@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, orderBy, query } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import CloudinaryImageUpload from './CloudinaryImageUpload';
+import MDEditor from '@uiw/react-md-editor';
+import MarkdownPreview from '@uiw/react-markdown-preview';
+import '@uiw/react-md-editor/markdown-editor.css';
 
 export default function NewsManagement() {
   const [news, setNews] = useState([]);
@@ -199,13 +202,20 @@ export default function NewsManagement() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
             </label>
-            <textarea
-              value={newArticle.description}
-              onChange={(e) => setNewArticle({ ...newArticle, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              rows="4"
-              placeholder="Enter full article description (optional)"
-            />
+            <div className="border border-gray-300 rounded-md overflow-hidden">
+              <MDEditor
+                value={newArticle.description}
+                onChange={(value) => setNewArticle({ ...newArticle, description: value || '' })}
+                preview="edit"
+                hideToolbar={false}
+                visibleDragBar={false}
+                textareaProps={{
+                  placeholder: 'Enter full article description (optional). You can use Markdown formatting for rich text.',
+                  style: { fontSize: 14, lineHeight: 1.5 }
+                }}
+                height={200}
+              />
+            </div>
           </div>
           <div className="flex items-center">
             <input
@@ -299,12 +309,20 @@ export default function NewsManagement() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Description
                       </label>
-                      <textarea
-                        value={editingArticle.description}
-                        onChange={(e) => setEditingArticle({ ...editingArticle, description: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        rows="4"
-                      />
+                      <div className="border border-gray-300 rounded-md overflow-hidden">
+                        <MDEditor
+                          value={editingArticle.description}
+                          onChange={(value) => setEditingArticle({ ...editingArticle, description: value || '' })}
+                          preview="edit"
+                          hideToolbar={false}
+                          visibleDragBar={false}
+                          textareaProps={{
+                            placeholder: 'Enter full article description. You can use Markdown formatting for rich text.',
+                            style: { fontSize: 14, lineHeight: 1.5 }
+                          }}
+                          height={200}
+                        />
+                      </div>
                     </div>
                     <div className="flex items-center mb-4">
                       <input
@@ -362,7 +380,19 @@ export default function NewsManagement() {
                           <h4 className="text-lg font-medium text-gray-900 mb-1">{article.title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{article.subtext}</p>
                           {article.description && (
-                            <p className="text-sm text-gray-500 mb-2 line-clamp-3">{article.description}</p>
+                            <div className="text-sm text-gray-500 mb-2 line-clamp-3 prose prose-sm max-w-none">
+                              <MarkdownPreview
+                                source={article.description}
+                                style={{
+                                  backgroundColor: 'transparent',
+                                  fontSize: '14px',
+                                  lineHeight: '1.4'
+                                }}
+                                wrapperElement={{
+                                  'data-color-mode': 'light'
+                                }}
+                              />
+                            </div>
                           )}
                           <p className="text-xs text-gray-500">
                             Publish Date: {article.publishDate?.toDate?.()?.toLocaleDateString() || 

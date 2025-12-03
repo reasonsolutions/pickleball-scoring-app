@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
+import Footer from '../components/Footer';
 import {
   fetchTournamentsOptimized,
   fetchMinimalTournamentData,
-  fetchLiveMatchesOnly,
   fetchTeamsAndPlayersOptimized,
   fetchHomePageContentOptimized,
   fetchTournamentStatsOptimized
@@ -22,6 +24,9 @@ export default function Home() {
   const [featuredVideos, setFeaturedVideos] = useState([]);
   const [news, setNews] = useState([]);
   const [featuredArticles, setFeaturedArticles] = useState([]);
+  
+  // Ref for player photo caching
+  const playerPhotoMapRef = useRef({});
 
   // Fetch tournaments with caching
   useEffect(() => {
@@ -172,50 +177,65 @@ export default function Home() {
     }
   }, [selectedTeam]);
 
-  // Periodic fetching for live matches (replaces real-time listener)
+  // Real-time listener for live matches (replaces polling)
   useEffect(() => {
     if (!selectedTournament) return;
 
-    let intervalId;
-    let playerPhotoMap = {};
+    // Set up real-time listener for all matches, then filter for live ones
+    const allMatchesQuery = query(
+      collection(db, 'fixtures'),
+      where('tournamentId', '==', selectedTournament)
+    );
 
-    const fetchLiveUpdates = async () => {
-      try {
-        // Fetch live matches only
-        const liveMatches = await fetchLiveMatchesOnly(selectedTournament);
-        
-        // If we have live matches and need player photos, fetch them
-        if (liveMatches.length > 0 && Object.keys(playerPhotoMap).length === 0) {
-          try {
-            const { players } = await fetchTeamsAndPlayersOptimized(selectedTournament);
-            playerPhotoMap = {};
-            players.forEach(player => {
-              if (player.name && player.photo?.url) {
-                playerPhotoMap[player.name] = player.photo.url;
-              }
-            });
-          } catch (error) {
-            console.warn('Could not fetch player photos:', error);
+    console.log('🔧 Setting up real-time listener for live matches');
+    
+    const unsubscribe = onSnapshot(
+      allMatchesQuery,
+      async (snapshot) => {
+        try {
+          console.log('🔥 Real-time update: Matches changed');
+          
+          // Filter for live matches in JavaScript to avoid composite index requirement
+          const allMatches = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          const liveMatches = allMatches.filter(match =>
+            match.status === 'live' || match.status === 'in-progress'
+          );
+
+          // If we have live matches and need player photos, fetch them once
+          if (liveMatches.length > 0 && Object.keys(playerPhotoMapRef.current).length === 0) {
+            try {
+              const { players } = await fetchTeamsAndPlayersOptimized(selectedTournament);
+              const newPlayerPhotoMap = {};
+              players.forEach(player => {
+                if (player.name && player.photo?.url) {
+                  newPlayerPhotoMap[player.name] = player.photo.url;
+                }
+              });
+              playerPhotoMapRef.current = newPlayerPhotoMap;
+            } catch (error) {
+              console.warn('Could not fetch player photos:', error);
+            }
           }
+          
+          processMatchesForDisplay(liveMatches, playerPhotoMapRef.current);
+        } catch (error) {
+          console.error('Error processing live match updates:', error);
         }
-        
-        processMatchesForDisplay(liveMatches, playerPhotoMap);
-      } catch (error) {
-        console.error('Error fetching live match updates:', error);
+      },
+      (error) => {
+        console.error('Error in live matches listener:', error);
       }
-    };
+    );
 
-    // Initial fetch
-    fetchLiveUpdates();
-
-    // Set up periodic fetching every 30 seconds for live matches
-    intervalId = setInterval(fetchLiveUpdates, 30000);
-
-    // Cleanup interval on unmount or tournament change
+    // Cleanup listener on unmount or tournament change
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      console.log('🧹 Cleaning up live matches listener');
+      unsubscribe();
+      playerPhotoMapRef.current = {}; // Reset photo cache
     };
   }, [selectedTournament, processMatchesForDisplay]);
 
@@ -328,38 +348,43 @@ export default function Home() {
       {/* Live Tournament Scores Banner */}
       <div className="live-scores-banner">
         <div className="flex items-center px-4 py-2 w-full">
-          {/* Tournament Dropdown */}
-          <div className="flex items-center min-w-0 mr-4">
-            <select
-              value={selectedTournament}
-              onChange={(e) => setSelectedTournament(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 max-w-xs truncate"
-            >
-              {tournaments.map(tournament => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name || tournament.tournamentName || `Tournament ${tournament.id}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Team Dropdown - Show for team format tournaments or when teams exist */}
-          {(currentTournament?.format === 'team' || teams.length > 0) && (
-            <div className="flex items-center min-w-0 mr-4">
+          {/* Left Side - Dropdowns */}
+          <div className="flex flex-col min-w-0 mr-4">
+            {/* Tournament Dropdown */}
+            <div className="flex items-center min-w-0 mb-2">
               <select
-                value={selectedTeam}
-                onChange={(e) => setSelectedTeam(e.target.value)}
+                value={selectedTournament}
+                onChange={(e) => setSelectedTournament(e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 max-w-xs truncate"
               >
-                <option value="">All Teams</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
+                {tournaments.map(tournament => (
+                  <option key={tournament.id} value={tournament.id}>
+                    {tournament.name || tournament.tournamentName || `Tournament ${tournament.id}`}
                   </option>
                 ))}
               </select>
             </div>
-          )}
+
+            {/* Team Dropdown - Show for team format tournaments or when teams exist */}
+            {(currentTournament?.format === 'team' || teams.length > 0) && (
+              <div className="flex items-center min-w-0">
+                <select
+                  value={selectedTeam}
+                  onChange={(e) => setSelectedTeam(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 max-w-xs truncate"
+                >
+                  <option value="">All Teams</option>
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Right Side - Navigation and Live Matches */}
 
           {/* Left Arrow */}
           <button
@@ -891,6 +916,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

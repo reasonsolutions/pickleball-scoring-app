@@ -486,6 +486,16 @@ export default function FixtureList() {
     e.preventDefault();
     
     try {
+      // Debug logging
+      console.log('=== FIXTURE UPDATE DEBUG ===');
+      console.log('Current user roles:', {
+        isSuperAdmin: isSuperAdmin(),
+        isTeamAdmin: isTeamAdmin()
+      });
+      console.log('Edit form data:', editForm);
+      console.log('Original match time:', editingMatch.time);
+      console.log('New time from form:', editForm.time);
+      
       const updatedMatch = {
         // Keep all existing required fields
         tournamentId: editingMatch.tournamentId,
@@ -522,7 +532,11 @@ export default function FixtureList() {
         updatedAt: serverTimestamp()
       };
 
+      console.log('Update object being sent to Firebase:', updatedMatch);
+      
       await updateDoc(doc(db, 'fixtures', editingMatch.id), updatedMatch);
+      
+      console.log('Firebase update completed successfully');
       
       // Update local state
       setMatches(prev => prev.map(match => 
@@ -591,6 +605,10 @@ export default function FixtureList() {
         winByTwo: null,
         // Clear any timeout data
         timeouts: {},
+        timeoutsUsed: { team1: 0, team2: 0 },
+        timeoutInProgress: null,
+        // Clear substitution data
+        substitutions: [],
         // Clear any other scoring state
         rallies: [],
         points: [],
@@ -693,6 +711,25 @@ export default function FixtureList() {
                     {fixtureInfo.team2Name}
                   </span>
                 </div>
+              </div>
+              
+              {/* Badges Section */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                {fixtureInfo.matchTypeLabel && (
+                  <div className="badge badge-primary badge-sm sm:badge-md">
+                    {fixtureInfo.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : fixtureInfo.matchTypeLabel}
+                  </div>
+                )}
+                {matches.length > 0 && (
+                  <div className="badge badge-secondary badge-sm sm:badge-md">
+                    {matches.length} match{matches.length !== 1 ? 'es' : ''}
+                  </div>
+                )}
+                {fixtureInfo.court && (
+                  <div className="badge badge-info badge-sm sm:badge-md">
+                    {fixtureInfo.court}
+                  </div>
+                )}
                 <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                   <span className="text-base-content/60 hidden sm:inline">•</span>
                   <span className="text-base-content/70 break-words text-xs sm:text-sm lg:text-base">
@@ -735,6 +772,11 @@ export default function FixtureList() {
                       <div className="badge badge-primary badge-xs sm:badge-sm lg:badge-md break-words max-w-[150px] sm:max-w-none truncate" title={match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}>
                         {match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}
                       </div>
+                      {match.court && (
+                        <div className="badge badge-info badge-xs sm:badge-sm lg:badge-md">
+                          {match.court}
+                        </div>
+                      )}
                       {match.time && (
                         <div className="text-sm sm:text-base lg:text-lg font-bold flex-shrink-0">{match.time}</div>
                       )}
@@ -860,6 +902,28 @@ export default function FixtureList() {
                             )}
                           </div>
                         )}
+                        
+                        {/* Game Breaker player order - Show only for super admins */}
+                        {match.matchType === 'dreamBreaker' && isSuperAdmin() && match.gameBreakerPlayersTeam1 && match.gameBreakerPlayersTeam1.some(player => player && player.trim() !== '') && (
+                          <div className="text-sm space-y-1">
+                            <div className="font-medium text-xs text-primary mb-1">Game Breaker Order:</div>
+                            <div className="space-y-0.5">
+                              {match.gameBreakerPlayersTeam1.map((playerName, index) => (
+                                playerName && playerName.trim() !== '' && (
+                                  <div key={index} className="flex items-center gap-2">
+                                    <span className={`badge badge-xs ${index === 2 || index === 4 ? 'badge-pink-500' : 'badge-primary'}`}>
+                                      {index + 1}
+                                    </span>
+                                    <span className="text-xs">{playerName}</span>
+                                    {(index === 2 || index === 4) && (
+                                      <span className="text-xs text-pink-600">(F)</span>
+                                    )}
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                     {/* Show placeholder for team admins who don't belong to this team */}
@@ -925,6 +989,28 @@ export default function FixtureList() {
                             )}
                           </div>
                         )}
+                        
+                        {/* Game Breaker player order - Show only for super admins */}
+                        {match.matchType === 'dreamBreaker' && isSuperAdmin() && match.gameBreakerPlayersTeam2 && match.gameBreakerPlayersTeam2.some(player => player && player.trim() !== '') && (
+                          <div className="text-sm space-y-1">
+                            <div className="font-medium text-xs text-secondary mb-1 text-right">Game Breaker Order:</div>
+                            <div className="space-y-0.5">
+                              {match.gameBreakerPlayersTeam2.map((playerName, index) => (
+                                playerName && playerName.trim() !== '' && (
+                                  <div key={index} className="flex items-center gap-2 justify-end">
+                                    {(index === 2 || index === 4) && (
+                                      <span className="text-xs text-pink-600">(F)</span>
+                                    )}
+                                    <span className="text-xs">{playerName}</span>
+                                    <span className={`badge badge-xs ${index === 2 || index === 4 ? 'badge-pink-500' : 'badge-secondary'}`}>
+                                      {index + 1}
+                                    </span>
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                     {/* Show placeholder for team admins who don't belong to this team */}
@@ -958,9 +1044,10 @@ export default function FixtureList() {
                                 <div className="text-sm text-base-content/70">
                                   {isSingles ? 'Pick your player for this match' : 'Pick your team for this match'}
                                 </div>
-                                <button
-                                  className="btn btn-primary btn-sm"
-                                  onClick={() => {
+                                {!isDeadlinePassed(match) ? (
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => {
                                     setEditingMatch(match);
                                     // Reset filters when opening modal
                                     setPlayerSearchTerm('');
@@ -978,40 +1065,47 @@ export default function FixtureList() {
                                       youtubeLink: match.youtubeLink || ''
                                     });
                                     setShowEditModal(true);
-                                  }}
-                                >
-                                  {isSingles ? 'Pick Your Player' : 'Pick Your Team'}
-                                </button>
+                                    }}
+                                  >
+                                    {isSingles ? 'Pick Your Player' : 'Pick Your Team'}
+                                  </button>
+                                ) : (
+                                  <div className="text-sm text-error">
+                                    Deadline passed - Cannot assign players
+                                  </div>
+                                )}
                               </div>
                             );
                           } else {
                             return (
                               <div className="text-sm text-success">
                                 ✓ Your {isSingles ? 'player' : 'team'} has been selected
-                                <button
-                                  className="btn btn-outline btn-xs ml-2"
-                                  onClick={() => {
-                                    setEditingMatch(match);
-                                    // Reset filters when opening modal
-                                    setPlayerSearchTerm('');
-                                    setSelectedAgeFilter('');
-                                    setSelectedGenderFilter('');
-                                    setEditForm({
-                                      date: match.date && match.date.toDate ? match.date.toDate().toISOString().split('T')[0] : '',
-                                      time: match.time || '',
-                                      pool: match.pool || '',
-                                      court: match.court || '',
-                                      player1Team1: match.player1Team1 || '',
-                                      player2Team1: match.player2Team1 || '',
-                                      player1Team2: match.player1Team2 || '',
-                                      player2Team2: match.player2Team2 || '',
-                                      youtubeLink: match.youtubeLink || ''
-                                    });
-                                    setShowEditModal(true);
-                                  }}
-                                >
-                                  Edit {isSingles ? 'Player' : 'Team'}
-                                </button>
+                                {!isDeadlinePassed(match) && (
+                                  <button
+                                    className="btn btn-outline btn-xs ml-2"
+                                    onClick={() => {
+                                      setEditingMatch(match);
+                                      // Reset filters when opening modal
+                                      setPlayerSearchTerm('');
+                                      setSelectedAgeFilter('');
+                                      setSelectedGenderFilter('');
+                                      setEditForm({
+                                        date: match.date && match.date.toDate ? match.date.toDate().toISOString().split('T')[0] : '',
+                                        time: match.time || '',
+                                        pool: match.pool || '',
+                                        court: match.court || '',
+                                        player1Team1: match.player1Team1 || '',
+                                        player2Team1: match.player2Team1 || '',
+                                        player1Team2: match.player1Team2 || '',
+                                        player2Team2: match.player2Team2 || '',
+                                        youtubeLink: match.youtubeLink || ''
+                                      });
+                                      setShowEditModal(true);
+                                    }}
+                                  >
+                                    Edit {isSingles ? 'Player' : 'Team'}
+                                  </button>
+                                )}
                               </div>
                             );
                           }
@@ -1066,9 +1160,10 @@ export default function FixtureList() {
                                 <div className="text-sm text-base-content/70">
                                   Pick your 8 players in order for this Game Breaker match
                                 </div>
-                                <button
-                                  className="btn btn-primary btn-sm"
-                                  onClick={() => {
+                                {!isDeadlinePassed(match) ? (
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => {
                                     setEditingMatch(match);
                                     // Reset filters when opening modal
                                     setPlayerSearchTerm('');
@@ -1088,42 +1183,49 @@ export default function FixtureList() {
                                       gameBreakerPlayersTeam2: match.gameBreakerPlayersTeam2 || ['', '', '', '', '', '', '', '']
                                     });
                                     setShowEditModal(true);
-                                  }}
-                                >
-                                  Pick Your 8 Players
-                                </button>
+                                    }}
+                                  >
+                                    Pick Your 8 Players
+                                  </button>
+                                ) : (
+                                  <div className="text-sm text-error">
+                                    Deadline passed - Cannot assign players
+                                  </div>
+                                )}
                               </div>
                             );
                           } else {
                             return (
                               <div className="text-sm text-success">
                                 ✓ Your 8 players have been selected for this Game Breaker match
-                                <button
-                                  className="btn btn-outline btn-xs ml-2"
-                                  onClick={() => {
-                                    setEditingMatch(match);
-                                    // Reset filters when opening modal
-                                    setPlayerSearchTerm('');
-                                    setSelectedAgeFilter('');
-                                    setSelectedGenderFilter('');
-                                    setEditForm({
-                                      date: match.date && match.date.toDate ? match.date.toDate().toISOString().split('T')[0] : '',
-                                      time: match.time || '',
-                                      pool: match.pool || '',
-                                      court: match.court || '',
-                                      player1Team1: match.player1Team1 || '',
-                                      player2Team1: match.player2Team1 || '',
-                                      player1Team2: match.player1Team2 || '',
-                                      player2Team2: match.player2Team2 || '',
-                                      youtubeLink: match.youtubeLink || '',
-                                      gameBreakerPlayersTeam1: match.gameBreakerPlayersTeam1 || ['', '', '', '', '', '', '', ''],
-                                      gameBreakerPlayersTeam2: match.gameBreakerPlayersTeam2 || ['', '', '', '', '', '', '', '']
-                                    });
-                                    setShowEditModal(true);
-                                  }}
-                                >
-                                  Edit Player Order
-                                </button>
+                                {!isDeadlinePassed(match) && (
+                                  <button
+                                    className="btn btn-outline btn-xs ml-2"
+                                    onClick={() => {
+                                      setEditingMatch(match);
+                                      // Reset filters when opening modal
+                                      setPlayerSearchTerm('');
+                                      setSelectedAgeFilter('');
+                                      setSelectedGenderFilter('');
+                                      setEditForm({
+                                        date: match.date && match.date.toDate ? match.date.toDate().toISOString().split('T')[0] : '',
+                                        time: match.time || '',
+                                        pool: match.pool || '',
+                                        court: match.court || '',
+                                        player1Team1: match.player1Team1 || '',
+                                        player2Team1: match.player2Team1 || '',
+                                        player1Team2: match.player1Team2 || '',
+                                        player2Team2: match.player2Team2 || '',
+                                        youtubeLink: match.youtubeLink || '',
+                                        gameBreakerPlayersTeam1: match.gameBreakerPlayersTeam1 || ['', '', '', '', '', '', '', ''],
+                                        gameBreakerPlayersTeam2: match.gameBreakerPlayersTeam2 || ['', '', '', '', '', '', '', '']
+                                      });
+                                      setShowEditModal(true);
+                                    }}
+                                  >
+                                    Edit Player Order
+                                  </button>
+                                )}
                               </div>
                             );
                           }
@@ -1163,10 +1265,10 @@ export default function FixtureList() {
                     <input
                       type="date"
                       name="date"
-                      className={`input input-bordered w-full input-sm sm:input-md ${isTeamAdmin() ? 'input-disabled bg-base-200 text-base-content/50' : ''}`}
+                      className={`input input-bordered w-full input-sm sm:input-md ${isTeamAdmin() && !isSuperAdmin() ? 'input-disabled bg-base-200 text-base-content/50' : ''}`}
                       value={editForm.date}
                       onChange={handleEditFormChange}
-                      disabled={isTeamAdmin()}
+                      disabled={isTeamAdmin() && !isSuperAdmin()}
                       required
                     />
                   </div>
@@ -1178,10 +1280,10 @@ export default function FixtureList() {
                     <input
                       type="time"
                       name="time"
-                      className={`input input-bordered w-full input-sm sm:input-md ${isTeamAdmin() ? 'input-disabled bg-base-200 text-base-content/50' : ''}`}
+                      className={`input input-bordered w-full input-sm sm:input-md ${isTeamAdmin() && !isSuperAdmin() ? 'input-disabled bg-base-200 text-base-content/50' : ''}`}
                       value={editForm.time}
                       onChange={handleEditFormChange}
-                      disabled={isTeamAdmin()}
+                      disabled={isTeamAdmin() && !isSuperAdmin()}
                     />
                   </div>
                 </div>
@@ -1190,7 +1292,8 @@ export default function FixtureList() {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-sm sm:text-base">Player Assignment</h4>
                   
-                  {(isSuperAdmin() || (isTeamAdmin() && getTeamAdminTeam(editingMatch) === 'team1')) && (
+                  {/* Only show regular player selection for non-Game Breaker matches */}
+                  {editingMatch.matchType !== 'dreamBreaker' && (isSuperAdmin() || (isTeamAdmin() && getTeamAdminTeam(editingMatch) === 'team1')) && (
                     <div className="space-y-2 min-w-0">
                       <label className="label">
                         <span className="label-text font-medium text-sm break-words">
@@ -1255,6 +1358,70 @@ export default function FixtureList() {
                   )}
                   
                   {(isSuperAdmin() || (isTeamAdmin() && getTeamAdminTeam(editingMatch) === 'team2')) && (
+                    <div className="space-y-2 min-w-0">
+                      <label className="label">
+                        <span className="label-text font-medium text-sm break-words">
+                          {editingMatch.team2Name} {(() => {
+                            const isSingles = editingMatch.matchType === 'singles' || editingMatch.matchTypeLabel?.toLowerCase().includes('singles');
+                            return isSingles ? 'Player' : 'Players';
+                          })()} {isTeamAdmin() ? '(Your Team)' : ''}
+                        </span>
+                      </label>
+                      
+                      <select
+                        name="player1Team2"
+                        className={`select select-bordered w-full select-sm text-xs sm:text-sm ${isTeamAdmin() && isDeadlinePassed(editingMatch) ? 'select-disabled bg-base-200' : ''}`}
+                        value={editForm.player1Team2}
+                        onChange={handleEditFormChange}
+                        disabled={isTeamAdmin() && isDeadlinePassed(editingMatch)}
+                      >
+                        <option value="">{(() => {
+                          const isSingles = editingMatch.matchType === 'singles' || editingMatch.matchTypeLabel?.toLowerCase().includes('singles');
+                          return isSingles ? 'Select player' : 'Select player 1';
+                        })()}</option>
+                        {getPlayersWithAvailability(getTeamPlayers(editingMatch.team2), 'team2', 'player1', editingMatch).map((player) => (
+                          <option
+                            key={player.id}
+                            value={player.available ? player.name : ''}
+                            disabled={!player.available}
+                            className={`text-xs sm:text-sm ${!player.available ? 'text-gray-400 bg-gray-100' : ''}`}
+                            title={!player.available ? player.reason : ''}
+                          >
+                            {player.name}{player.age ? ` (${player.age}y)` : ''}{player.gender ? ` - ${player.gender}` : ''}{!player.available ? ` (${player.reason})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      
+                      {/* Only show second player selection for doubles matches */}
+                      {(() => {
+                        const isSingles = editingMatch.matchType === 'singles' || editingMatch.matchTypeLabel?.toLowerCase().includes('singles');
+                        return !isSingles && (
+                          <select
+                            name="player2Team2"
+                            className={`select select-bordered w-full select-sm text-xs sm:text-sm ${isTeamAdmin() && isDeadlinePassed(editingMatch) ? 'select-disabled bg-base-200' : ''}`}
+                            value={editForm.player2Team2}
+                            onChange={handleEditFormChange}
+                            disabled={isTeamAdmin() && isDeadlinePassed(editingMatch)}
+                          >
+                            <option value="">Select player 2</option>
+                            {getPlayersWithAvailability(getTeamPlayers(editingMatch.team2), 'team2', 'player2', editingMatch).map((player) => (
+                              <option
+                                key={player.id}
+                                value={player.available ? player.name : ''}
+                                disabled={!player.available}
+                                className={`text-xs sm:text-sm ${!player.available ? 'text-gray-400 bg-gray-100' : ''}`}
+                                title={!player.available ? player.reason : ''}
+                              >
+                                {player.name}{player.age ? ` (${player.age}y)` : ''}{player.gender ? ` - ${player.gender}` : ''}{!player.available ? ` (${player.reason})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  
+                  {editingMatch.matchType !== 'dreamBreaker' && (isSuperAdmin() || (isTeamAdmin() && getTeamAdminTeam(editingMatch) === 'team2')) && (
                     <div className="space-y-2 min-w-0">
                       <label className="label">
                         <span className="label-text font-medium text-sm break-words">

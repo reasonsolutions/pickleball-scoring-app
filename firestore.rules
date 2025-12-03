@@ -21,20 +21,20 @@ service cloud.firestore {
                    request.auth.uid == resource.data.createdBy;
     }
     
-    // Players collection rules
+    // Players collection rules - TEMPORARILY RELAXED FOR DEBUGGING
     match /players/{playerId} {
-      // Allow all authenticated users to read players
-      allow read: if request.auth != null;
+      // Allow public read access for players (needed for umpire scoring and TV displays)
+      allow read: if true;
       
-      // Allow creating players if user is authenticated and is the creator
-      allow create: if request.auth != null &&
-                   request.auth.uid == request.resource.data.createdBy &&
-                   isValidPlayerData(request.resource.data);
+      // TEMPORARILY ALLOW ALL AUTHENTICATED USERS TO CREATE PLAYERS - NO VALIDATION
+      allow create: if request.auth != null;
       
-      // Allow updating only by the player creator with valid data
+      // Allow updating by the player creator OR by super admin OR by tournament creator
       allow update: if request.auth != null &&
-                   request.auth.uid == resource.data.createdBy &&
-                   isValidPlayerData(request.resource.data);
+                   (request.auth.uid == resource.data.createdBy ||
+                    isSuperAdminSimple() ||
+                    isTournamentCreator(resource.data.tournamentId)) &&
+                   isValidPlayerUpdateData(request.resource.data);
       
       // Allow deleting only by the player creator (no data validation needed for delete)
       allow delete: if request.auth != null &&
@@ -43,7 +43,7 @@ service cloud.firestore {
     
     // Teams collection rules
     match /teams/{teamId} {
-      // Allow public read access for teams (for streaming overlay and TV display)
+      // Allow public read access for teams (for umpire scoring, streaming overlay and TV display)
       allow read: if true;
       
       // Allow creating teams if user is authenticated and is the creator
@@ -64,12 +64,20 @@ service cloud.firestore {
     // Fixtures collection rules - COMPLETELY OPEN FOR TESTING
     match /fixtures/{fixtureId} {
       // Allow all operations for testing
+      // fixtureType field is allowed as part of the open policy
       allow read, write: if true;
     }
     
     // Fixture Groups collection rules - COMPLETELY OPEN FOR TESTING
     match /fixtureGroups/{fixtureGroupId} {
       // Allow all operations for testing
+      allow read, write: if true;
+    }
+    
+    // Matches collection rules - COMPLETELY OPEN FOR TESTING
+    match /matches/{matchId} {
+      // Allow all operations for testing
+      // playingTime field is allowed as part of the open policy
       allow read, write: if true;
     }
     
@@ -151,6 +159,66 @@ service cloud.firestore {
                    isSuperAdminSimple();
     }
     
+    // Display Settings collection rules
+    match /display_settings/{settingId} {
+      // Allow public read access for display settings (needed for main display)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete display settings
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidDisplaySettingData(request.resource.data);
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidDisplaySettingData(request.resource.data);
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Overlay Controls collection rules - for streaming overlay player cards
+    match /overlay_controls/{controlId} {
+      // Allow public read and write access for overlay controls (needed for streaming functionality)
+      allow read, write: if true;
+    }
+    
+    // Video Links collection rules - for ads videos management
+    match /video_links/{tournamentId} {
+      // Allow public read access for video links (needed for display)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete video links
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidVideoLinksData(request.resource.data);
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidVideoLinksData(request.resource.data);
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Tournament Logos collection rules - for logo management
+    match /tournament_logos/{tournamentId} {
+      // Allow public read access for tournament logos (needed for display)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete tournament logos
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidTournamentLogosData(request.resource.data);
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple() &&
+                   isValidTournamentLogosData(request.resource.data);
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
     // Function to validate news data structure
     function isValidNewsData(data) {
       return data.keys().hasAll(['title', 'subtext', 'publishDate']) &&
@@ -221,8 +289,50 @@ service cloud.firestore {
               (data.photo is map &&
                data.photo.keys().hasAll(['url']) &&
                data.photo.url is string &&
-               (data.photo.publicId == null || data.photo.publicId is string)));
-    }
+               (data.photo.publicId == null || data.photo.publicId is string))) &&
+             // Backward compatibility photo fields
+             (data.photoUrl == null || data.photoUrl is string) &&
+             (data.photoPublicId == null || data.photoPublicId is string) &&
+             // New rating and statistics fields
+             (data.doublesRating == null || data.doublesRating is number) &&
+             (data.doublesWins == null || data.doublesWins is number) &&
+             (data.doublesLosses == null || data.doublesLosses is number) &&
+             (data.singlesRating == null || data.singlesRating is number) &&
+             (data.singlesWins == null || data.singlesWins is number) &&
+             (data.singlesLosses == null || data.singlesLosses is number) &&
+             // Allow createdAt and updatedAt timestamp fields
+             (data.createdAt == null || data.createdAt is timestamp) &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
+   }
+   
+   // Function to validate player data structure for updates (more flexible)
+   function isValidPlayerUpdateData(data) {
+     return data.keys().hasAll(['name', 'tournamentId', 'createdBy']) &&
+            data.name is string &&
+            data.tournamentId is string &&
+            data.createdBy is string &&
+            (data.age == null || data.age is number) &&
+            (data.gender == null || data.gender is string) &&
+            (data.duprId == null || data.duprId is string) &&
+            (data.photo == null ||
+             data.photo is string || // Allow direct URL strings for bulk upload
+             (data.photo is map &&
+              data.photo.keys().hasAll(['url']) &&
+              data.photo.url is string &&
+              (data.photo.publicId == null || data.photo.publicId is string))) &&
+            // Backward compatibility photo fields
+            (data.photoUrl == null || data.photoUrl is string) &&
+            (data.photoPublicId == null || data.photoPublicId is string) &&
+            // New rating and statistics fields
+            (data.doublesRating == null || data.doublesRating is number) &&
+            (data.doublesWins == null || data.doublesWins is number) &&
+            (data.doublesLosses == null || data.doublesLosses is number) &&
+            (data.singlesRating == null || data.singlesRating is number) &&
+            (data.singlesWins == null || data.singlesWins is number) &&
+            (data.singlesLosses == null || data.singlesLosses is number) &&
+            // Allow updatedAt timestamp for updates
+            (data.updatedAt == null || data.updatedAt is timestamp);
+   }
     
     // Function to validate team data structure
     function isValidTeamData(data) {
@@ -271,5 +381,82 @@ service cloud.firestore {
              (data.updatedAt == null || data.updatedAt is timestamp) &&
              (data.createdBy == null || data.createdBy is string);
     }
+    
+    // Function to validate display setting data structure
+    function isValidDisplaySettingData(data) {
+      return data.keys().hasAll(['tournamentId', 'date', 'currentFixture']) &&
+             data.tournamentId is string &&
+             data.date is string &&
+             data.currentFixture is map &&
+             data.currentFixture.keys().hasAll(['fixtureGroupId', 'team1Name', 'team2Name']) &&
+             data.currentFixture.fixtureGroupId is string &&
+             data.currentFixture.team1Name is string &&
+             data.currentFixture.team2Name is string &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
+    }
+    
+    // Function to validate video links data structure (now supports mixed media)
+    function isValidVideoLinksData(data) {
+      return data.keys().hasAll(['tournamentId']) &&
+             data.tournamentId is string &&
+             // Support both old format (links) and new format (mediaItems)
+             (('links' in data && data.links is list && isValidVideoLinksArray(data.links)) ||
+              ('mediaItems' in data && data.mediaItems is list && isValidMediaItemsArray(data.mediaItems)) ||
+              ('links' in data && 'mediaItems' in data &&
+               data.links is list && data.mediaItems is list &&
+               isValidVideoLinksArray(data.links) && isValidMediaItemsArray(data.mediaItems))) &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
+    }
+    
+    // Function to validate individual video link objects in the array (backward compatibility)
+    function isValidVideoLinksArray(links) {
+      return links.size() >= 0 &&
+             links.size() <= 50; // Reasonable limit - simplified validation
+    }
+    
+    // Function to validate individual media item objects in the array (new format)
+    function isValidMediaItemsArray(mediaItems) {
+      return mediaItems.size() >= 0 &&
+             mediaItems.size() <= 50 && // Reasonable limit
+             // Simplified validation - each item should have basic required fields
+             (mediaItems.size() == 0 ||
+              (mediaItems[0].keys().hasAny(['id', 'type', 'url', 'title', 'rank']) &&
+               (mediaItems[0].type == null || mediaItems[0].type in ['video', 'image']) &&
+               (mediaItems[0].url == null || mediaItems[0].url is string) &&
+               (mediaItems[0].title == null || mediaItems[0].title is string) &&
+               (mediaItems[0].rank == null || mediaItems[0].rank is number)));
   }
+  
+  // Function to validate tournament logos data structure
+  function isValidTournamentLogosData(data) {
+    return data.keys().hasAll(['tournamentId', 'displayLogos']) &&
+           data.tournamentId is string &&
+           data.displayLogos is list &&
+           data.displayLogos.size() >= 0 &&
+           data.displayLogos.size() <= 20 && // Reasonable limit for logos
+           (data.updatedAt == null || data.updatedAt is timestamp) &&
+           // Simplified validation for logo items
+           (data.displayLogos.size() == 0 ||
+            (data.displayLogos[0].keys().hasAny(['id', 'url', 'title', 'rank']) &&
+             (data.displayLogos[0].url == null || data.displayLogos[0].url is string) &&
+             (data.displayLogos[0].title == null || data.displayLogos[0].title is string) &&
+             (data.displayLogos[0].rank == null || data.displayLogos[0].rank is number) &&
+             (data.displayLogos[0].publicId == null || data.displayLogos[0].publicId is string)));
+  }
+  
+  // Function to check if current user is a team admin for a specific tournament
+   function isTeamAdminForPlayer(tournamentId) {
+     return request.auth != null &&
+            exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'team_admin' &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tournamentId == tournamentId;
+   }
+   
+   // Function to check if current user is the tournament creator
+   function isTournamentCreator(tournamentId) {
+     return request.auth != null &&
+            exists(/databases/$(database)/documents/tournaments/$(tournamentId)) &&
+            get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.createdBy == request.auth.uid;
+   }
+ }
 }

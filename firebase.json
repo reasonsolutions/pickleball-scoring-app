@@ -3,6 +3,9 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
     "public": "dist",
     "ignore": [
@@ -12,12 +15,29 @@
     ],
     "rewrites": [
       {
+        "source": "/api/match/*/score",
+        "function": "getMatchScore"
+      },
+      {
+        "source": "/api/match/*/events",
+        "function": "getMatchEvents"
+      },
+      {
+        "source": "/api/match/*",
+        "function": "getMatch"
+      },
+      {
+        "source": "/api/matches",
+        "function": "getMatches"
+      },
+      {
+        "source": "/basic-score/**",
+        "function": "getMatchData"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
-  },
-  "storage": {
-    "rules": "storage.rules"
   }
 }
