@@ -4,6 +4,9 @@ import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs }
 import { db } from '../utils/firebase';
 import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
 
+// Import background image
+import mainDisplayBg from '../assets/maindisplay.png';
+
 // Import team logos (keep these for team logos, not sponsor logos)
 import paddleLogo from '../assets/paddle.png';
 import allstarsLogo from '../assets/allstars.png';
@@ -61,6 +64,10 @@ export default function MainDisplay() {
   // Featured image state
   const [showFeaturedImage, setShowFeaturedImage] = useState(false);
   const [featuredImageUrl, setFeaturedImageUrl] = useState('');
+  
+  // Team logos state for DRS
+  const [team1Logo, setTeam1Logo] = useState(null);
+  const [team2Logo, setTeam2Logo] = useState(null);
   
   // Use refs to avoid recreating callbacks and triggering re-subscriptions
   const centerCourtMatchesRef = useRef([]);
@@ -588,17 +595,51 @@ export default function MainDisplay() {
           setShowAdsMedia(false);
           setIsTimeoutActive(false);
           
-          // Start DRS video
+          // Start DRS video with team data
           setDrsVideoUrl(matchData.drsVideoUrl);
           setIsDRSVideoPlaying(true);
           
-          console.log('🎥 DRS Video started:', matchData.drsVideoUrl);
+          // Store DRS team data for display
+          setMatch(prevMatch => ({
+            ...prevMatch,
+            drsTeam: matchData.drsTeam,
+            drsTeamName: matchData.drsTeamName
+          }));
+          
+          // Fetch team logos
+          const fetchTeamLogos = async () => {
+            try {
+              if (matchData.team1Id) {
+                const team1Doc = await getDoc(doc(db, 'teams', matchData.team1Id));
+                if (team1Doc.exists()) {
+                  const team1Data = team1Doc.data();
+                  setTeam1Logo(team1Data.logoUrl || null);
+                }
+              }
+              
+              if (matchData.team2Id) {
+                const team2Doc = await getDoc(doc(db, 'teams', matchData.team2Id));
+                if (team2Doc.exists()) {
+                  const team2Data = team2Doc.data();
+                  setTeam2Logo(team2Data.logoUrl || null);
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching team logos:', error);
+            }
+          };
+          
+          fetchTeamLogos();
+          
+          console.log('🎥 DRS Video started:', matchData.drsVideoUrl, 'Team:', matchData.drsTeamName);
         }
         // Check if DRS video should be stopped
         else if (!matchData.drsVideoActive && isDRSVideoPlaying) {
           // Stop DRS video and restore previous state
           setIsDRSVideoPlaying(false);
           setDrsVideoUrl('');
+          setTeam1Logo(null);
+          setTeam2Logo(null);
           
           // Restore previous display state
           if (previousDisplayState) {
@@ -823,7 +864,7 @@ export default function MainDisplay() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
         <div className="loading loading-spinner loading-lg text-white"></div>
       </div>
     );
@@ -831,7 +872,7 @@ export default function MainDisplay() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
         <div className="text-white text-center">
           <h2 className="text-2xl font-bold mb-4">Error</h2>
           <p>{error}</p>
@@ -843,7 +884,7 @@ export default function MainDisplay() {
   // Show featured image if all matches are scheduled
   if (showFeaturedImage && featuredImageUrl) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
         {/* Header with logos */}
         <div className="absolute top-0 left-0 right-0 flex justify-evenly items-center px-12 py-6">
           {displayLogos.length > 0 ? (
@@ -878,7 +919,7 @@ export default function MainDisplay() {
 
   if (!currentFixture || !liveMatch) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
         <div className="text-white text-center">
           <h2 className="text-2xl font-bold mb-4">No Center Court Matches</h2>
           <p>No center court matches found for {formatDate(dateString)}</p>
@@ -888,7 +929,7 @@ export default function MainDisplay() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden flex flex-col">
+    <div className="min-h-screen text-white overflow-hidden flex flex-col bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
       {/* Header with logos - Fixed at top */}
       <div className="flex justify-evenly items-center px-12 py-6 flex-shrink-0">
         {displayLogos.length > 0 ? (
@@ -913,10 +954,29 @@ export default function MainDisplay() {
       <div className="flex-1 flex flex-col px-12">
         {/* Main Live Match Display */}
         <div className="mb-8">
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-8 border border-slate-600 shadow-2xl">
+        <div className="bg-gradient-to-r from-orange-900 to-orange-800 rounded-2xl p-8 border border-orange-600 shadow-2xl relative overflow-hidden">
+          {/* Lightning animation effects */}
+          <div className="absolute inset-0 rounded-2xl border-4 border-orange-400 opacity-75 animate-pulse"></div>
+          <div
+            className="absolute inset-0 rounded-2xl border-2 border-yellow-300 opacity-60"
+            style={{
+              animation: 'lightning 1.5s ease-in-out infinite',
+              boxShadow: '0 0 20px rgba(255, 255, 0, 0.5), inset 0 0 20px rgba(255, 165, 0, 0.3)'
+            }}
+          ></div>
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 0, 0.3) 50%, transparent 70%)',
+              animation: 'electricSweep 15s linear infinite'
+            }}
+          ></div>
+          
+          {/* Content wrapper to ensure it's above the animations */}
+          <div className="relative z-10">
           {/* Match Type Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white bg-slate-600 rounded-lg py-3 px-6 inline-block">
+            <h2 className="text-3xl font-bold text-white bg-orange-700 rounded-lg py-3 px-6 inline-block">
               {liveMatch.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : liveMatch.matchTypeLabel}
             </h2>
           </div>
@@ -942,7 +1002,7 @@ export default function MainDisplay() {
               </div>
               <div className="text-left">
                 <h3 className="text-2xl font-bold text-white mb-2">{currentFixture.team1Name}</h3>
-                <div className="text-lg text-slate-300 space-y-1">
+                <div className="text-lg text-orange-200 space-y-1">
                   {liveMatch.player1Team1 && (
                     <div className="font-medium">{liveMatch.player1Team1}</div>
                   )}
@@ -967,7 +1027,7 @@ export default function MainDisplay() {
                   {/* Team 1 Serve Indicators */}
                   {renderServeIndicators(liveMatch, 'team1')}
                 </div>
-                <span className="text-6xl font-bold text-slate-400">-</span>
+                <span className="text-6xl font-bold text-orange-400">-</span>
                 <div className="text-center relative">
                   <span className="text-8xl font-bold text-white">
                     {liveMatch.scores?.player2?.game1 ||
@@ -986,7 +1046,7 @@ export default function MainDisplay() {
             <div className="flex items-center space-x-8 flex-1 justify-end">
               <div className="text-right">
                 <h3 className="text-2xl font-bold text-white mb-2">{currentFixture.team2Name}</h3>
-                <div className="text-lg text-slate-300 space-y-1">
+                <div className="text-lg text-orange-200 space-y-1">
                   {liveMatch.player1Team2 && (
                     <div className="font-medium">{liveMatch.player1Team2}</div>
                   )}
@@ -1014,9 +1074,10 @@ export default function MainDisplay() {
           </div>
         </div>
       </div>
+          </div>
 
       {/* Other Matches in Fixture */}
-      <div className="px-12">
+      <div className="px-12 relative z-10">
         <div className="grid grid-cols-5 gap-6">
           {(() => {
             // In Game Breaker scenario (3-3), show the 6 matches that were played before
@@ -1037,17 +1098,17 @@ export default function MainDisplay() {
             }
             
             return matchesToShow.map((match, index) => (
-                <div key={match.id} className="bg-slate-800 rounded-xl p-6 border border-slate-600 shadow-lg">
+                <div key={match.id} className="bg-orange-900 rounded-xl p-6 border border-orange-600 shadow-lg">
                   {/* Match Type Header */}
                   <div className="text-center mb-6">
-                    <h4 className="text-lg font-semibold text-white bg-slate-700 rounded py-3 px-4">
+                    <h4 className="text-lg font-semibold text-white bg-orange-700 rounded py-3 px-4">
                       {match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}
                     </h4>
                   </div>
                   
                   {/* Team 1 Section */}
                   <div className="mb-4">
-                    <div className="text-left text-slate-400 text-sm mb-2">{currentFixture.team1Name}</div>
+                    <div className="text-left text-orange-300 text-sm mb-2">{currentFixture.team1Name}</div>
                     <div className="flex justify-between items-center">
                       <div className="text-left">
                         <div className="text-white text-lg font-medium">
@@ -1075,11 +1136,11 @@ export default function MainDisplay() {
                   </div>
 
                   {/* Separator Line */}
-                  <div className="border-t border-slate-600 my-4"></div>
+                  <div className="border-t border-orange-600 my-4"></div>
 
                   {/* Team 2 Section */}
                   <div>
-                    <div className="text-left text-slate-400 text-sm mb-2">{currentFixture.team2Name}</div>
+                    <div className="text-left text-orange-300 text-sm mb-2">{currentFixture.team2Name}</div>
                     <div className="flex justify-between items-center">
                       <div className="text-left">
                         <div className="text-white text-lg font-medium">
@@ -1112,7 +1173,7 @@ export default function MainDisplay() {
       </div>
 
       {/* Bottom Logos Section - Fixed at bottom */}
-      <div className="px-12 py-6 flex-shrink-0">
+      <div className="px-12 py-6 flex-shrink-0 relative z-10">
         <div className="flex justify-evenly items-center w-full">
           {bottomLogos.map((logo, index) => (
             <img
@@ -1241,7 +1302,7 @@ export default function MainDisplay() {
                           <div className="text-center text-white">
                             <div className="text-8xl mb-8">🎥</div>
                             <h2 className="text-6xl font-bold mb-4">Video Error</h2>
-                            <p className="text-2xl text-slate-300">
+                            <p className="text-2xl text-orange-200">
                               {currentItem.title || 'Invalid video format'}
                             </p>
                             <p className="text-lg text-red-400 mt-4">
@@ -1256,7 +1317,7 @@ export default function MainDisplay() {
                         <div className="text-center text-white">
                           <div className="text-8xl mb-8">❓</div>
                           <h2 className="text-6xl font-bold mb-4">Unknown Media Type</h2>
-                          <p className="text-2xl text-slate-300">
+                          <p className="text-2xl text-orange-200">
                             {currentItem.title || 'Unknown media'}
                           </p>
                         </div>
@@ -1284,28 +1345,87 @@ export default function MainDisplay() {
         </div>
       )}
 
-      {/* DRS Video Overlay */}
-      {isDRSVideoPlaying && drsVideoUrl && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <div className="w-full h-full relative">
-            {/* YouTube Video Embed */}
-            <iframe
-              src={`https://www.youtube.com/embed/${extractVideoId(drsVideoUrl)}?autoplay=1&controls=1&rel=0&modestbranding=1`}
-              title="DRS Review Video"
-              className="w-full h-full"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+      {/* DRS Pending Screen */}
+      {isDRSVideoPlaying && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background Video */}
+          <video
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+          >
+            <source src="/src/assets/backgrounds/drs_background.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          
+          {/* Top Logos */}
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-8 z-20">
+            <img
+              src="/src/assets/centrecourt_logo.png"
+              alt="Centre Court Logo"
+              className="h-16 w-auto object-contain"
             />
+            <img
+              src="/src/assets/hpllogo_white.png"
+              alt="HPL Logo"
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          
+          {/* Content Overlay */}
+          <div className="relative z-10 w-full flex items-center justify-center px-16">
+            {/* Left Team Logo */}
+            <div className="flex-1 flex justify-end pr-16">
+              {team1Logo ? (
+                <img
+                  src={team1Logo}
+                  alt={liveMatch?.team1Name || 'Team 1'}
+                  className="w-64 h-64 object-contain opacity-80"
+                />
+              ) : (
+                <img
+                  src={getTeamLogo(liveMatch?.team1Name)}
+                  alt={liveMatch?.team1Name || 'Team 1'}
+                  className="w-64 h-64 object-contain opacity-80"
+                />
+              )}
+            </div>
             
-            {/* DRS Overlay Info */}
-            <div className="absolute top-4 left-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg font-bold text-xl">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                <span>🎥 DRS REVIEW IN PROGRESS</span>
+            {/* Center Text */}
+            <div className="flex-shrink-0 text-center">
+              <div
+                className="font-championer text-8xl md:text-9xl lg:text-[12rem] font-bold leading-none animate-drs-heartbeat"
+                style={{
+                  color: '#e98318',
+                  textShadow: '4px 4px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(233, 131, 24, 0.3)',
+                  fontFamily: 'Championer, Arial Black, Impact, Helvetica Neue, sans-serif'
+                }}
+              >
+                <div className="mb-4">DECISION</div>
+                <div>PENDING</div>
               </div>
             </div>
+            
+            {/* Right Team Logo */}
+            <div className="flex-1 flex justify-start pl-16">
+              {team2Logo ? (
+                <img
+                  src={team2Logo}
+                  alt={liveMatch?.team2Name || 'Team 2'}
+                  className="w-64 h-64 object-contain opacity-80"
+                />
+              ) : (
+                <img
+                  src={getTeamLogo(liveMatch?.team2Name)}
+                  alt={liveMatch?.team2Name || 'Team 2'}
+                  className="w-64 h-64 object-contain opacity-80"
+                />
+              )}
+            </div>
           </div>
+          
         </div>
       )}
 

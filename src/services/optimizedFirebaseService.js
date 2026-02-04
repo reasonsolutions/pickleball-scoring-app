@@ -272,7 +272,11 @@ export const fetchTournamentStatsOptimized = async (tournamentId) => {
         date: match.date,
         time: match.time,
         matches: [],
-        status: 'scheduled'
+        status: 'scheduled',
+        fixtureType: match.fixtureType, // Include fixtureType to identify playoff fixtures
+        playoffStage: match.playoffStage,
+        playoffNumber: match.playoffNumber,
+        playoffName: match.playoffName
       };
     }
     fixtureGroups[groupId].matches.push(match);
@@ -294,10 +298,14 @@ export const fetchTournamentStatsOptimized = async (tournamentId) => {
 
   // Calculate team statistics based on fixtures
   const teamsWithStats = teams.map(team => {
-    // Get all fixtures involving this team
-    const teamFixtures = Object.values(fixtureGroups).filter(fixture =>
-      fixture.team1 === team.id || fixture.team2 === team.id
-    );
+    // Get all fixtures involving this team, excluding playoff fixtures
+    const teamFixtures = Object.values(fixtureGroups).filter(fixture => {
+      const isTeamInvolved = fixture.team1 === team.id || fixture.team2 === team.id;
+      // Exclude playoff fixtures from rankings calculations
+      const playoffTypes = ['playoff', 'Qualifier', 'Qualifier 1', 'Qualifier 2', 'Eliminator', 'Final'];
+      const isNotPlayoff = !fixture.fixtureType || !playoffTypes.includes(fixture.fixtureType);
+      return isTeamInvolved && isNotPlayoff;
+    });
 
     let battleWins = 0; // Number of fixtures won
     let battleLosses = 0; // Number of fixtures lost

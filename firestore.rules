@@ -34,7 +34,7 @@ service cloud.firestore {
                    (request.auth.uid == resource.data.createdBy ||
                     isSuperAdminSimple() ||
                     isTournamentCreator(resource.data.tournamentId)) &&
-                   isValidPlayerUpdateData(request.resource.data);
+                   (isSuperAdminSimple() || isValidPlayerUpdateData(request.resource.data));
       
       // Allow deleting only by the player creator (no data validation needed for delete)
       allow delete: if request.auth != null &&
@@ -219,6 +219,128 @@ service cloud.firestore {
                    isSuperAdminSimple();
     }
     
+    // Clubs Players collection rules - for HPL player registration
+    match /clubs-players/{playerId} {
+      // Allow public read and write access for player registration form
+      allow read, write: if true;
+    }
+    
+    // HPL Clubs collection rules - for HPL club registration
+    match /hpl-clubs/{clubId} {
+      // Allow public read access for club registration form
+      allow read: if true;
+      
+      // Allow creating clubs with valid data structure
+      allow create: if isValidHplClubData(request.resource.data);
+      
+      // Allow updating clubs with valid data structure
+      allow update: if isValidHplClubData(request.resource.data);
+      
+      // Allow deleting clubs (for admin purposes)
+      allow delete: if true;
+    }
+    
+    // Email OTPs collection rules - for email verification
+    match /email-otps/{otpId} {
+      // Allow public read access for OTP verification (needed for email verification)
+      allow read: if true;
+      
+      // Only Firebase Functions can create OTPs
+      allow create: if false;
+      
+      // No updates or deletes allowed from frontend
+      allow update, delete: if false;
+    }
+    
+    // Recruitment Requests collection rules - for club player recruitment
+    match /recruitment-requests/{requestId} {
+      // Allow public read and write access for recruitment functionality
+      allow read, write: if true;
+    }
+    
+    // Password reset tokens collection rules
+    match /password-reset-tokens/{tokenId} {
+      // Allow public read and write access for password reset functionality
+      allow read, write: if true;
+    }
+    
+    // Function to validate clubs player data structure
+    function isValidClubsPlayerData(data) {
+      return data.keys().hasAll(['fullName', 'mobileNumber', 'emailId', 'password', 'gender', 'dateOfBirth', 'singlesRating', 'doublesRating', 'singlesReliabilityScore', 'doublesReliabilityScore', 'whyPickYou', 'leagueCommitment', 'registrationFee']) &&
+             data.fullName is string &&
+             data.mobileNumber is string &&
+             data.emailId is string &&
+             data.password is string &&
+             data.gender is string &&
+             data.gender in ['male', 'female'] &&
+             data.dateOfBirth is string &&
+             data.singlesRating is string &&
+             data.doublesRating is string &&
+             data.singlesReliabilityScore is string &&
+             data.doublesReliabilityScore is string &&
+             data.whyPickYou is string &&
+             data.leagueCommitment is bool &&
+             data.registrationFee is bool &&
+             // Optional fields
+             (data.duprId == null || data.duprId is string) &&
+             (data.dilemma1 == null || data.dilemma1 is string) &&
+             (data.dilemma2 == null || data.dilemma2 is string) &&
+             (data.dilemma3 == null || data.dilemma3 is string) &&
+             // Cloudinary photo fields
+             (data.photoUrl == null || data.photoUrl is string) &&
+             (data.photoPublicId == null || data.photoPublicId is string) &&
+             (data.photoFileName == null || data.photoFileName is string) &&
+             (data.photoFileSize == null || data.photoFileSize is number) &&
+             // Cloudinary Aadhar document fields
+             (data.aadharUrl == null || data.aadharUrl is string) &&
+             (data.aadharPublicId == null || data.aadharPublicId is string) &&
+             (data.aadharFileName == null || data.aadharFileName is string) &&
+             (data.aadharFileType == null || data.aadharFileType is string) &&
+             (data.aadharFileSize == null || data.aadharFileSize is number) &&
+             // Timestamp fields
+             (data.createdAt == null || data.createdAt is timestamp) &&
+             (data.updatedAt == null || data.updatedAt is timestamp) &&
+             (data.createdBy == null || data.createdBy is string) &&
+             (data.status == null || data.status is string);
+    }
+    
+    // Function to validate HPL club data structure
+    function isValidHplClubData(data) {
+      return data.keys().hasAll(['proposedClubName', 'primaryOwnerName', 'clubNamingFormat', 'phoneNumber', 'emailId', 'password']) &&
+             data.proposedClubName is string &&
+             data.primaryOwnerName is string &&
+             data.clubNamingFormat is string &&
+             data.clubNamingFormat in ['PC', 'PBC', 'Athletic', 'Academy', 'Collective', 'Crew', 'Union', 'Social'] &&
+             data.phoneNumber is string &&
+             data.emailId is string &&
+             data.password is string &&
+             // Optional fields
+             (data.clubDescription == null || data.clubDescription is string) &&
+             (data.communityExistence == null || data.communityExistence is string) &&
+             (data.whyJoinLeague == null || data.whyJoinLeague is string) &&
+             (data.winningVsCulture == null || data.winningVsCulture is string) &&
+             (data.clubFeeling == null || data.clubFeeling is string) &&
+             (data.venueAccess == null || data.venueAccess is string) &&
+             (data.venueName == null || data.venueName is string) &&
+             (data.communityManagerName == null || data.communityManagerName is string) &&
+             (data.managerPhoneNumber == null || data.managerPhoneNumber is string) &&
+             (data.managerEmailId == null || data.managerEmailId is string) &&
+             (data.playerSelectionCriteria == null || data.playerSelectionCriteria is list) &&
+             (data.clubUSP == null || data.clubUSP is string) &&
+             (data.longTermGoals == null || data.longTermGoals is list) &&
+             (data.playerBenefits == null || data.playerBenefits is list) &&
+             (data.otherBenefits == null || data.otherBenefits is string) &&
+             (data.uniqueCulture == null || data.uniqueCulture is string) &&
+             (data.rolesResponsibilities == null || data.rolesResponsibilities is string) &&
+             (data.additionalInfo == null || data.additionalInfo is string) &&
+             (data.finalDeclarations == null || data.finalDeclarations is list) &&
+             // Payment info fields
+             (data.paymentInfo == null || data.paymentInfo is map) &&
+             // Timestamp fields
+             (data.submittedAt == null || data.submittedAt is timestamp) &&
+             (data.status == null || data.status is string);
+    }
+    
     // Function to validate news data structure
     function isValidNewsData(data) {
       return data.keys().hasAll(['title', 'subtext', 'publishDate']) &&
@@ -290,6 +412,11 @@ service cloud.firestore {
                data.photo.keys().hasAll(['url']) &&
                data.photo.url is string &&
                (data.photo.publicId == null || data.photo.publicId is string))) &&
+             (data.playerPortrait == null ||
+              (data.playerPortrait is map &&
+               data.playerPortrait.keys().hasAll(['url']) &&
+               data.playerPortrait.url is string &&
+               (data.playerPortrait.publicId == null || data.playerPortrait.publicId is string))) &&
              // Backward compatibility photo fields
              (data.photoUrl == null || data.photoUrl is string) &&
              (data.photoPublicId == null || data.photoPublicId is string) &&
@@ -320,6 +447,11 @@ service cloud.firestore {
               data.photo.keys().hasAll(['url']) &&
               data.photo.url is string &&
               (data.photo.publicId == null || data.photo.publicId is string))) &&
+            (data.playerPortrait == null ||
+             (data.playerPortrait is map &&
+              data.playerPortrait.keys().hasAll(['url']) &&
+              data.playerPortrait.url is string &&
+              (data.playerPortrait.publicId == null || data.playerPortrait.publicId is string))) &&
             // Backward compatibility photo fields
             (data.photoUrl == null || data.photoUrl is string) &&
             (data.photoPublicId == null || data.photoPublicId is string) &&
@@ -347,7 +479,15 @@ service cloud.firestore {
              (data.logo == null || (data.logo is map &&
               data.logo.keys().hasAll(['url']) &&
               data.logo.url is string &&
-              (data.logo.publicId == null || data.logo.publicId is string)));
+              (data.logo.publicId == null || data.logo.publicId is string))) &&
+             (data.playerImages == null || (data.playerImages is list &&
+              data.playerImages.size() >= 0 &&
+              data.playerImages.size() <= 20 && // Reasonable limit for player images
+              (data.playerImages.size() == 0 ||
+               (data.playerImages[0].keys().hasAny(['url', 'publicId']) &&
+                (data.playerImages[0].url == null || data.playerImages[0].url is string) &&
+                (data.playerImages[0].publicId == null || data.playerImages[0].publicId is string))))) &&
+             (data.updatedAt == null || data.updatedAt is timestamp);
     }
     
     // Enhanced function to check if current user is super admin

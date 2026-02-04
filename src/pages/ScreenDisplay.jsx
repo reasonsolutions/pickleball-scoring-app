@@ -221,6 +221,28 @@ export default function ScreenDisplay() {
                         >
                           Outside Display
                         </button>
+                        
+                        <button
+                          className="btn btn-warning btn-sm flex-1"
+                          onClick={() => {
+                            const excitementDisplayUrl = `${window.location.origin}/excitement-display/${tournamentId}/${dateString}`;
+                            window.open(excitementDisplayUrl, '_blank');
+                          }}
+                        >
+                          Excitement Display
+                        </button>
+                      </div>
+                      
+                      <div className="flex gap-2 w-full">
+                        <button
+                          className="btn btn-info btn-sm flex-1"
+                          onClick={() => {
+                            const excitementDisplay2Url = `${window.location.origin}/excitement-display-2/${tournamentId}/${dateString}`;
+                            window.open(excitementDisplay2Url, '_blank');
+                          }}
+                        >
+                          Excitement Display 2
+                        </button>
                       </div>
                     </div>
                   </div>

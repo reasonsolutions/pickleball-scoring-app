@@ -98,12 +98,18 @@ export default function Footer() {
           <p className="text-gray-400 text-sm">
             © {new Date().getFullYear()} Hyderabad Pickleball League. All rights reserved.
           </p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 md:mt-0">
             <Link to="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
               Privacy Policy
             </Link>
             <Link to="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">
               Terms of Service
+            </Link>
+            <Link to="/refund" className="text-gray-400 hover:text-white text-sm transition-colors">
+              Refund Policy
+            </Link>
+            <Link to="/shipping" className="text-gray-400 hover:text-white text-sm transition-colors">
+              Shipping Policy
             </Link>
           </div>
         </div>

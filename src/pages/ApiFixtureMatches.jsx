@@ -42,15 +42,67 @@ export default function ApiFixtureMatches() {
         }));
 
         // Filter matches that belong to this fixture group
-        const team1 = fixtureGroupId.split('_vs_')[0];
-        const team2 = fixtureGroupId.split('_vs_')[1];
+        // Parse the fixture group ID to extract team names, date, and court
+        // Format: Team1_vs_Team2_YYYY-MM-DD_Court
+        const parts = fixtureGroupId.split('_');
+        const vsIndex = parts.findIndex(part => part === 'vs');
+        
+        if (vsIndex === -1) {
+          console.error('Invalid fixture group ID format:', fixtureGroupId);
+          setError('Invalid fixture group ID format');
+          return;
+        }
+        
+        // Extract team names (everything before 'vs' and between 'vs' and date)
+        const team1Parts = parts.slice(0, vsIndex);
+        const team1 = team1Parts.join(' ');
+        
+        // Find the date part (YYYY-MM-DD format)
+        let dateIndex = -1;
+        for (let i = vsIndex + 1; i < parts.length; i++) {
+          if (parts[i].match(/^\d{4}-\d{2}-\d{2}$/)) {
+            dateIndex = i;
+            break;
+          }
+        }
+        
+        let team2, expectedDate, expectedCourt;
+        if (dateIndex !== -1) {
+          // Extract team2 (between 'vs' and date)
+          const team2Parts = parts.slice(vsIndex + 1, dateIndex);
+          team2 = team2Parts.join(' ');
+          
+          // Extract date and court
+          expectedDate = parts[dateIndex];
+          expectedCourt = parts.slice(dateIndex + 1).join(' ');
+        } else {
+          // Fallback: assume everything after 'vs' is team2
+          const team2Parts = parts.slice(vsIndex + 1);
+          team2 = team2Parts.join(' ');
+        }
+        
+        console.log('Parsed fixture info:', { team1, team2, expectedDate, expectedCourt });
         
         const fixtureMatches = allMatchesData.filter(match => {
           const matchTeam1 = match.team1Name || 'TBD';
           const matchTeam2 = match.team2Name || 'TBD';
-          return (matchTeam1 === team1 && matchTeam2 === team2) ||
-                 (matchTeam1 === team2 && matchTeam2 === team1);
+          
+          // Check if teams match (in either order)
+          const teamsMatch = (matchTeam1 === team1 && matchTeam2 === team2) ||
+                            (matchTeam1 === team2 && matchTeam2 === team1);
+          
+          // If we have expected date and court, also check those
+          if (expectedDate && expectedCourt) {
+            const matchDate = match.date?.toDate ? match.date.toDate().toISOString().split('T')[0] : 'no-date';
+            const matchCourt = match.court || 'no-court';
+            
+            return teamsMatch && matchDate === expectedDate && matchCourt === expectedCourt;
+          }
+          
+          return teamsMatch;
         });
+        
+        console.log('Found matches:', fixtureMatches.length);
 
         // Define match type order (identical to UmpireMatchList)
         const getMatchTypeOrder = (matchType) => {
@@ -166,8 +218,23 @@ export default function ApiFixtureMatches() {
   }, [selectedDate, allMatches]);
 
   const handleMatchClick = (matchId) => {
+    console.log('Match clicked:', matchId);
     const basicScoreUrl = `${window.location.origin}/basic-score/${matchId}`;
-    window.open(basicScoreUrl, '_blank');
+    console.log('Opening URL:', basicScoreUrl);
+    
+    // Try to open in new tab, fallback to current tab if blocked
+    try {
+      const newWindow = window.open(basicScoreUrl, '_blank');
+      if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+        // Pop-up blocked, navigate in current tab
+        console.log('Pop-up blocked, navigating in current tab');
+        window.location.href = basicScoreUrl;
+      }
+    } catch (error) {
+      console.error('Error opening window:', error);
+      // Fallback to current tab
+      window.location.href = basicScoreUrl;
+    }
   };
 
   const formatDate = (dateString) => {

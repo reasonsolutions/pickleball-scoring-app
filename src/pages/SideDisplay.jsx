@@ -58,6 +58,11 @@ export default function SideDisplay() {
   const [drsVideoUrl, setDrsVideoUrl] = useState('');
   const [previousDisplayState, setPreviousDisplayState] = useState(null);
   
+  // Team logo state for DRS screen
+  const [team1Logo, setTeam1Logo] = useState(null);
+  const [team2Logo, setTeam2Logo] = useState(null);
+  const [match, setMatch] = useState(null);
+  
   // Featured image state
   const [showFeaturedImage, setShowFeaturedImage] = useState(false);
   const [featuredImageUrl, setFeaturedImageUrl] = useState('');
@@ -629,15 +634,48 @@ export default function SideDisplay() {
           setShowAdsMedia(false);
           setIsTimeoutActive(false);
           
-          // Start DRS video
+          // Start DRS video with team data
           setDrsVideoUrl(matchData.drsVideoUrl);
           setIsDRSVideoPlaying(true);
+          
+          // Store DRS team data for display
+          setMatch(prevMatch => ({
+            ...prevMatch,
+            drsTeam: matchData.drsTeam,
+            drsTeamName: matchData.drsTeamName
+          }));
+          
+          // Fetch team logos
+          const fetchTeamLogos = async () => {
+            try {
+              if (matchData.team1Id) {
+                const team1Doc = await getDoc(doc(db, 'teams', matchData.team1Id));
+                if (team1Doc.exists()) {
+                  const team1Data = team1Doc.data();
+                  setTeam1Logo(team1Data.logoUrl || null);
+                }
+              }
+              
+              if (matchData.team2Id) {
+                const team2Doc = await getDoc(doc(db, 'teams', matchData.team2Id));
+                if (team2Doc.exists()) {
+                  const team2Data = team2Doc.data();
+                  setTeam2Logo(team2Data.logoUrl || null);
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching team logos:', error);
+            }
+          };
+          
+          fetchTeamLogos();
           
           console.log('🎥 Side Court - DRS Video started:', {
             url: matchData.drsVideoUrl,
             matchId: liveMatch.id,
             teams: `${matchData.team1Name} vs ${matchData.team2Name}`,
-            court: matchData.court
+            court: matchData.court,
+            drsTeam: matchData.drsTeam
           });
         }
         // Check if DRS video should be stopped
@@ -645,6 +683,8 @@ export default function SideDisplay() {
           // Stop DRS video and restore previous state
           setIsDRSVideoPlaying(false);
           setDrsVideoUrl('');
+          setTeam1Logo(null);
+          setTeam2Logo(null);
           
           // Restore previous display state
           if (previousDisplayState) {
@@ -934,6 +974,85 @@ export default function SideDisplay() {
         <div className="text-white text-center">
           <h2 className="text-2xl font-bold mb-4">No Side Court Matches</h2>
           <p>No side court matches found for {formatDate(dateString)}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DRS Screen - Show when DRS video is playing
+  if (isDRSVideoPlaying) {
+    return (
+      <div className="min-h-screen bg-black text-white overflow-hidden relative">
+        {/* Video Background */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+        >
+          <source src="/src/assets/backgrounds/drs_background.mp4" type="video/mp4" />
+        </video>
+        
+        {/* Top Logos */}
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-6 z-20">
+          <img
+            src="/src/assets/centrecourt_logo.png"
+            alt="Centre Court Logo"
+            className="h-12 w-auto object-contain"
+          />
+          <img
+            src="/src/assets/hpllogo_white.png"
+            alt="HPL Logo"
+            className="h-12 w-auto object-contain"
+          />
+        </div>
+        
+        {/* Content Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex items-center justify-center w-full px-8">
+            {/* Team 1 Logo */}
+            <div className="flex-1 flex justify-center">
+              {team1Logo ? (
+                <img
+                  src={team1Logo}
+                  alt="Team 1 Logo"
+                  className="w-32 h-32 object-contain"
+                />
+              ) : (
+                <div className="w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-400 text-sm">Team 1</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Center Text */}
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-[#e98318] championer-font drs-text-animation transform -skew-x-12">
+                  DECISION
+                </div>
+                <div className="text-4xl font-bold text-[#e98318] championer-font drs-text-animation transform -skew-x-12 mt-2">
+                  PENDING
+                </div>
+              </div>
+            </div>
+            
+            {/* Team 2 Logo */}
+            <div className="flex-1 flex justify-center">
+              {team2Logo ? (
+                <img
+                  src={team2Logo}
+                  alt="Team 2 Logo"
+                  className="w-32 h-32 object-contain"
+                />
+              ) : (
+                <div className="w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-400 text-sm">Team 2</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1335,31 +1454,57 @@ export default function SideDisplay() {
         </div>
       )}
 
-      {/* DRS Video Overlay */}
-      {isDRSVideoPlaying && drsVideoUrl && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <div className="w-full h-full relative">
-            {/* YouTube Video Embed */}
-            <iframe
-              key={`drs-video-${extractVideoId(drsVideoUrl)}-${Date.now()}`}
-              src={`https://www.youtube.com/embed/${extractVideoId(drsVideoUrl)}?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=${window.location.origin}&playsinline=1&start=0&fs=1&cc_load_policy=0&iv_load_policy=3&showinfo=0&disablekb=0&loop=0&playlist=${extractVideoId(drsVideoUrl)}`}
-              title="Side Court DRS Live Video"
-              className="w-full h-full"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              allowFullScreen
-              sandbox="allow-same-origin allow-scripts allow-presentation"
-              onLoad={() => console.log('🎥 Side Court - DRS Video iframe loaded and should autoplay')}
-            />
+      {/* DRS Pending Screen */}
+      {isDRSVideoPlaying && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Background Video */}
+          <video
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+          >
+            <source src="/src/assets/backgrounds/drs_background.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          
+          {/* Content Overlay */}
+          <div className="relative z-10 w-full flex items-center justify-center px-12">
+            {/* Left Team Logo */}
+            <div className="flex-1 flex justify-end pr-12">
+              <img
+                src={getTeamLogo(liveMatch?.team1Name)}
+                alt={liveMatch?.team1Name || 'Team 1'}
+                className="w-48 h-48 object-contain opacity-80"
+              />
+            </div>
             
-            {/* DRS Overlay Info */}
-            <div className="absolute top-4 left-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg font-bold text-xl">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                <span>🎥 SIDE COURT DRS REVIEW</span>
+            {/* Center Text */}
+            <div className="flex-shrink-0 text-center">
+              <div
+                className="font-championer text-6xl md:text-7xl lg:text-8xl font-bold leading-none animate-drs-heartbeat"
+                style={{
+                  color: '#e98318',
+                  textShadow: '4px 4px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(233, 131, 24, 0.3)',
+                  fontFamily: 'Championer, Arial Black, Impact, Helvetica Neue, sans-serif'
+                }}
+              >
+                <div className="mb-4">DECISION</div>
+                <div>PENDING</div>
               </div>
             </div>
+            
+            {/* Right Team Logo */}
+            <div className="flex-1 flex justify-start pl-12">
+              <img
+                src={getTeamLogo(liveMatch?.team2Name)}
+                alt={liveMatch?.team2Name || 'Team 2'}
+                className="w-48 h-48 object-contain opacity-80"
+              />
+            </div>
           </div>
+          
         </div>
       )}
 

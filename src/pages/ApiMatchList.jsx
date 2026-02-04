@@ -39,27 +39,31 @@ export default function ApiMatchList() {
           ...doc.data()
         }));
 
-        // Group matches by team pairs
+        // Group matches by team matchups and date, including all match types within each fixture (identical to StreamingMatchList)
         const groupedMatches = {};
         matchesData.forEach(match => {
-          const team1Name = match.team1Name || 'TBD';
-          const team2Name = match.team2Name || 'TBD';
+          // Create a unique key for team matchup including date and court
+          const team1 = match.team1Name || 'TBD';
+          const team2 = match.team2Name || 'TBD';
+          const fixtureDate = match.date?.toDate ? match.date.toDate().toISOString().split('T')[0] : 'no-date';
+          const court = match.court || 'no-court';
+          const matchupKey = `${team1}_vs_${team2}_${fixtureDate}_${court}`;
           
-          // Create a consistent key for the fixture group
-          const fixtureKey = [team1Name, team2Name].sort().join('_vs_');
-          
-          if (!groupedMatches[fixtureKey]) {
-            groupedMatches[fixtureKey] = {
-              id: fixtureKey,
-              team1Name: team1Name,
-              team2Name: team2Name,
+          if (!groupedMatches[matchupKey]) {
+            groupedMatches[matchupKey] = {
+              id: matchupKey,
+              team1Name: team1,
+              team2Name: team2,
+              team1: match.team1,
+              team2: match.team2,
               matches: [],
               date: match.date,
-              pool: match.pool
+              pool: match.pool,
+              court: court
             };
           }
           
-          groupedMatches[fixtureKey].matches.push(match);
+          groupedMatches[matchupKey].matches.push(match);
         });
 
         // Convert to array and sort by date

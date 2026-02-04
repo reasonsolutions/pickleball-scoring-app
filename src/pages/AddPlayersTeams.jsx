@@ -55,7 +55,8 @@ export default function AddPlayersTeams() {
     description: '',
     selectedPlayers: [],
     logo: null,
-    adminEmail: ''
+    adminEmail: '',
+    playerImages: []
   });
 
   // Edit player modal state
@@ -67,6 +68,7 @@ export default function AddPlayersTeams() {
     gender: '',
     duprId: '',
     photo: null,
+    playerPortrait: null,
     doublesRating: '',
     doublesWins: '',
     doublesLosses: '',
@@ -183,6 +185,13 @@ export default function AddPlayersTeams() {
     setEditPlayerForm(prev => ({
       ...prev,
       photo: photoData
+    }));
+  };
+
+  const handleEditPlayerPortraitUpload = (portraitData) => {
+    setEditPlayerForm(prev => ({
+      ...prev,
+      playerPortrait: portraitData
     }));
   };
 
@@ -499,6 +508,50 @@ export default function AddPlayersTeams() {
     }));
   };
 
+  const handlePlayerImageUpload = async (file) => {
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      // Import the upload function dynamically
+      const { uploadPlayerPhoto } = await import('../utils/cloudinary');
+      const result = await uploadPlayerPhoto(file);
+      
+      // Add the uploaded image to the player images array
+      setEditTeamForm(prev => ({
+        ...prev,
+        playerImages: [...prev.playerImages, result]
+      }));
+      
+      console.log('Player image uploaded successfully:', result);
+    } catch (error) {
+      console.error('Error uploading player image:', error);
+      alert('Failed to upload player image: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRemovePlayerImage = (index) => {
+    setEditTeamForm(prev => ({
+      ...prev,
+      playerImages: prev.playerImages.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     if (!teamForm.name.trim()) {
@@ -581,7 +634,8 @@ export default function AddPlayersTeams() {
       description: team.description || '',
       selectedPlayers: team.playerIds || [],
       logo: team.logo || null,
-      adminEmail: team.adminEmail || ''
+      adminEmail: team.adminEmail || '',
+      playerImages: team.playerImages || []
     });
     setShowEditTeamModal(true);
   };
@@ -656,6 +710,7 @@ export default function AddPlayersTeams() {
           url: editTeamForm.logo.url,
           publicId: editTeamForm.logo.publicId
         } : null,
+        playerImages: editTeamForm.playerImages || [],
         adminEmail: newAdminEmail,
         adminUid: adminUid, // Store the admin user ID
         updatedAt: serverTimestamp()
@@ -671,7 +726,8 @@ export default function AddPlayersTeams() {
         description: '',
         selectedPlayers: [],
         logo: null,
-        adminEmail: ''
+        adminEmail: '',
+        playerImages: []
       });
       setShowEditTeamModal(false);
       setEditingTeam(null);
@@ -745,6 +801,7 @@ export default function AddPlayersTeams() {
       gender: player.gender || '',
       duprId: player.duprId || '',
       photo: player.photo || null,
+      playerPortrait: player.playerPortrait || null,
       doublesRating: player.doublesRating || '',
       doublesWins: player.doublesWins || '',
       doublesLosses: player.doublesLosses || '',
@@ -774,6 +831,10 @@ export default function AddPlayersTeams() {
           url: editPlayerForm.photo.url,
           publicId: editPlayerForm.photo.publicId
         } : null,
+        playerPortrait: editPlayerForm.playerPortrait ? {
+          url: editPlayerForm.playerPortrait.url,
+          publicId: editPlayerForm.playerPortrait.publicId
+        } : null,
         doublesRating: editPlayerForm.doublesRating ? parseFloat(editPlayerForm.doublesRating) : null,
         doublesWins: editPlayerForm.doublesWins ? parseInt(editPlayerForm.doublesWins) : null,
         doublesLosses: editPlayerForm.doublesLosses ? parseInt(editPlayerForm.doublesLosses) : null,
@@ -794,6 +855,7 @@ export default function AddPlayersTeams() {
         gender: '',
         duprId: '',
         photo: null,
+        playerPortrait: null,
         doublesRating: '',
         doublesWins: '',
         doublesLosses: '',
@@ -2334,6 +2396,72 @@ export default function AddPlayersTeams() {
                   className="mb-4"
                 />
 
+                {/* Player Images Section */}
+                <div className="form-control mb-6">
+                  <label className="label">
+                    <span className="label-text font-medium">Player Images</span>
+                    <span className="label-text-alt text-xs">For Excitement Display</span>
+                  </label>
+                  
+                  {/* Upload new player image */}
+                  <div className="mb-4">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          handlePlayerImageUpload(file);
+                          // Reset the input so the same file can be selected again if needed
+                          e.target.value = '';
+                        }
+                      }}
+                      className="file-input file-input-bordered file-input-primary w-full"
+                      disabled={submitting}
+                    />
+                    <div className="text-xs text-base-content/60 mt-1">
+                      Select multiple images one by one. Max 5MB per image.
+                    </div>
+                  </div>
+
+                  {/* Display existing player images */}
+                  {editTeamForm.playerImages.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium text-base-content/70">
+                        Current Player Images ({editTeamForm.playerImages.length}):
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {editTeamForm.playerImages.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={image.url}
+                              alt={`Player ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-base-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePlayerImage(index)}
+                              className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error opacity-0 group-hover:opacity-100 transition-opacity"
+                              disabled={submitting}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {submitting && (
+                    <div className="flex items-center justify-center mt-2">
+                      <span className="loading loading-spinner loading-sm mr-2"></span>
+                      <span className="text-sm">Uploading player image...</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">Select Players *</span>
@@ -2399,7 +2527,8 @@ export default function AddPlayersTeams() {
                         description: '',
                         selectedPlayers: [],
                         logo: null,
-                        adminEmail: ''
+                        adminEmail: '',
+                        playerImages: []
                       });
                       setPlayerSearch('');
                     }}
@@ -2594,6 +2723,13 @@ export default function AddPlayersTeams() {
                   label="Player Photo"
                 />
 
+                <CloudinaryImageUpload
+                  onImageUpload={handleEditPlayerPortraitUpload}
+                  currentImage={editPlayerForm.playerPortrait?.url}
+                  label="Player Portrait"
+                  uploadType="player"
+                />
+
                 <div className="modal-action">
                   <button
                     type="button"
@@ -2607,6 +2743,7 @@ export default function AddPlayersTeams() {
                         gender: '',
                         duprId: '',
                         photo: null,
+                        playerPortrait: null,
                         doublesRating: '',
                         doublesWins: '',
                         doublesLosses: '',

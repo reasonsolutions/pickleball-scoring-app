@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Report Generator</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid #00ff00;
+            padding: 20px;
+            background-color: #2a2a2a;
+        }
+        .report-output {
+            background-color: #000;
+            border: 1px solid #00ff00;
+            padding: 20px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .generate-btn {
+            background-color: #00ff00;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .generate-btn:hover {
+            background-color: #00cc00;
+        }
+        .generate-btn:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        .loading {
+            color: #ffff00;
+        }
+        .error {
+            color: #ff0000;
+        }
+        .success {
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏓 PICKLEBALL PLAYER REPORT GENERATOR 🏓</h1>
+            <p>Generate comprehensive reports for All Stars and Credicon Mavericks teams</p>
+            <button id="generateBtn" class="generate-btn">Generate Player Report</button>
+        </div>
+        
+        <div id="output" class="report-output">
+Click "Generate Player Report" to fetch and display player data...
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFO4nUrgpBBydJoim9HFBLAOan94Bg7Fw",
+            authDomain: "pickleball-app-9ccf7.firebaseapp.com",
+            projectId: "pickleball-app-9ccf7",
+            storageBucket: "pickleball-app-9ccf7.firebasestorage.app",
+            messagingSenderId: "248577092150",
+            appId: "1:248577092150:web:fb1415679f016111c2c697",
+            measurementId: "G-6FRPZQJQ3B"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Output element
+        const output = document.getElementById('output');
+        const generateBtn = document.getElementById('generateBtn');
+
+        function log(message, type = 'normal') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = `[${timestamp}] `;
+            
+            let className = '';
+            if (type === 'error') className = 'error';
+            else if (type === 'success') className = 'success';
+            else if (type === 'loading') className = 'loading';
+            
+            const span = document.createElement('span');
+            span.className = className;
+            span.textContent = prefix + message + '\n';
+            
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+
+        /**
+         * Fetch all tournaments
+         */
+        async function fetchTournaments() {
+            try {
+                log('🔍 Fetching tournaments...', 'loading');
+                const tournamentsRef = collection(db, 'tournaments');
+                const snapshot = await getDocs(tournamentsRef);
+                const tournaments = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                log(`✅ Found ${tournaments.length} tournaments`, 'success');
+                return tournaments;
+            } catch (error) {
+                log(`❌ Error fetching tournaments: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
+        /**
+         * Fetch teams for a specific tournament
+         */
+        async function fetchTeamsForTournament(tournamentId) {
+            try {
+                const teamsRef = collection(db, 'teams');
+                const teamsQuery = query(teamsRef, where('tournamentId', '==', tournamentId));
+                const snapshot = await getDocs(teamsQuery);
+                return snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+            } catch (error) {
+                log(`❌ Error fetching teams for tournament ${tournamentId}: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
+        /**
+         * Fetch players for a specific tournament
+         */
+        async function fetchPlayersForTournament(tournamentId) {
+            try {
+                const playersRef = collection(db, 'players');
+                const playersQuery = query(playersRef, where('tournamentId', '==', tournamentId));
+                const snapshot = await getDocs(playersQuery);
+                return snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+            } catch (error) {
+                log(`❌ Error fetching players for tournament ${tournamentId}: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
+        /**
+         * Find target teams across all tournaments
+         */
+        async function findTargetTeams() {
+            const targetTeamNames = ['All Stars', 'Credicon Mavericks', 'allstars', 'mavericks'];
+            const foundTeams = [];
+            
+            const tournaments = await fetchTournaments();
+            
+            for (const tournament of tournaments) {
+                log(`\n🔍 Searching in tournament: ${tournament.name || tournament.tournamentName || tournament.id}`);
+                
+                const teams = await fetchTeamsForTournament(tournament.id);
+                
+                for (const team of teams) {
+                    const teamName = team.name || '';
+                    
+                    // Check if this team matches any of our target teams (case-insensitive)
+                    const matchedTargetName = targetTeamNames.find(targetName => 
+                        teamName.toLowerCase().includes(targetName.toLowerCase()) ||
+                        targetName.toLowerCase().includes(teamName.toLowerCase())
+                    );
+                    
+                    if (matchedTargetName) {
+                        log(`✅ Found target team: "${teamName}" (matches "${matchedTargetName}")`, 'success');
+                        foundTeams.push({
+                            ...team,
+                            tournamentId: tournament.id,
+                            tournamentName: tournament.name || tournament.tournamentName || tournament.id,
+                            targetName: matchedTargetName
+                        });
+                    }
+                }
+            }
+            
+            return foundTeams;
+        }
+
+        /**
+         * Get players for specific teams
+         */
+        async function getPlayersForTeams(teams) {
+            const teamPlayers = [];
+            
+            for (const team of teams) {
+                log(`\n🔍 Fetching players for team: ${team.name}`, 'loading');
+                
+                // Get all players for this tournament
+                const allPlayers = await fetchPlayersForTournament(team.tournamentId);
+                
+                // Filter players that belong to this team
+                const teamPlayerIds = team.playerIds || [];
+                const playersInTeam = allPlayers.filter(player => teamPlayerIds.includes(player.id));
+                
+                log(`✅ Found ${playersInTeam.length} players in team "${team.name}"`, 'success');
+                
+                teamPlayers.push({
+                    team: team,
+                    players: playersInTeam
+                });
+            }
+            
+            return teamPlayers;
+        }
+
+        /**
+         * Format player information for display
+         */
+        function formatPlayerInfo(player) {
+            const info = [];
+            
+            info.push(`Name: ${player.name || 'N/A'}`);
+            
+            if (player.age) {
+                info.push(`Age: ${player.age}`);
+            }
+            
+            if (player.gender) {
+                info.push(`Gender: ${player.gender}`);
+            }
+            
+            if (player.duprId) {
+                info.push(`DUPR ID: ${player.duprId}`);
+            }
+            
+            // Ratings and statistics
+            if (player.doublesRating) {
+                info.push(`Doubles Rating: ${player.doublesRating}`);
+            }
+            
+            if (player.doublesWins !== undefined || player.doublesLosses !== undefined) {
+                const wins = player.doublesWins || 0;
+                const losses = player.doublesLosses || 0;
+                info.push(`Doubles Record: ${wins}W - ${losses}L`);
+            }
+            
+            if (player.singlesRating) {
+                info.push(`Singles Rating: ${player.singlesRating}`);
+            }
+            
+            if (player.singlesWins !== undefined || player.singlesLosses !== undefined) {
+                const wins = player.singlesWins || 0;
+                const losses = player.singlesLosses || 0;
+                info.push(`Singles Record: ${wins}W - ${losses}L`);
+            }
+            
+            if (player.photo?.url || player.photoUrl) {
+                info.push(`Photo: Available`);
+            }
+            
+            return info.join(' | ');
+        }
+
+        /**
+         * Generate and display the player report
+         */
+        async function generatePlayerReport() {
+            clearOutput();
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating Report...';
+            
+            log('🚀 Starting Player Report Generation...\n');
+            log('=' .repeat(80));
+            log('PLAYER REPORT FOR ALL STARS AND CREDICON MAVERICKS');
+            log('=' .repeat(80));
+            
+            try {
+                // Find target teams
+                const targetTeams = await findTargetTeams();
+                
+                if (targetTeams.length === 0) {
+                    log('\n❌ No target teams found!', 'error');
+                    log('Searched for: All Stars, Credicon Mavericks');
+                    return;
+                }
+                
+                log(`\n✅ Found ${targetTeams.length} target team(s)`, 'success');
+                
+                // Get players for each team
+                const teamPlayersData = await getPlayersForTeams(targetTeams);
+                
+                // Generate report
+                log('\n' + '=' .repeat(80));
+                log('DETAILED PLAYER REPORT');
+                log('=' .repeat(80));
+                
+                let totalPlayers = 0;
+                
+                for (const teamData of teamPlayersData) {
+                    const { team, players } = teamData;
+                    
+                    log(`\n${'▓'.repeat(60)}`);
+                    log(`TEAM: ${team.name.toUpperCase()}`);
+                    log(`Tournament: ${team.tournamentName}`);
+                    log(`Team ID: ${team.id}`);
+                    log(`Total Players: ${players.length}`);
+                    if (team.description) {
+                        log(`Description: ${team.description}`);
+                    }
+                    log(`${'▓'.repeat(60)}`);
+                    
+                    if (players.length === 0) {
+                        log('\n  ⚠️  No players found for this team');
+                        continue;
+                    }
+                    
+                    // Sort players by name
+                    players.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    
+                    players.forEach((player, index) => {
+                        log(`\n  ${index + 1}. ${formatPlayerInfo(player)}`);
+                    });
+                    
+                    totalPlayers += players.length;
+                    
+                    // Team statistics
+                    const playersWithDoublesRating = players.filter(p => p.doublesRating).length;
+                    const playersWithSinglesRating = players.filter(p => p.singlesRating).length;
+                    const playersWithPhotos = players.filter(p => p.photo?.url || p.photoUrl).length;
+                    
+                    log(`\n  📊 TEAM STATISTICS:`);
+                    log(`     • Players with Doubles Rating: ${playersWithDoublesRating}/${players.length}`);
+                    log(`     • Players with Singles Rating: ${playersWithSinglesRating}/${players.length}`);
+                    log(`     • Players with Photos: ${playersWithPhotos}/${players.length}`);
+                    
+                    if (playersWithDoublesRating > 0) {
+                        const avgDoublesRating = players
+                            .filter(p => p.doublesRating)
+                            .reduce((sum, p) => sum + p.doublesRating, 0) / playersWithDoublesRating;
+                        log(`     • Average Doubles Rating: ${avgDoublesRating.toFixed(3)}`);
+                    }
+                    
+                    if (playersWithSinglesRating > 0) {
+                        const avgSinglesRating = players
+                            .filter(p => p.singlesRating)
+                            .reduce((sum, p) => sum + p.singlesRating, 0) / playersWithSinglesRating;
+                        log(`     • Average Singles Rating: ${avgSinglesRating.toFixed(3)}`);
+                    }
+                }
+                
+                // Overall summary
+                log('\n' + '=' .repeat(80));
+                log('SUMMARY');
+                log('=' .repeat(80));
+                log(`Total Teams Found: ${teamPlayersData.length}`);
+                log(`Total Players: ${totalPlayers}`);
+                
+                const allPlayers = teamPlayersData.flatMap(td => td.players);
+                const totalWithDoublesRating = allPlayers.filter(p => p.doublesRating).length;
+                const totalWithSinglesRating = allPlayers.filter(p => p.singlesRating).length;
+                const totalWithPhotos = allPlayers.filter(p => p.photo?.url || p.photoUrl).length;
+                
+                log(`Players with Doubles Rating: ${totalWithDoublesRating}/${totalPlayers}`);
+                log(`Players with Singles Rating: ${totalWithSinglesRating}/${totalPlayers}`);
+                log(`Players with Photos: ${totalWithPhotos}/${totalPlayers}`);
+                
+                if (totalWithDoublesRating > 0) {
+                    const overallAvgDoublesRating = allPlayers
+                        .filter(p => p.doublesRating)
+                        .reduce((sum, p) => sum + p.doublesRating, 0) / totalWithDoublesRating;
+                    log(`Overall Average Doubles Rating: ${overallAvgDoublesRating.toFixed(3)}`);
+                }
+                
+                if (totalWithSinglesRating > 0) {
+                    const overallAvgSinglesRating = allPlayers
+                        .filter(p => p.singlesRating)
+                        .reduce((sum, p) => sum + p.singlesRating, 0) / totalWithSinglesRating;
+                    log(`Overall Average Singles Rating: ${overallAvgSinglesRating.toFixed(3)}`);
+                }
+                
+                log('\n✅ Player report generation completed!', 'success');
+                
+            } catch (error) {
+                log(`❌ Error generating player report: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Player Report';
+            }
+        }
+
+        // Add event listener to the button
+        generateBtn.addEventListener('click', generatePlayerReport);
+    </script>
+</body>
+</html>

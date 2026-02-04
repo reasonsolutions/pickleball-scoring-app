@@ -28,6 +28,8 @@ export default function StreamingOverlay() {
   const [previousServer, setPreviousServer] = useState(null);
   const [activePlayerCard, setActivePlayerCard] = useState(null);
   const [playerCardTimer, setPlayerCardTimer] = useState(null);
+  const [pointTicker, setPointTicker] = useState(null);
+  const [previousScores, setPreviousScores] = useState({ player1: 0, player2: 0 });
 
   // Team logo mapping
   const teamLogos = {
@@ -94,6 +96,59 @@ export default function StreamingOverlay() {
         try {
           if (matchDoc.exists()) {
             const matchData = { id: matchDoc.id, ...matchDoc.data() };
+            
+            // Check for score changes and trigger point ticker
+            if (match) {
+              // Calculate current scores using the same logic as formatScore
+              const getCurrentScore = (playerKey) => {
+                if (!matchData.scores || !matchData.scores[playerKey]) return 0;
+                const playerScores = matchData.scores[playerKey];
+                let totalScore = 0;
+                Object.keys(playerScores).forEach(gameKey => {
+                  if (gameKey.startsWith('game')) {
+                    totalScore += playerScores[gameKey] || 0;
+                  }
+                });
+                return totalScore;
+              };
+              
+              const currentPlayer1Score = getCurrentScore('player1');
+              const currentPlayer2Score = getCurrentScore('player2');
+              
+              console.log('Score check:', {
+                current: { player1: currentPlayer1Score, player2: currentPlayer2Score },
+                previous: previousScores
+              });
+              
+              // Check if player1 scored
+              if (currentPlayer1Score > previousScores.player1) {
+                console.log('Player 1 scored!');
+                setPointTicker({
+                  team: 'player1',
+                  teamName: matchData.team1Name,
+                  points: currentPlayer1Score - previousScores.player1,
+                  timestamp: Date.now()
+                });
+                setTimeout(() => setPointTicker(null), 3000);
+              }
+              // Check if player2 scored
+              else if (currentPlayer2Score > previousScores.player2) {
+                console.log('Player 2 scored!');
+                setPointTicker({
+                  team: 'player2',
+                  teamName: matchData.team2Name,
+                  points: currentPlayer2Score - previousScores.player2,
+                  timestamp: Date.now()
+                });
+                setTimeout(() => setPointTicker(null), 3000);
+              }
+              
+              // Update previous scores
+              setPreviousScores({
+                player1: currentPlayer1Score,
+                player2: currentPlayer2Score
+              });
+            }
             
             // Check for serve changes and trigger ticker (only for non-dreambreaker matches)
             if (match && (!matchData.matchType || matchData.matchType !== 'dreamBreaker')) {
@@ -310,9 +365,40 @@ export default function StreamingOverlay() {
     return (
       <div className={`absolute top-1/2 transform -translate-y-1/2 ${isLeft ? 'left-2' : 'right-2'} z-20`}>
         <div className="animate-bounce bg-green-500 text-white px-3 py-2 rounded-full shadow-lg border-2 border-green-600">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 font-danson">
             <span className="text-lg font-bold">SERVE</span>
             <span className="text-sm">{ticker.serverNumber}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Point Ticker Component (shows when a team scores)
+  const PointTicker = ({ ticker }) => {
+    if (!ticker) return null;
+    
+    return (
+      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-4 rounded-t-lg shadow-2xl border-4 border-green-400" style={{
+          background: `
+            linear-gradient(145deg, #16a34a 0%, #15803d 50%, #166534 100%),
+            linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 2px, transparent 2px, transparent calc(100% - 2px), rgba(0,0,0,0.3) calc(100% - 2px), rgba(0,0,0,0.2) 100%)
+          `,
+          boxShadow: `
+            inset 0 2px 0 rgba(255,255,255,0.25),
+            inset 0 -2px 0 rgba(0,0,0,0.4),
+            inset 2px 0 0 rgba(255,255,255,0.15),
+            inset -2px 0 0 rgba(0,0,0,0.2)
+          `
+        }}>
+          <div className="flex items-center space-x-3 font-danson">
+            <span className="text-2xl font-black uppercase tracking-wider">
+              {ticker.teamName} SCORES!
+            </span>
+            <div className="bg-white text-green-700 px-3 py-1 rounded-full font-black text-xl">
+              +{ticker.points}
+            </div>
           </div>
         </div>
       </div>
@@ -345,7 +431,7 @@ export default function StreamingOverlay() {
           />
           {/* Serve number inside triangle */}
           <div className={`absolute top-1/2 ${isLeft ? 'left-2' : 'right-2'} transform -translate-y-1/2`}>
-            <span className="text-green-800 text-lg font-black">{serveNumber}</span>
+            <span className="text-green-800 text-lg font-black font-danson">{serveNumber}</span>
           </div>
         </div>
       </div>
@@ -359,23 +445,47 @@ export default function StreamingOverlay() {
         <div className="relative h-20 sm:h-24 lg:h-28">
           
           {/* Left Team Card */}
-          <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-amber-50 to-amber-100 rounded-full shadow-2xl border-2 border-amber-200 flex items-center px-6 pr-20" style={{ width: '45%' }}>
-            {/* Team 1 Logo */}
-            <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-2 border-gray-200 flex-shrink-0 mr-4">
-              <img
-                src={getTeamLogo('team1')}
-                alt={match.team1Name}
-                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain"
-              />
-            </div>
+          <div className="absolute left-0 top-0 h-full flex items-center pl-20 pr-20 overflow-hidden border-2 border-orange-500" style={{
+            width: '45%',
+            clipPath: 'polygon(0 0, calc(100% - 40px) 0, 100% 100%, 0 100%)',
+            background: `
+              linear-gradient(145deg, #334155 0%, #1e293b 50%, #0f172a 100%),
+              linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 1px, transparent 1px, transparent calc(100% - 1px), rgba(0,0,0,0.2) calc(100% - 1px), rgba(0,0,0,0.1) 100%)
+            `,
+            boxShadow: `
+              inset 0 1px 0 rgba(255,255,255,0.15),
+              inset 0 -1px 0 rgba(0,0,0,0.25),
+              inset 1px 0 0 rgba(255,255,255,0.1),
+              inset -1px 0 0 rgba(0,0,0,0.1)
+            `
+          }}>
+            {/* Pickleball pattern background */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
+              backgroundImage: `
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 1px, transparent 1px),
+                linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%)
+              `,
+              backgroundSize: '40px 40px, 40px 40px, 40px 40px, 40px 40px, 20px 20px, 60px 60px, 60px 60px',
+              filter: 'blur(0.5px) contrast(1.2)'
+            }} />
+            {/* Noise filter overlay */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              mixBlendMode: 'overlay'
+            }} />
             
             {/* Team 1 Info */}
-            <div className="flex flex-col min-w-0 flex-1">
-              <div className="text-lg sm:text-xl lg:text-2xl font-black text-black uppercase tracking-wider truncate">
+            <div className="flex flex-col min-w-0 flex-1 relative z-10">
+              <div className="text-lg sm:text-xl lg:text-2xl font-black text-white uppercase tracking-wider truncate font-anthem">
                 {match.team1Name}
               </div>
               {(!match.matchType || match.matchType !== 'dreamBreaker') && (
-                <div className="text-sm sm:text-base lg:text-lg font-bold text-black truncate">
+                <div className="text-sm sm:text-base lg:text-lg font-bold text-orange-300 truncate font-danson">
                   {match.player1Team1 && match.player2Team1
                     ? `${match.player1Team1}/${match.player2Team1}`
                     : match.player1Team1 || 'TBD'
@@ -386,22 +496,54 @@ export default function StreamingOverlay() {
             
             {/* Pool/Court indicator for Team 1 */}
             {match.pool && (
-              <div className="bg-yellow-400 text-black px-2 py-1 rounded-full font-bold text-sm flex-shrink-0 ml-2">
+              <div className="bg-orange-500 text-white px-2 py-1 font-bold text-sm flex-shrink-0 ml-2 border border-orange-400 relative z-10 font-danson">
                 {match.pool}
               </div>
             )}
           </div>
 
           {/* Right Team Card */}
-          <div className="absolute right-0 top-0 h-full bg-gradient-to-l from-amber-50 to-amber-100 rounded-full shadow-2xl border-2 border-amber-200 flex items-center justify-end px-6 pl-20" style={{ width: '45%' }}>
+          <div className="absolute right-0 top-0 h-full flex items-center justify-end pl-20 pr-20 overflow-hidden border-2 border-orange-500" style={{
+            width: '45%',
+            clipPath: 'polygon(40px 0, 100% 0, 100% 100%, 0 100%)',
+            background: `
+              linear-gradient(145deg, #334155 0%, #1e293b 50%, #0f172a 100%),
+              linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 1px, transparent 1px, transparent calc(100% - 1px), rgba(0,0,0,0.2) calc(100% - 1px), rgba(0,0,0,0.1) 100%)
+            `,
+            boxShadow: `
+              inset 0 1px 0 rgba(255,255,255,0.15),
+              inset 0 -1px 0 rgba(0,0,0,0.25),
+              inset 1px 0 0 rgba(255,255,255,0.1),
+              inset -1px 0 0 rgba(0,0,0,0.1)
+            `
+          }}>
+            {/* Pickleball pattern background */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
+              backgroundImage: `
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 1px, transparent 1px),
+                linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%)
+              `,
+              backgroundSize: '40px 40px, 40px 40px, 40px 40px, 40px 40px, 20px 20px, 60px 60px, 60px 60px',
+              filter: 'blur(0.5px) contrast(1.2)'
+            }} />
+            {/* Noise filter overlay */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              mixBlendMode: 'overlay'
+            }} />
             
             {/* Team 2 Info */}
-            <div className="flex flex-col min-w-0 flex-1 text-right">
-              <div className="text-lg sm:text-xl lg:text-2xl font-black text-black uppercase tracking-wider truncate">
+            <div className="flex flex-col min-w-0 flex-1 text-right relative z-10">
+              <div className="text-lg sm:text-xl lg:text-2xl font-black text-white uppercase tracking-wider truncate font-anthem">
                 {match.team2Name}
               </div>
               {(!match.matchType || match.matchType !== 'dreamBreaker') && (
-                <div className="text-sm sm:text-base lg:text-lg font-bold text-black truncate">
+                <div className="text-sm sm:text-base lg:text-lg font-bold text-orange-300 truncate font-danson">
                   {match.player1Team2 && match.player2Team2
                     ? `${match.player1Team2}/${match.player2Team2}`
                     : match.player1Team2 || 'TBD'
@@ -410,12 +552,47 @@ export default function StreamingOverlay() {
               )}
             </div>
             
-            {/* Team 2 Logo */}
-            <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-2 border-gray-200 flex-shrink-0 ml-4">
+          </div>
+
+          {/* Team Logos as Overlays */}
+          {/* Team 1 Logo Overlay - 90% outside to the left, 10% inside the left box */}
+          <div className="absolute top-1/2 transform -translate-y-1/2 z-20" style={{ left: '-72px' }}>
+            <div className="relative">
+              {/* White glow background */}
+              <div className="absolute inset-0 rounded-full" style={{
+                background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.05) 70%, transparent 100%)',
+                filter: 'blur(8px)',
+                transform: 'scale(1.2)',
+                zIndex: -1
+              }} />
+              <img
+                src={getTeamLogo('team1')}
+                alt={match.team1Name}
+                className="w-20 h-20 sm:w-26 sm:h-26 lg:w-32 lg:h-32 object-contain drop-shadow-lg relative z-10"
+                style={{
+                  filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.4)) drop-shadow(0 0 24px rgba(255,255,255,0.2))'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Team 2 Logo Overlay - 90% outside to the right, 10% inside the right box */}
+          <div className="absolute top-1/2 transform -translate-y-1/2 z-20" style={{ right: '-72px' }}>
+            <div className="relative">
+              {/* White glow background */}
+              <div className="absolute inset-0 rounded-full" style={{
+                background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.05) 70%, transparent 100%)',
+                filter: 'blur(8px)',
+                transform: 'scale(1.2)',
+                zIndex: -1
+              }} />
               <img
                 src={getTeamLogo('team2')}
                 alt={match.team2Name}
-                className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain"
+                className="w-20 h-20 sm:w-26 sm:h-26 lg:w-32 lg:h-32 object-contain drop-shadow-lg relative z-10"
+                style={{
+                  filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.4)) drop-shadow(0 0 24px rgba(255,255,255,0.2))'
+                }}
               />
             </div>
           </div>
@@ -436,7 +613,7 @@ export default function StreamingOverlay() {
           {/* Center Section */}
           <div className="absolute left-1/2 top-0 transform -translate-x-1/2 h-full flex flex-col items-center justify-center space-y-1 z-10">
             {/* Match Number */}
-            <div className="text-xs sm:text-sm lg:text-base font-bold text-white uppercase tracking-wider bg-black px-3 py-1 rounded">
+            <div className="text-xs sm:text-sm lg:text-base font-bold text-white uppercase tracking-wider bg-black px-3 py-1 border-2 border-orange-500 font-danson">
               {(() => {
                 // Use matchNumber if available, otherwise default to Match 1
                 const matchNumber = match.matchNumber || 1;
@@ -445,27 +622,30 @@ export default function StreamingOverlay() {
             </div>
             
             {/* Score Display */}
-            <div className="bg-red-600 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 rounded-full shadow-2xl border-2 border-red-700">
+            <div className="bg-gradient-to-r from-red-700 to-red-800 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 shadow-2xl border-4 border-orange-500 transform skew-x-[-2deg]">
               <div className="flex items-center space-x-3 sm:space-x-4">
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-black">
+                <span className={`text-2xl sm:text-3xl lg:text-4xl font-black ${pointTicker && pointTicker.team === 'player1' ? 'animate-score-pulse' : ''}`}>
                   {formatScore('player1')}
                 </span>
                 <span className="text-xl sm:text-2xl lg:text-3xl font-light text-red-200">|</span>
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-black">
+                <span className={`text-2xl sm:text-3xl lg:text-4xl font-black ${pointTicker && pointTicker.team === 'player2' ? 'animate-score-pulse' : ''}`}>
                   {formatScore('player2')}
                 </span>
               </div>
             </div>
             
             {/* Match Type */}
-            <div className="bg-red-600 text-white px-4 sm:px-5 lg:px-6 py-1 sm:py-2 rounded-full shadow-lg border border-red-700">
-              <span className="text-sm sm:text-base lg:text-lg font-bold">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-4 sm:px-5 lg:px-6 py-1 sm:py-2 shadow-lg border-2 border-orange-400">
+              <span className="text-sm sm:text-base lg:text-lg font-bold font-danson">
                 {(match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel) || match.matchType || 'Match'}
               </span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Point Ticker */}
+      <PointTicker ticker={pointTicker} />
 
       {/* Player Info Card Overlay */}
       {activePlayerCard && (() => {

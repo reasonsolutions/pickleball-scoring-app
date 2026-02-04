@@ -2,10 +2,20 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { UserAuthProvider } from './contexts/UserAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
+import Logins from './pages/Logins';
+import ResetPassword from './pages/ResetPassword';
 import Register from './pages/Register';
 import Home from './pages/Home';
+import NewHome from './pages/NewHome';
+import HplClubs from './pages/HplClubs';
+import HplClubRules from './pages/HplClubRules';
+import HplClubRegistration from './pages/HplClubRegistration';
+import HplPlayerRegistration from './pages/HplPlayerRegistration';
+import PlayerProfile from './pages/PlayerProfile';
+import ClubProfile from './pages/ClubProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import MyTournaments from './pages/MyTournaments';
 import CreateTournament from './pages/CreateTournament';
@@ -37,27 +47,45 @@ import Results from './pages/Results';
 import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
 import SuperAdminManagement from './pages/SuperAdminManagement';
+import AdminClubs from './pages/AdminClubs';
 import ScreenDisplay from './pages/ScreenDisplay';
 import MainDisplay from './pages/MainDisplay';
 import SideDisplay from './pages/SideDisplay';
 import OutsideDisplay from './pages/OutsideDisplay';
+import ExcitementDisplay from './pages/ExcitementDisplay';
+import ExcitementDisplay2 from './pages/ExcitementDisplay2';
 import DisplayController from './pages/DisplayController';
 import FirebaseDebug from './pages/FirebaseDebug';
 import LogosManager from './pages/LogosManager';
 import CloudinaryTest from './pages/CloudinaryTest';
 import Players from './pages/Players';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import RefundPolicy from './pages/RefundPolicy';
+import ShippingPolicy from './pages/ShippingPolicy';
+import DuprApi from './pages/DuprApi';
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <div className="App">
+        <UserAuthProvider>
+          <Router>
+            <div className="App">
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/logins" element={<Logins />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<NewHome />} />
+            <Route path="/old-home" element={<Home />} />
+            <Route path="/hpl-clubs" element={<HplClubs />} />
+            <Route path="/hpl-club-rules" element={<HplClubRules />} />
+            <Route path="/hpl-club-registration" element={<HplClubRegistration />} />
+            <Route path="/hpl-player-registration" element={<HplPlayerRegistration />} />
+            <Route path="/resetpassword" element={<ResetPassword />} />
+            <Route path="/player-profile/:playerId" element={<PlayerProfile />} />
+            <Route path="/club-profile/:clubId" element={<ClubProfile />} />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/news" element={<News />} />
@@ -65,6 +93,12 @@ function App() {
             <Route path="/results" element={<Results />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/teams/:tournamentId/:teamId" element={<TeamDetail />} />
+            
+            {/* Policy Pages - Public Routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/refund" element={<RefundPolicy />} />
+            <Route path="/shipping" element={<ShippingPolicy />} />
             
             {/* Admin Dashboard - Protected Routes */}
             <Route path="/admin" element={
@@ -127,6 +161,12 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/admin/clubs" element={
+              <ProtectedRoute>
+                <AdminClubs />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/admin/super-admins" element={
               <ProtectedRoute>
                 <SuperAdminManagement />
@@ -154,6 +194,12 @@ function App() {
             <Route path="/admin/players" element={
               <ProtectedRoute>
                 <Players />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/dupr-api" element={
+              <ProtectedRoute>
+                <DuprApi />
               </ProtectedRoute>
             } />
             
@@ -196,6 +242,12 @@ function App() {
             {/* Outside Display Route - Public access for outside display */}
             <Route path="/outside-display/:tournamentId/:dateString" element={<OutsideDisplay />} />
             
+            {/* Excitement Display Route - Public access for excitement display (80ft x 6ft) */}
+            <Route path="/excitement-display/:tournamentId/:dateString" element={<ExcitementDisplay />} />
+            
+            {/* Excitement Display 2 Route - Public access for excitement display (80ft x 6ft) for Team 2 */}
+            <Route path="/excitement-display-2/:tournamentId/:dateString" element={<ExcitementDisplay2 />} />
+            
             {/* Display Controller Route - Public access for display management */}
             <Route path="/display-controller/:tournamentId" element={<DisplayController />} />
             
@@ -222,8 +274,9 @@ function App() {
           </Routes>
           </div>
         </Router>
-      </AuthProvider>
-    </ThemeProvider>
+      </UserAuthProvider>
+    </AuthProvider>
+  </ThemeProvider>
   );
 }
 

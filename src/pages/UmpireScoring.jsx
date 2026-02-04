@@ -514,43 +514,46 @@ export default function UmpireScoring() {
     setDrsTeam(team);
     setDrsStep('outcome');
     
-    // Start playing YouTube video on MainDisplay using fixture's youtubeLiveLink
+    // Start DRS pending screen on MainDisplay and SideDisplay
     console.log('🎥 DRS Team Selected:', team);
-    console.log('🎥 Match YouTube Live Link:', match?.youtubeLiveLink);
-    console.log('🎥 Match YouTube Link:', match?.youtubeLink);
+    console.log('🎥 Starting DRS pending screen');
     
-    const youtubeUrl = match?.youtubeLiveLink || match?.youtubeLink;
-    console.log('🎥 Using YouTube URL:', youtubeUrl);
-    
-    if (youtubeUrl) {
-      await playVideoOnMainDisplay();
-    } else {
-      console.error('🎥 No YouTube Live Link found for this match');
-      alert('No YouTube Live Link found for this match. Please add one in the fixture settings.');
-    }
+    await playVideoOnMainDisplay();
   };
 
-  // Play YouTube video on MainDisplay by updating Firestore
+  // Start DRS pending screen on MainDisplay and SideDisplay by updating Firestore
   const playVideoOnMainDisplay = async () => {
     if (!match?.tournamentId || !match?.date) return;
     
     try {
-      const youtubeUrl = match.youtubeLiveLink || match.youtubeLink;
-      console.log('🎥 Starting DRS video with URL:', youtubeUrl);
+      console.log('🎥 Starting DRS pending screen for team:', drsTeam);
+      
+      // Get team names and IDs for the DRS display
+      const team1Name = match.team1Name || 'Team 1';
+      const team2Name = match.team2Name || 'Team 2';
+      const team1Id = match.team1;
+      const team2Id = match.team2;
+      const drsTeamName = drsTeam === 'team1' ? team1Name : team2Name;
       
       // Update the match document with DRS video state
       await updateDoc(doc(db, 'fixtures', matchId), {
         drsVideoActive: true,
-        drsVideoUrl: youtubeUrl,
+        drsVideoUrl: 'drs_pending', // We don't need a real URL anymore
+        drsTeam: drsTeam,
+        drsTeamName: drsTeamName,
+        team1Name: team1Name,
+        team2Name: team2Name,
+        team1Id: team1Id,
+        team2Id: team2Id,
         drsStartedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
       
-      console.log('🎥 DRS video state updated in Firestore');
+      console.log('🎥 DRS pending screen state updated in Firestore');
       setIsVideoPlaying(true);
     } catch (error) {
-      console.error('Error starting DRS video:', error);
-      setError('Failed to start DRS video');
+      console.error('Error starting DRS pending screen:', error);
+      setError('Failed to start DRS pending screen');
     }
   };
 
@@ -605,10 +608,10 @@ export default function UmpireScoring() {
     closeDRSModal();
   };
 
-  // Stop video on MainDisplay by updating Firestore
+  // Stop DRS pending screen on MainDisplay and SideDisplay by updating Firestore
   const stopVideoOnMainDisplay = async () => {
     try {
-      // Update the match document to stop DRS video
+      // Update the match document to stop DRS pending screen
       await updateDoc(doc(db, 'fixtures', matchId), {
         drsVideoActive: false,
         drsVideoUrl: null,
@@ -618,8 +621,8 @@ export default function UmpireScoring() {
       
       setIsVideoPlaying(false);
     } catch (error) {
-      console.error('Error stopping DRS video:', error);
-      setError('Failed to stop DRS video');
+      console.error('Error stopping DRS pending screen:', error);
+      setError('Failed to stop DRS pending screen');
     }
   };
 

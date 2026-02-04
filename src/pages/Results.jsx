@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import LeagueNavbar from '../components/LeagueNavbar';
+import NewHomeNavbar from '../components/NewHomeNavbar';
 import Footer from '../components/Footer';
 import { shouldShowPlayerNames, parseDate, formatDateForDisplay } from '../utils/dateTimeUtils';
+import AvantiqueBoldFont from '../assets/fonts/Avantique/Avantique-Bold.woff';
+import AvantiqueRegularFont from '../assets/fonts/Avantique/Avantique-Regular.woff';
+import AvantiqueMediumFont from '../assets/fonts/Avantique/Avantique-Medium.woff';
+import AvantiqueSemiboldFont from '../assets/fonts/Avantique/Avantique-Semibold.woff';
 
 // Utility function to convert 24-hour time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (timeString) => {
@@ -294,31 +299,86 @@ export default function Results() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <LeagueNavbar />
+      <div className="league-home min-h-screen" style={{backgroundColor: '#212121'}}>
+        <style>{`
+          @font-face {
+            font-family: 'Avantique';
+            src: url('${AvantiqueRegularFont}') format('woff');
+            font-weight: normal;
+            font-style: normal;
+          }
+          @font-face {
+            font-family: 'Avantique';
+            src: url('${AvantiqueMediumFont}') format('woff');
+            font-weight: 500;
+            font-style: normal;
+          }
+          @font-face {
+            font-family: 'Avantique';
+            src: url('${AvantiqueSemiboldFont}') format('woff');
+            font-weight: 600;
+            font-style: normal;
+          }
+          @font-face {
+            font-family: 'Avantique';
+            src: url('${AvantiqueBoldFont}') format('woff');
+            font-weight: bold;
+            font-style: normal;
+          }
+        `}</style>
+        
+        <NewHomeNavbar />
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading tournaments...</div>
+          <div className="text-lg text-white" style={{fontFamily: 'Avantique, sans-serif'}}>Loading tournaments...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <LeagueNavbar />
+    <div className="league-home min-h-screen" style={{backgroundColor: '#212121'}}>
+      <style>{`
+        @font-face {
+          font-family: 'Avantique';
+          src: url('${AvantiqueRegularFont}') format('woff');
+          font-weight: normal;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: 'Avantique';
+          src: url('${AvantiqueMediumFont}') format('woff');
+          font-weight: 500;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: 'Avantique';
+          src: url('${AvantiqueSemiboldFont}') format('woff');
+          font-weight: 600;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: 'Avantique';
+          src: url('${AvantiqueBoldFont}') format('woff');
+          font-weight: bold;
+          font-style: normal;
+        }
+      `}</style>
+      
+      <NewHomeNavbar />
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Tournament Dropdown */}
         <div className="mb-6">
           <div className="flex items-center space-x-4">
-            <label htmlFor="tournament-select" className="text-lg font-semibold text-gray-700">
+            <label htmlFor="tournament-select" className="text-lg font-semibold text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
               Tournament:
             </label>
             <select
               id="tournament-select"
               value={selectedTournament}
               onChange={(e) => setSelectedTournament(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-w-64"
+              className="px-4 py-2 border border-gray-600 bg-gray-800 text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-w-64"
+              style={{fontFamily: 'Avantique, sans-serif'}}
             >
               {tournaments.map(tournament => (
                 <option key={tournament.id} value={tournament.id}>
@@ -331,15 +391,16 @@ export default function Results() {
 
         {/* Tabs */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-600">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('league')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'league'
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-orange-500 text-orange-500'
+                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
                 }`}
+                style={{fontFamily: 'Avantique, sans-serif'}}
               >
                 League
               </button>
@@ -347,9 +408,10 @@ export default function Results() {
                 onClick={() => setActiveTab('playoffs')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'playoffs'
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-orange-500 text-orange-500'
+                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
                 }`}
+                style={{fontFamily: 'Avantique, sans-serif'}}
               >
                 Playoffs
               </button>
@@ -358,14 +420,14 @@ export default function Results() {
         </div>
 
         {/* Results Schedule */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-700">
           {fixturesLoading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="text-lg">Loading results...</div>
+              <div className="text-lg text-white" style={{fontFamily: 'Avantique, sans-serif'}}>Loading results...</div>
             </div>
           ) : fixtures.length === 0 ? (
             <div className="flex items-center justify-center h-32">
-              <div className="text-lg text-gray-500">No results found for this tournament</div>
+              <div className="text-lg text-gray-300" style={{fontFamily: 'Avantique, sans-serif'}}>No results found for this tournament</div>
             </div>
           ) : (
             <div className="p-6">
@@ -434,20 +496,20 @@ export default function Results() {
 
                 return Object.entries(fixturesByDate).map(([date, dateFixtures]) => (
                   <div key={date} className="mb-8">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-white mb-4 pb-2 border-b border-gray-600" style={{fontFamily: 'Avantique, sans-serif'}}>
                       {date === 'No Date' ? 'Unscheduled' : formatDateForDisplay(date)}
                     </h3>
                     <div className="grid gap-4">
                       {dateFixtures.map(fixture => (
-                        <div key={fixture.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div key={fixture.id} className="border border-gray-600 rounded-lg overflow-hidden bg-gray-700">
                           <div
-                            className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                            className="p-4 hover:bg-gray-600 cursor-pointer transition-colors"
                             onClick={() => setSelectedFixture(selectedFixture?.id === fixture.id ? null : fixture)}
                           >
                             {/* Fixture Type Name - Only show for playoffs tab */}
                             {activeTab === 'playoffs' && fixture.fixtureType && (
                               <div className="text-center mb-3">
-                                <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                                <span className="text-sm font-semibold text-orange-500 bg-orange-900 bg-opacity-30 px-3 py-1 rounded-full" style={{fontFamily: 'Avantique, sans-serif'}}>
                                   {fixture.fixtureType}
                                 </span>
                               </div>
@@ -463,17 +525,17 @@ export default function Results() {
                                       className="w-8 h-8 rounded-full flex-shrink-0"
                                     />
                                   )}
-                                  <span className="font-medium text-gray-900 truncate">
+                                  <span className="font-medium text-white truncate" style={{fontFamily: 'Avantique, sans-serif'}}>
                                     {fixture.team1Details?.name || fixture.team1Name || 'Team 1'}
                                   </span>
                                 </div>
                                 
                                 {/* VS */}
-                                <div className="text-gray-500 font-semibold flex-shrink-0">VS</div>
+                                <div className="text-gray-300 font-semibold flex-shrink-0" style={{fontFamily: 'Avantique, sans-serif'}}>VS</div>
                                 
                                 {/* Team 2 */}
                                 <div className="flex items-center space-x-2 flex-1 justify-end min-w-0">
-                                  <span className="font-medium text-gray-900 truncate">
+                                  <span className="font-medium text-white truncate" style={{fontFamily: 'Avantique, sans-serif'}}>
                                     {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
                                   </span>
                                   {fixture.team2Details?.logo?.url && (
@@ -490,14 +552,14 @@ export default function Results() {
                               <div className="flex items-center justify-between sm:justify-end sm:ml-6 sm:text-right sm:flex-col sm:items-end space-x-2 sm:space-x-0 sm:space-y-1">
                                 <div className="flex items-center space-x-2 sm:flex-col sm:space-x-0 sm:space-y-1">
                                   {(fixture.playingTime || fixture.time) && (
-                                    <div className="text-sm text-gray-600">
+                                    <div className="text-sm text-gray-300" style={{fontFamily: 'Avantique, sans-serif'}}>
                                       {formatTimeTo12Hour(fixture.playingTime || fixture.time)}
                                       {/* Temporary debug - remove after testing */}
                                     </div>
                                   )}
                                   
                                   {/* Match count */}
-                                  <div className="text-xs text-gray-500">
+                                  <div className="text-xs text-gray-400" style={{fontFamily: 'Avantique, sans-serif'}}>
                                     {fixture.matches?.length || 0} match{(fixture.matches?.length || 0) !== 1 ? 'es' : ''}
                                   </div>
                                 </div>
