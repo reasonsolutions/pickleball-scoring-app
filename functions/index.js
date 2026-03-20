@@ -535,6 +535,205 @@ exports.verifyOtp = onRequest({cors: true}, async (request, response) => {
   }
 });
 
+// Send Club Approval Email Function
+exports.sendClubApprovalEmail = onRequest({cors: true}, async (request, response) => {
+  try {
+    setCorsHeaders(response);
+    if (handlePreflight(request, response)) return;
+
+    const { to, clubName, ownerName } = request.body;
+    
+    if (!to || !clubName) {
+      response.status(400).json({
+        status: 'error',
+        message: 'Email recipient and club name are required'
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      response.status(400).json({
+        status: 'error',
+        message: 'Invalid email format'
+      });
+      return;
+    }
+
+    // Configure email transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'hpl@centrecourt.ventures', // Gmail address
+        pass: 'ktrnasnndenawfka'  // Gmail app password
+      }
+    });
+
+    // Email template with content provided
+    const subject = 'Welcome to the HPL Club League – Next Steps & Club Responsibilities';
+    const greeting = ownerName ? `Dear ${ownerName},` : 'Dear Team,';
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #333;">
+        <h2 style="color: #3c6e71;">Welcome to the HPL Club League – Next Steps & Club Responsibilities</h2>
+        
+        <p>${greeting}</p>
+        <p>Congratulations — your club has been officially approved to participate in the HPL Club League for the upcoming season.</p>
+        <p>You are now part of a season-long, community-driven competition built around identity, professionalism, and long-term growth of pickleball in Hyderabad. This email outlines what this approval means, your responsibilities as a club, and the immediate next steps.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-left: 4px solid #3c6e71;">
+          <h3 style="color: #3c6e71; margin-top: 0;">What Your Club Represents</h3>
+          <p>As an HPL Club League club, you are not just entering a competition — you are becoming a local custodian of the league.</p>
+          <p>Your club is expected to:</p>
+          <ul>
+            <li>Represent the league with professionalism</li>
+            <li>Build and manage a strong player community</li>
+            <li>Uphold competitive integrity and fair play</li>
+            <li>Deliver a consistent and welcoming matchday experience at your home venue</li>
+          </ul>
+        </div>
+        
+        <h3 style="color: #3c6e71;">Club Roles & Responsibilities</h3>
+        
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin-bottom: 5px;">1. Club Manager (Mandatory)</h4>
+          <p>Each club must operate through one authorised Club Manager, who will be the:</p>
+          <ul>
+            <li>Single point of contact with the league</li>
+            <li>Decision-maker for player selection, matchday coordination, and communication</li>
+            <li>Person responsible for compliance with league rules and timelines</li>
+          </ul>
+          <p>The Club Manager's conduct and responsiveness will directly impact your club's season review score.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin-bottom: 5px;">2. Team Formation & Player Management</h4>
+          <ul>
+            <li>Each club will form and manage a 10-player team</li>
+            <li>Player invitations and confirmations will be handled entirely through thehpl.in</li>
+            <li>Selection does not guarantee playing time — rotation and participation are club decisions</li>
+            <li>Clubs may drop players and nominate replacements as per league guidelines (to be communicated separately)</li>
+            <li>Any team that cannot create a squad of 10 players with the mandatory guidelines will be reviewed for participation.</li>
+          </ul>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h4 style="margin-bottom: 5px;">3. Home Venue & Matchdays</h4>
+          <ul>
+            <li>Each club must designate a home venue</li>
+            <li>Clubs are responsible for:
+              <ul>
+                <li>Venue readiness</li>
+                <li>Basic on-ground coordination</li>
+                <li>Supporting referees and match coordinators appointed by the league</li>
+                <li>Ensuring the venue adheres to the requirements of the league</li>
+              </ul>
+            </li>
+          </ul>
+          <p>The league will provide:</p>
+          <ul>
+            <li>Referees</li>
+            <li>Match coordinators</li>
+            <li>Central scheduling</li>
+            <li>Match recording infrastructure</li>
+          </ul>
+        </div>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-left: 4px solid #3c6e71;">
+          <h3 style="color: #3c6e71; margin-top: 0;">Branding, Logo & Jersey Standards</h3>
+          <p>To maintain a strong, unified league identity:</p>
+          <ul>
+            <li>All clubs will follow league-defined branding standards</li>
+            <li>Club logos are pre-assigned and cannot be changed</li>
+            <li>Jerseys will be created through a guided design process</li>
+            <li>Clubs will configure:
+              <ul>
+                <li>Club name & suffix</li>
+                <li>Colours (from the approved palette)</li>
+              </ul>
+            </li>
+            <li>Final designs will be reviewed and approved by the league</li>
+            <li>League-recommended vendors will be suggested to ensure quality and best pricing</li>
+          </ul>
+          <p>Independent or unapproved designs will not be permitted.</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: #3c6e71;">Financial & Season Structure Notes</h3>
+          <ul>
+            <li>Club approval is valid for one season only</li>
+            <li>Eligibility for future seasons depends on:
+              <ul>
+                <li>Compliance</li>
+                <li>Professionalism</li>
+                <li>Feedback from players, officials, and the league oversight committee</li>
+              </ul>
+            </li>
+            <li>The league will host and manage the Grand Final – "State of the League"</li>
+          </ul>
+          <p>This is a grassroots competition designed to reward clubs that build culture, not just results.</p>
+        </div>
+        
+        <div style="background-color: #3c6e71; color: white; padding: 15px; margin: 20px 0; text-align: center;">
+          <h3 style="margin-top: 0;">Immediate Next Step (Required)</h3>
+          <p>Please complete your Club Profile on the platform.</p>
+          <p>This will:</p>
+          <ul style="text-align: left; display: inline-block;">
+            <li>Activate your club on thehpl.in</li>
+            <li>Make you visible to players</li>
+            <li>Enable player onboarding and scheduling</li>
+          </ul>
+          <p style="margin: 15px 0 5px; font-weight: bold;">👉 Log in to thehpl.in and complete your Club Profile</p>
+          <p style="margin: 5px 0;">(Access is already enabled for your account.)</p>
+        </div>
+        
+        <p>We're excited to have you on board.</p>
+        <p>Build your community well.<br>
+        Run your season professionally.<br>
+        Earn your place every year.</p>
+        <p>Welcome to the HPL Club League.</p>
+        
+        <p>Warm regards,<br>
+        Team HPL<br>
+        HPL Club League<br>
+        thehpl.in</p>
+        
+        <p style="font-style: italic; color: #666; border-top: 1px solid #eee; padding-top: 10px; margin-top: 20px;">
+          "Not a tournament. Not a franchise. This is club sport."
+        </p>
+      </div>
+    `;
+
+    // Email options
+    const mailOptions = {
+      from: 'hpl@centrecourt.ventures',
+      to: to,
+      subject: subject,
+      html: htmlContent
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    logger.info(`Club approval email sent successfully to ${to} for club: ${clubName}`);
+
+    response.status(200).json({
+      status: 'success',
+      message: 'Club approval email sent successfully',
+      recipient: to,
+      clubName: clubName
+    });
+
+  } catch (error) {
+    logger.error('Error sending club approval email:', error);
+    response.status(500).json({
+      status: 'error',
+      message: 'Failed to send club approval email'
+    });
+  }
+});
+
 // Send Recruitment Email Function
 exports.sendRecruitmentEmail = onRequest({cors: true}, async (request, response) => {
   try {

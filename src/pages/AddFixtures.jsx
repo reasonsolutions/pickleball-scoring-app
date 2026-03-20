@@ -5,6 +5,7 @@ import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
 import CloudinaryImageUpload from '../components/CloudinaryImageUpload';
+import * as XLSX from 'xlsx';
 
 export default function AddFixtures() {
   const { id } = useParams();
@@ -51,6 +52,7 @@ export default function AddFixtures() {
     playingTime: '18:00', // Default to 6:00 PM
     pool: '',
     court: '',
+    venue: '',
     player1Team1: '',
     player2Team1: '',
     player1Team2: '',
@@ -428,12 +430,22 @@ export default function AddFixtures() {
     // The pool should already be stored in the fixture from when it was created
     const poolValue = fixture.pool || '';
     
+    // Auto-assign Team A's venue if not already set
+    let venueValue = fixture.venue || '';
+    if (!venueValue && fixture.team1) {
+      const team1 = teams.find(t => t.id === fixture.team1);
+      if (team1 && team1.venueId) {
+        venueValue = team1.venueId;
+      }
+    }
+    
     setEditForm({
       date: dateString,
       time: fixture.time || '',
       playingTime: fixture.playingTime || fixture.time || '18:00', // Use existing time or default to 6:00 PM
       pool: poolValue,
       court: fixture.court || '',
+      venue: venueValue,
       fixtureType: fixture.fixtureType || 'League', // Initialize with existing value or default
       // For playoff fixtures, include team selection
       team1: fixture.team1 || '',
@@ -470,10 +482,20 @@ export default function AddFixtures() {
     e.preventDefault();
     
     try {
+      // Validate required fields
+      if (!editForm.date || !editForm.time || !editForm.playingTime || !editForm.court) {
+        setError('Please fill in all required fields (Date, Time, Playing Time, Court)');
+        return;
+      }
+
+      // Parse date string (YYYY-MM-DD) and create date at local midnight
+      const [year, month, day] = editForm.date.split('-');
+      const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      
       const updatedFixture = {
         // Ensure all required fields are explicitly included
         tournamentId: editingFixture.tournamentId,
-        date: Timestamp.fromDate(new Date(editForm.date)),
+        date: Timestamp.fromDate(dateObj),
         matchType: editingFixture.matchType,
         matchTypeLabel: editingFixture.matchTypeLabel,
         team1: editingFixture.team1,
@@ -482,11 +504,13 @@ export default function AddFixtures() {
         team2Name: editingFixture.team2Name,
         status: editingFixture.status,
         createdBy: editingFixture.createdBy,
-        createdAt: editingFixture.createdAt,
+        // Only include createdAt if it exists (avoid undefined values)
+        ...(editingFixture.createdAt && { createdAt: editingFixture.createdAt }),
         // Only editable fields from the form
         time: editForm.time,
         playingTime: editForm.playingTime,
         court: editForm.court,
+        venue: editForm.venue,
         // Optional fields that might exist - use conditional spreading to avoid undefined values
         ...(editingFixture.pool && { pool: editingFixture.pool }),
         ...(editingFixture.player1Team1 && { player1Team1: editingFixture.player1Team1 }),
@@ -618,7 +642,10 @@ export default function AddFixtures() {
       setError('');
     } catch (error) {
       console.error('Error updating fixture:', error);
-      setError('Failed to update fixture');
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Updated fixture data:', updatedFixture);
+      setError(`Failed to update fixture: ${error.message}`);
     }
   };
 
@@ -1150,6 +1177,412 @@ export default function AddFixtures() {
     }
   };
 
+  const parseMatchData = (rows) => {
+    // Parse match data from array of rows (works for both CSV and XLSX)
+    const matches = rows.map((row, index) => {
+      // Handle both array format (XLSX) and string format (CSV)
+      let columns;
+      if (typeof row === 'string') {
+        // CSV format
+        columns = row.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+      } else {
+        // XLSX format - already an array
+        columns = row.map(col => String(col || '').trim());
+      }
+      
+      // Validate we have at least 4 columns
+      if (columns.length < 4) {
+        return null;
+      }
+      
+      let teamA = columns[0] ? String(columns[0]).trim() : '';
+      let teamB = columns[1] ? String(columns[1]).trim() : '';
+      const dateStr = columns[2] ? String(columns[2]).trim() : '';
+      const timeAndDateStr = columns[3] ? String(columns[3]).trim() : '';
+      
+      // Validate required fields - skip if empty
+      if (!teamA || !teamB) {
+        return null;
+      }
+      
+      // Extract date and time from the combined field (e.g., "Mar-13 7:30PM")
+      // If dateStr is empty, try to parse from timeAndDateStr
+      let finalDateStr = dateStr;
+      let finalTimeStr = timeAndDateStr;
+      
+      if (!finalDateStr && timeAndDateStr) {
+        // Parse from format like "Mar-13 7:30PM"
+        const parts = timeAndDateStr.split(' ');
+        if (parts.length >= 2) {
+          finalDateStr = parts[0];
+          finalTimeStr = parts.slice(1).join(' ');
+        }
+      }
+      
+      if (!finalDateStr) {
+        console.warn(`Row ${index + 2} has missing date, skipping`);
+        return null;
+      }
+      
+      // Convert Excel serial date to DD/MM/YYYY if needed
+      let dateToProcess = String(finalDateStr).trim();
+      
+      // Check if it's an Excel serial number (numeric value)
+      // Excel serial numbers are typically > 30000 for dates after 1980
+      if (!isNaN(dateToProcess) && dateToProcess !== '') {
+        const numValue = parseInt(dateToProcess);
+        
+        // If it's a large number (typical Excel serial date), convert it
+        if (numValue > 30000) {
+          // Excel serial date - convert to actual date
+          // Excel epoch is December 30, 1899 (Excel has a leap year bug for 1900)
+          const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+          const millisecondsPerDay = 24 * 60 * 60 * 1000;
+          const actualDate = new Date(excelEpoch.getTime() + numValue * millisecondsPerDay);
+          
+          const day = String(actualDate.getDate()).padStart(2, '0');
+          const month = String(actualDate.getMonth() + 1).padStart(2, '0');
+          const year = String(actualDate.getFullYear());
+          dateToProcess = `${day}/${month}/${year}`;
+        }
+        // Otherwise, it might be a small number that's not a valid date - skip this row
+        else if (numValue < 100) {
+          console.warn(`Row ${index + 2} has invalid date value "${finalDateStr}", skipping`);
+          return null;
+        }
+      }
+      
+      // Try to parse date from DD/MM/YYYY format first
+      let dateParts = dateToProcess.split('/');
+      let day, month, year;
+      
+      if (dateParts.length === 3) {
+        // DD/MM/YYYY format
+        const [dayStr, monthStr, yearStr] = dateParts;
+        day = String(dayStr).padStart(2, '0');
+        month = String(monthStr).padStart(2, '0');
+        year = yearStr || '2026';
+        
+        // Validate day and month
+        const dayNum = parseInt(dayStr);
+        const monthNum = parseInt(monthStr);
+        if (isNaN(dayNum) || isNaN(monthNum) || dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12) {
+          console.warn(`Row ${index + 2} has invalid date values "${finalDateStr}", skipping`);
+          return null;
+        }
+      } else {
+        // Try to parse text format like "May-15" or "15-May"
+        const monthMap = {
+          'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'may': '05', 'jun': '06',
+          'jul': '07', 'aug': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+        };
+        
+        // Try "May-15" format
+        const textDateMatch = dateToProcess.match(/([a-zA-Z]+)-(\d{1,2})/);
+        if (textDateMatch) {
+          const monthName = textDateMatch[1].toLowerCase();
+          const dayNum = parseInt(textDateMatch[2]);
+          month = monthMap[monthName];
+          
+          if (!month || dayNum < 1 || dayNum > 31) {
+            console.warn(`Row ${index + 2} has invalid date format "${finalDateStr}", skipping`);
+            return null;
+          }
+          
+          day = String(dayNum).padStart(2, '0');
+          year = '2026'; // Default year
+        } else {
+          console.warn(`Row ${index + 2} has invalid date format "${finalDateStr}", expected DD/MM/YYYY or Month-DD, skipping`);
+          return null;
+        }
+      }
+      
+      const parsedDate = `${year}-${month}-${day}`;
+      
+      // Parse time from format like "7:30PM" to 24-hour format
+      let parsedTime = '';
+      if (finalTimeStr) {
+        const timeMatch = finalTimeStr.match(/(\d{1,2}):(\d{2})(AM|PM)/i);
+        if (timeMatch) {
+          let hours = parseInt(timeMatch[1]);
+          const minutes = timeMatch[2];
+          const period = timeMatch[3].toUpperCase();
+          
+          if (period === 'PM' && hours !== 12) {
+            hours += 12;
+          } else if (period === 'AM' && hours === 12) {
+            hours = 0;
+          }
+          
+          parsedTime = `${String(hours).padStart(2, '0')}:${minutes}`;
+        }
+      }
+      
+      console.log(`Parsed row ${index + 2}: ${teamA} vs ${teamB}, Date: ${parsedDate}, Time: ${parsedTime}`);
+      
+      return {
+        teamA,
+        teamB,
+        date: parsedDate,
+        time: parsedTime
+      };
+    }).filter(match => match !== null);
+    
+    return matches;
+  };
+
+  const handleBulkImportMatches = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const fileName = file.name.toLowerCase();
+      const isXlsx = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+      
+      if (isXlsx) {
+        // Handle XLSX files
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            const data = event.target.result;
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            
+            // Get cell values - use formatted value if available, otherwise raw value
+            const rows = [];
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            
+            for (let row = range.s.r; row <= range.e.r; row++) {
+              const rowData = [];
+              for (let col = range.s.c; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                const cell = worksheet[cellAddress];
+                
+                // Use formatted value (cell.w) if available, otherwise raw value (cell.v)
+                const cellValue = cell ? (cell.w || cell.v || '') : '';
+                
+                rowData.push(cellValue);
+              }
+              rows.push(rowData);
+            }
+            
+            // Skip header row and parse data
+            const dataRows = rows.slice(1);
+            const matches = parseMatchData(dataRows);
+
+            // Find team IDs by name
+            const processedMatches = matches.map(match => {
+              const team1 = teams.find(t => t.name.toLowerCase() === match.teamA.toLowerCase());
+              const team2 = teams.find(t => t.name.toLowerCase() === match.teamB.toLowerCase());
+              
+              return {
+                team1: team1?.id || '',
+                team2: team2?.id || '',
+                date: match.date,
+                time: match.time,
+                teamAName: match.teamA,
+                teamBName: match.teamB
+              };
+            });
+
+            // Validate all teams were found
+            const missingTeams = processedMatches.filter(m => !m.team1 || !m.team2);
+            if (missingTeams.length > 0) {
+              const missingNames = missingTeams.map(m => `${m.teamAName}${!m.team1 ? ' (Team A)' : ''} ${m.teamBName}${!m.team2 ? ' (Team B)' : ''}`).join(', ');
+              setError(`Teams not found: ${missingNames}`);
+              return;
+            }
+
+            // Create fixtures for each match
+            let createdCount = 0;
+            for (const match of processedMatches) {
+              try {
+                const fixtureGroupId = `${match.date}_${Date.now()}_${Math.random()}`;
+                const matchTypes = fixtureStyle === 'minidreambreaker'
+                  ? ['mensDoubles', 'mensDoubles', 'mixedDoubles', 'mixedDoubles']
+                  : ['mensDoubles', 'womensDoubles', 'mensSingles', 'womensSingles', 'mensDoubles', 'mixedDoubles', 'dreamBreaker'];
+
+                for (let index = 0; index < matchTypes.length; index++) {
+                  const matchType = matchTypes[index];
+                  const matchTypeLabel = matchType === 'mensDoubles' && index === 4 ? 'Men\'s Doubles (2)' :
+                                        matchType === 'mensDoubles' ? 'Men\'s Doubles' :
+                                        matchType === 'womensDoubles' ? 'Women\'s Doubles' :
+                                        matchType === 'mensSingles' ? 'Men\'s Singles' :
+                                        matchType === 'womensSingles' ? 'Women\'s Singles' :
+                                        matchType === 'dreamBreaker' ? 'Game Breaker' :
+                                        'Mixed Doubles';
+
+                  const fixtureData = {
+                    tournamentId: id,
+                    date: Timestamp.fromDate(new Date(match.date)),
+                    time: match.time || '10:00',
+                    matchType: matchType,
+                    matchTypeLabel: matchTypeLabel,
+                    team1: match.team1,
+                    team2: match.team2,
+                    team1Name: match.teamAName,
+                    team2Name: match.teamBName,
+                    player1Team1: '',
+                    player2Team1: '',
+                    player1Team2: '',
+                    player2Team2: '',
+                    fixtureGroupId: fixtureGroupId,
+                    fixtureType: fixtureStyle === 'minidreambreaker' ? 'minidreambreaker' : 'dreambreaker',
+                    matchNumber: index + 1,
+                    createdBy: currentUser.uid,
+                    youtubeLink: '',
+                    venue: '',
+                    venueName: '',
+                    status: 'scheduled',
+                    court: ''
+                  };
+
+                  await addDoc(collection(db, 'fixtures'), fixtureData);
+                }
+                createdCount++;
+              } catch (error) {
+                console.error(`Error creating fixtures for match ${match.teamAName} vs ${match.teamBName}:`, error);
+              }
+            }
+
+            setError('');
+            alert(`Successfully imported ${createdCount} matches!`);
+            
+            // Close modal and refresh page
+            setShowBulkModal(false);
+            
+            // Refresh the page to show new fixtures
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+            
+            // Reset file input
+            e.target.value = '';
+          } catch (error) {
+            console.error('Error processing XLSX file:', error);
+            setError('Failed to process Excel file. Please check the format.');
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        // Handle CSV files
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            const data = event.target.result;
+            const lines = data.split('\n').filter(line => line.trim());
+            
+            // Skip header row and parse data
+            const dataRows = lines.slice(1);
+            const matches = parseMatchData(dataRows);
+
+            // Find team IDs by name
+            console.log('Available teams:', teams.map(t => t.name));
+            console.log('Parsed matches:', matches.map(m => `${m.teamA} vs ${m.teamB}`));
+            
+            const processedMatches = matches.map(match => {
+              const team1 = teams.find(t => t.name.toLowerCase() === match.teamA.toLowerCase());
+              const team2 = teams.find(t => t.name.toLowerCase() === match.teamB.toLowerCase());
+              
+              console.log(`Matching: "${match.teamA}" -> ${team1?.name || 'NOT FOUND'}, "${match.teamB}" -> ${team2?.name || 'NOT FOUND'}`);
+              
+              return {
+                team1: team1?.id || '',
+                team2: team2?.id || '',
+                date: match.date,
+                time: match.time,
+                teamAName: match.teamA,
+                teamBName: match.teamB
+              };
+            });
+
+            // Validate all teams were found
+            const missingTeams = processedMatches.filter(m => !m.team1 || !m.team2);
+            if (missingTeams.length > 0) {
+              const missingNames = missingTeams.map(m => `${m.teamAName}${!m.team1 ? ' (Team A)' : ''} ${m.teamBName}${!m.team2 ? ' (Team B)' : ''}`).join(', ');
+              setError(`Teams not found: ${missingNames}`);
+              console.error('Missing teams error:', missingNames);
+              return;
+            }
+
+            // Create fixtures for each match
+            let createdCount = 0;
+            for (const match of processedMatches) {
+              try {
+                const fixtureGroupId = `${match.date}_${Date.now()}_${Math.random()}`;
+                const matchTypes = fixtureStyle === 'minidreambreaker'
+                  ? ['mensDoubles', 'mensDoubles', 'mixedDoubles', 'mixedDoubles']
+                  : ['mensDoubles', 'womensDoubles', 'mensSingles', 'womensSingles', 'mensDoubles', 'mixedDoubles', 'dreamBreaker'];
+
+                for (let index = 0; index < matchTypes.length; index++) {
+                  const matchType = matchTypes[index];
+                  const matchTypeLabel = matchType === 'mensDoubles' && index === 4 ? 'Men\'s Doubles (2)' :
+                                        matchType === 'mensDoubles' ? 'Men\'s Doubles' :
+                                        matchType === 'womensDoubles' ? 'Women\'s Doubles' :
+                                        matchType === 'mensSingles' ? 'Men\'s Singles' :
+                                        matchType === 'womensSingles' ? 'Women\'s Singles' :
+                                        matchType === 'dreamBreaker' ? 'Game Breaker' :
+                                        'Mixed Doubles';
+
+                  const fixtureData = {
+                    tournamentId: id,
+                    date: Timestamp.fromDate(new Date(match.date)),
+                    time: match.time || '10:00',
+                    matchType: matchType,
+                    matchTypeLabel: matchTypeLabel,
+                    team1: match.team1,
+                    team2: match.team2,
+                    team1Name: match.teamAName,
+                    team2Name: match.teamBName,
+                    player1Team1: '',
+                    player2Team1: '',
+                    player1Team2: '',
+                    player2Team2: '',
+                    fixtureGroupId: fixtureGroupId,
+                    fixtureType: fixtureStyle === 'minidreambreaker' ? 'minidreambreaker' : 'dreambreaker',
+                    matchNumber: index + 1,
+                    createdBy: currentUser.uid,
+                    youtubeLink: '',
+                    venue: '',
+                    venueName: '',
+                    status: 'scheduled',
+                    court: ''
+                  };
+
+                  await addDoc(collection(db, 'fixtures'), fixtureData);
+                }
+                createdCount++;
+              } catch (error) {
+                console.error(`Error creating fixtures for match ${match.teamAName} vs ${match.teamBName}:`, error);
+              }
+            }
+
+            setError('');
+            alert(`Successfully imported ${createdCount} matches!`);
+            
+            // Close modal and refresh page
+            setShowBulkModal(false);
+            
+            // Refresh the page to show new fixtures
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+            
+            // Reset file input
+            e.target.value = '';
+          } catch (error) {
+            console.error('Error processing CSV file:', error);
+            setError('Failed to process file. Please check the format.');
+          }
+        };
+        reader.readAsText(file);
+      }
+    } catch (error) {
+      console.error('Error reading file:', error);
+      setError('Failed to read file');
+    }
+  };
+
   // Round Robin handlers
   const handleRoundRobinConfigChange = (field, value) => {
     setRoundRobinConfig(prev => ({
@@ -1176,6 +1609,45 @@ export default function AddFixtures() {
         pools: newPools
       };
     });
+  };
+
+  const handleDeleteAllFixtures = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL fixtures for this tournament? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Get all fixtures for this tournament
+      const fixturesQuery = query(
+        collection(db, 'fixtures'),
+        where('tournamentId', '==', id)
+      );
+      
+      const fixturesSnapshot = await getDocs(fixturesQuery);
+      
+      // Delete all fixtures
+      const batch = writeBatch(db);
+      fixturesSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      
+      await batch.commit();
+      
+      setError('');
+      alert(`Successfully deleted ${fixturesSnapshot.docs.length} fixtures!`);
+      
+      // Refresh the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error('Error deleting fixtures:', error);
+      setError(`Failed to delete fixtures: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const generateRoundRobinFixtures = async () => {
@@ -1595,6 +2067,22 @@ export default function AddFixtures() {
               <span className="sm:hidden">Back</span>
             </button>
             
+            {/* Venue Streaming Overlay - Always visible */}
+            <button
+              className="btn btn-warning btn-sm sm:btn-md flex-shrink-0"
+              onClick={() => {
+                const venueStreamingUrl = `${window.location.origin}/streaming-venues/${id}`;
+                window.open(venueStreamingUrl, '_blank');
+              }}
+              title="View matches grouped by venue for streaming overlay access"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span className="hidden sm:inline">Venue Streaming Overlay</span>
+              <span className="sm:hidden">Venue</span>
+            </button>
+
             {isSuperAdmin() && (
               <div className="flex gap-2">
                 <button
@@ -1668,6 +2156,7 @@ export default function AddFixtures() {
                   <span className="hidden sm:inline">API</span>
                   <span className="sm:hidden">API</span>
                 </button>
+                
               </div>
             )}
           </div>
@@ -3222,6 +3711,30 @@ export default function AddFixtures() {
                   </select>
                 </div>
 
+                {/* Bulk Import Section */}
+                <div className="divider">OR</div>
+                
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium text-sm sm:text-base">Bulk Import Matches</span>
+                  </label>
+                  <div className="alert alert-info mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="font-bold text-sm">Excel Format Required</h4>
+                      <p className="text-xs">Columns: Team A, Team B, Date (DD/MM/YYYY), Start Time (7:30PM)</p>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleBulkImportMatches}
+                    className="file-input file-input-bordered w-full text-sm sm:text-base"
+                  />
+                </div>
+
                 <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-0">
                   <button
                     type="button"
@@ -3278,80 +3791,31 @@ export default function AddFixtures() {
                   </div>
                 </div>
 
-                {/* Mini Game Breaker Team Option */}
+                {/* HPL Clubs Game Breaker Option */}
                 <div
-                  className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-warning"
-                  onClick={() => handleFixtureStyleSelect('minidreambreaker')}
+                  className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-info"
+                  onClick={() => handleFixtureStyleSelect('dreambreaker')}
                 >
                   <div className="card-body p-6">
                     <div className="flex items-center gap-4">
                       <div className="avatar placeholder">
-                        <div className="bg-warning text-warning-content rounded-full w-12">
-                          <span className="text-xl">⚡</span>
+                        <div className="bg-info text-info-content rounded-full w-12">
+                          <span className="text-xl">🎯</span>
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-lg">Mini Game Breaker Team</h4>
+                        <h4 className="font-bold text-lg">HPL Clubs Game Breaker</h4>
                         <p className="text-sm text-base-content/70 mt-1">
-                          Automatically creates 4 matches between two teams:
+                          Automatically creates 6 matches between two clubs:
                         </p>
                         <ul className="text-xs text-base-content/60 mt-2 list-disc list-inside">
-                          <li>2 Men's Doubles</li>
-                          <li>2 Mixed Doubles</li>
+                          <li>1 Men's Doubles</li>
+                          <li>1 Women's Doubles</li>
+                          <li>1 Men's Singles</li>
+                          <li>1 Women's Singles</li>
+                          <li>1 Men's Doubles (2)</li>
+                          <li>1 Mixed Doubles</li>
                         </ul>
-                        <p className="text-xs text-base-content/50 mt-2">
-                          No pool or court selection required
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Custom Option */}
-                <div
-                  className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-secondary"
-                  onClick={() => handleFixtureStyleSelect('custom')}
-                >
-                  <div className="card-body p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="avatar placeholder">
-                        <div className="bg-secondary text-secondary-content rounded-full w-12">
-                          <span className="text-xl">⚙️</span>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-lg">Custom</h4>
-                        <p className="text-sm text-base-content/70 mt-1">
-                          Manually create individual matches one by one.
-                        </p>
-                        <p className="text-xs text-base-content/60 mt-2">
-                          Choose match type, teams, and players for each fixture.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* RoundRobin + Playoffs Option */}
-                <div
-                  className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-accent"
-                  onClick={() => handleFixtureStyleSelect('roundrobin')}
-                >
-                  <div className="card-body p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="avatar placeholder">
-                        <div className="bg-accent text-accent-content rounded-full w-12">
-                          <span className="text-xl">🏅</span>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-lg">RoundRobin + Playoffs</h4>
-                        <p className="text-sm text-base-content/70 mt-1">
-                          Create pools where teams play round robin, followed by playoffs.
-                        </p>
-                        <p className="text-xs text-base-content/60 mt-2">
-                          Configure number of pools, teams per pool, and team assignments.
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -3459,6 +3923,26 @@ export default function AddFixtures() {
                     <option value="">Select Court</option>
                     <option value="Center Court">Center Court</option>
                     <option value="Side Court">Side Court</option>
+                  </select>
+                </div>
+
+                {/* Venue */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Venue</span>
+                  </label>
+                  <select
+                    name="venue"
+                    className="select select-bordered w-full"
+                    value={editForm.venue}
+                    onChange={handleEditFormChange}
+                  >
+                    <option value="">Select Venue</option>
+                    {venues.map(venue => (
+                      <option key={venue.id} value={venue.id}>
+                        {venue.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

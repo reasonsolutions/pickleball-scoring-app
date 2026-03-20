@@ -1,5 +1,5 @@
 // Public Cloudinary functions that work without Admin API
-const CLOUDINARY_CLOUD_NAME = 'dnfcybtnn';
+const CLOUDINARY_CLOUD_NAME = 'dchlpsvwh';
 
 // Generate Cloudinary URL for a resource
 export const getCloudinaryUrl = (publicId, options = {}) => {
@@ -7,7 +7,7 @@ export const getCloudinaryUrl = (publicId, options = {}) => {
     width,
     height,
     crop = 'fit',
-    quality = 'auto',
+    quality = 'auto:eco',
     format = 'auto',
     transformation = ''
   } = options;

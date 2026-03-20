@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
 import Footer from '../components/Footer';
+import OptimizedImage from '../components/OptimizedImage';
 import {
   fetchTournamentsOptimized,
   fetchMinimalTournamentData,
@@ -634,7 +635,7 @@ export default function Home() {
                   <span className="text-sm font-bold text-orange-600">#{index + 1}</span>
                   <div className="flex items-center space-x-2 min-w-0">
                     {team.logo?.url ? (
-                      <img src={team.logo.url} alt={team.name} className="w-8 h-8 rounded-full flex-shrink-0" />
+                      <OptimizedImage src={team.logo.url} alt={team.name} type="logoSmall" className="w-8 h-8 rounded-full flex-shrink-0" />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-bold text-gray-600">
@@ -713,11 +714,12 @@ export default function Home() {
 
                 return (
                   <Link key={article.id} to={`/news/${article.id}`} className="featured-article block hover:opacity-90 transition-opacity">
-                    <img
+                    <OptimizedImage
                       src={typeof article.featuredImage === 'string'
                         ? article.featuredImage
                         : article.featuredImage?.secure_url || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=300&fit=crop"}
                       alt={article.title}
+                      type="featuredSmall"
                     />
                     <div className="article-content">
                       <h3 className="article-title">

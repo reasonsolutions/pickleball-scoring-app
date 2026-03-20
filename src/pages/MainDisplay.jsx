@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
+import { getOptimizedUrlByType } from '../utils/imageOptimizationHelper';
 
 // Import background image
 import mainDisplayBg from '../assets/maindisplay.png';
@@ -1179,7 +1180,7 @@ export default function MainDisplay() {
             <img
               key={`${logo.id}-${index}`}
               src={logo.url.includes('cloudinary.com')
-                ? logo.url.replace('/upload/', '/upload/w_200,h_80,c_fit,f_auto,q_auto/')
+                ? getOptimizedUrlByType(logo.url, 'logo')
                 : logo.url
               }
               alt={logo.name || `Logo ${index + 1}`}

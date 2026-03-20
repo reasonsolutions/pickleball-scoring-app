@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import NewHomeNavbar from '../components/NewHomeNavbar';
 import Footer from '../components/Footer';
+import OptimizedImage from '../components/OptimizedImage';
 import { fetchTournamentStatsOptimized, fetchTournamentsOptimized, fetchTeamsAndPlayersOptimized } from '../services/optimizedFirebaseService';
 
 export default function TeamDetail() {
@@ -223,9 +224,10 @@ export default function TeamDetail() {
                 <div className="flex-shrink-0">
                   <div className="w-24 h-24 md:w-32 md:h-32 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
                     {team.logo?.url ? (
-                      <img
+                      <OptimizedImage
                         src={team.logo.url}
                         alt={`${team.name} logo`}
+                        type="logo"
                         className="w-20 h-20 md:w-28 md:h-28 object-contain rounded-full"
                       />
                     ) : (
@@ -309,9 +311,10 @@ export default function TeamDetail() {
                       <div className="flex-shrink-0 mr-4">
                         <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-600">
                           {player.photo?.url ? (
-                            <img
+                            <OptimizedImage
                               src={player.photo.url}
                               alt={player.name}
+                              type="avatar"
                               className="w-full h-full object-cover"
                             />
                           ) : (

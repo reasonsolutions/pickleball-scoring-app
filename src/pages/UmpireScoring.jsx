@@ -197,8 +197,90 @@ export default function UmpireScoring() {
         startedAt: serverTimestamp()
       });
       console.log('✅ MATCH STATUS UPDATED TO LIVE');
+      
+      // Start recording APIs
+      await startRecording();
     } catch (error) {
       console.error('Error setting match to live:', error);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      console.log('🎥 Starting recording process...');
+      
+      // Step 1: Generate bearer token
+      console.log('🔐 Generating bearer token...');
+      const authResponse = await fetch('https://admin-api.theclutchsports.com/api/recording/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          username: 'hpl',
+          password: 'hpl'
+        })
+      });
+
+      if (!authResponse.ok) {
+        throw new Error(`Auth API failed with status ${authResponse.status}`);
+      }
+
+      const authData = await authResponse.json();
+      console.log('🔐 Auth API Response:', authData);
+      const bearerToken = authData.token || authData.access_token;
+      
+      if (!bearerToken) {
+        throw new Error('No bearer token received from auth API');
+      }
+
+      console.log('✅ Bearer token generated successfully');
+      console.log('🔑 Bearer Token:', bearerToken);
+
+      // Step 2: Start recording using facilityId and venueCourtId
+      if (!match?.facilityId || !match?.venueCourtId) {
+        console.warn('⚠️ Missing facilityId or venueCourtId, skipping recording start');
+        return;
+      }
+
+      console.log('🎬 Starting recording with facilityId:', match.facilityId, 'venueCourtId:', match.venueCourtId);
+      
+      const recordingResponse = await fetch(
+        `https://admin-api.theclutchsports.com/api/recording/${match.facilityId}/${match.venueCourtId}/start-recording`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${bearerToken}`
+          },
+          body: JSON.stringify({})
+        }
+      );
+
+      if (!recordingResponse.ok) {
+        throw new Error(`Recording API failed with status ${recordingResponse.status}`);
+      }
+
+      const recordingData = await recordingResponse.json();
+      console.log('✅ Recording started successfully:', recordingData);
+
+      // Save recording session info to match document
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        recordingStarted: true,
+        recordingStartedAt: serverTimestamp(),
+        recordingSessionData: recordingData,
+        recording_id: recordingData.recording_id,
+        session_id: recordingData.session_id
+      });
+
+      console.log('✅ Recording session saved to match document');
+      console.log('📹 Recording ID:', recordingData.recording_id);
+      console.log('📹 Session ID:', recordingData.session_id);
+    } catch (error) {
+      console.error('❌ Error starting recording:', error);
+      setError(`Recording error: ${error.message}`);
     }
   };
 
@@ -419,10 +501,89 @@ export default function UmpireScoring() {
       });
       
       console.log('✅ MATCH STATUS UPDATED TO COMPLETED');
+      
+      // Stop recording
+      await stopRecording();
+      
       setMatchEnded(true);
     } catch (error) {
       console.error('Error ending match:', error);
       setError('Failed to end match');
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      console.log('🎥 Stopping recording process...');
+      
+      // Check if we have the necessary recording information
+      if (!match?.facilityId || !match?.venueCourtId) {
+        console.warn('⚠️ Missing facilityId or venueCourtId, skipping recording stop');
+        return;
+      }
+
+      // Step 1: Generate bearer token
+      console.log('🔐 Generating bearer token for stop recording...');
+      const authResponse = await fetch('https://admin-api.theclutchsports.com/api/recording/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          username: 'hpl',
+          password: 'hpl'
+        })
+      });
+
+      if (!authResponse.ok) {
+        throw new Error(`Auth API failed with status ${authResponse.status}`);
+      }
+
+      const authData = await authResponse.json();
+      console.log('🔐 Auth API Response (Stop Recording):', authData);
+      const bearerToken = authData.token || authData.access_token;
+      
+      if (!bearerToken) {
+        throw new Error('No bearer token received from auth API');
+      }
+
+      console.log('✅ Bearer token generated successfully');
+      console.log('🔑 Bearer Token (Stop Recording):', bearerToken);
+
+      // Step 2: Stop recording using facilityId and venueCourtId
+      console.log('🛑 Stopping recording with facilityId:', match.facilityId, 'venueCourtId:', match.venueCourtId);
+      
+      const stopResponse = await fetch(
+        `https://admin-api.theclutchsports.com/api/recording/${match.facilityId}/${match.venueCourtId}/stop-recording`,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${bearerToken}`
+          }
+        }
+      );
+
+      if (!stopResponse.ok) {
+        throw new Error(`Stop recording API failed with status ${stopResponse.status}`);
+      }
+
+      const stopData = await stopResponse.json();
+      console.log('✅ Recording stopped successfully');
+      console.log('🎬 Stop Recording API Response:', stopData);
+
+      // Save recording stop info to match document
+      await updateDoc(doc(db, 'fixtures', matchId), {
+        recordingStopped: true,
+        recordingStoppedAt: serverTimestamp(),
+        recordingStopData: stopData
+      });
+
+      console.log('✅ Recording stop information saved to match document');
+    } catch (error) {
+      console.error('❌ Error stopping recording:', error);
+      setError(`Recording stop error: ${error.message}`);
     }
   };
 
@@ -999,9 +1160,32 @@ export default function UmpireScoring() {
                   </div>
                 ))}
               </div>
+
+              {/* Match Details Section */}
+              <div className="divider my-4"></div>
+              <div className="bg-base-200 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-semibold mb-3 text-base-content/70">Match Details</h3>
+                <div className="space-y-2 text-sm">
+                  {match?.venueCourtId && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-base-content/70">Venue Court ID:</span>
+                      <span className="font-mono font-semibold text-primary">{match.venueCourtId}</span>
+                    </div>
+                  )}
+                  {match?.facilityId && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-base-content/70">Facility ID:</span>
+                      <span className="font-mono font-semibold text-primary">{match.facilityId}</span>
+                    </div>
+                  )}
+                  {!match?.venueCourtId && !match?.facilityId && (
+                    <div className="text-base-content/50 italic">No venue/facility information available</div>
+                  )}
+                </div>
+              </div>
               
               <div className="flex gap-3">
-                <button 
+                <button
                   className="btn btn-outline flex-1"
                   onClick={() => setSetupStep('games')}
                 >

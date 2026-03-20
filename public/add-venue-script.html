@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Venue to Teams Script</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .info {
+            color: blue;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add Venue Field to Teams</h1>
+        <p>This script will add the venue field to all teams in the database.</p>
+        <button id="runBtn" onclick="runScript()">Run Script</button>
+        <button id="clearBtn" onclick="clearOutput()" style="background-color: #f44336; margin-left: 10px;">Clear Output</button>
+        
+        <div id="output"></div>
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFO4nUrgpBBydJoim9HFBLAOan94Bg7Fw",
+            authDomain: "pickleball-app-9ccf7.firebaseapp.com",
+            projectId: "pickleball-app-9ccf7",
+            storageBucket: "pickleball-app-9ccf7.firebasestorage.app",
+            messagingSenderId: "248577092150",
+            appId: "1:248577092150:web:fb1415679f016111c2c697",
+            measurementId: "G-6FRPZQJQ3B"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Venue mapping
+        const venueMapping = {
+            '48': '48 PicklePark',
+            'The Build Crew': 'Pro-touch Manikonda',
+            'FALCONS': 'House of Play (HOP)',
+            'Bend it Club': 'Bend it BNR Hills',
+            'DRC Sports Foundation': 'Ready Set Pickle',
+            'Jubilee Hills Pickleball Club': 'Pickleball Collective - DMart',
+            'Penguin': 'Vanam',
+            'TRP': 'The Rooftop Pickle (TRP)',
+            'Racket Garden Academy': 'Racket Garden',
+            'Paddock': 'Paddock - Rooftop Pickle',
+            'Ye': 'Vanam',
+            'Courtyard Crusaders': 'The Pickleball Courtyard',
+            'Vikings Pickleball club': 'House of Play (HOP)',
+            'SOO Collective': 'SOO Coffee and Pickleball',
+            'Gladiators PC': 'Pick Paddlers',
+            'Badgers': 'Softserve',
+            'Deccan collective': 'Olympians arena , apollo hospital',
+            'The PB Social': 'The Pickleball Social',
+            'Pro-touch': 'Pro-touch Manikonda',
+            'BELLEZZA': 'Lodha Bellezza'
+        };
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+            document.getElementById('summary').innerHTML = '';
+        }
+
+        async function runScript() {
+            const btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            clearOutput();
+
+            try {
+                log('Starting to add venue field to teams...', 'info');
+                
+                const teamsSnapshot = await db.collection('teams').get();
+                let updatedCount = 0;
+                let notFoundCount = 0;
+                const teamsList = [];
+
+                for (const doc of teamsSnapshot.docs) {
+                    const team = doc.data();
+                    const teamName = team.name;
+                    const venue = venueMapping[teamName];
+
+                    teamsList.push({ name: teamName, venue: venue || 'NOT FOUND' });
+
+                    if (venue) {
+                        await doc.ref.update({
+                            venue: venue
+                        });
+                        log(`✓ Updated ${teamName} with venue: ${venue}`, 'success');
+                        updatedCount++;
+                    } else {
+                        log(`✗ No venue found for team: ${teamName}`, 'error');
+                        notFoundCount++;
+                    }
+                }
+
+                // Display summary
+                const summary = document.getElementById('summary');
+                summary.innerHTML = `
+                    <div class="summary">
+                        <h3>Summary</h3>
+                        <p><strong>Updated:</strong> ${updatedCount} teams</p>
+                        <p><strong>Not found:</strong> ${notFoundCount} teams</p>
+                        <p><strong>Total:</strong> ${teamsList.length} teams</p>
+                    </div>
+                `;
+
+                log('Done!', 'success');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

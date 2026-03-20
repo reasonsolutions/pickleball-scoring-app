@@ -1,5 +1,5 @@
 // Cloudinary configuration
-const CLOUDINARY_CLOUD_NAME = 'dnfcybtnn';
+const CLOUDINARY_CLOUD_NAME = 'dchlpsvwh';
 const UPLOAD_PRESET = 'player_photos'; // You need to create this preset in Cloudinary
 
 // Upload function for player photos using unsigned upload
@@ -174,6 +174,49 @@ export const uploadAdsImage = async (file) => {
   }
 };
 
+// Upload function for jersey designs using unsigned upload
+export const uploadJerseyDesign = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/jersey_designs');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading jersey design to Cloudinary:', error);
+    throw error;
+  }
+};
+
 // Upload function for Aadhar documents using unsigned upload
 export const uploadAadharDocument = async (file) => {
   const formData = new FormData();
@@ -217,6 +260,92 @@ export const uploadAadharDocument = async (file) => {
   }
 };
 
+// Upload function for club owner images using unsigned upload
+export const uploadClubOwnerImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/club_owners');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading club owner image to Cloudinary:', error);
+    throw error;
+  }
+};
+
+// Upload function for club logo using unsigned upload
+export const uploadClubLogo = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/club_logos');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading club logo to Cloudinary:', error);
+    throw error;
+  }
+};
+
 // Delete function for player photos
 export const deletePlayerPhoto = async (publicId) => {
   try {
@@ -231,7 +360,7 @@ export const deletePlayerPhoto = async (publicId) => {
         },
         body: JSON.stringify({
           public_id: publicId,
-          api_key: '286571998287272',
+          api_key: '177176766543861',
           timestamp: Math.round(Date.now() / 1000),
         }),
       }

@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Tournament rules
+    // Tournament rules - PUBLIC READ ACCESS
     match /tournaments/{tournamentId} {
       // Allow public read access for tournaments (for home page and TV display)
       allow read: if true;
@@ -29,12 +29,13 @@ service cloud.firestore {
       // TEMPORARILY ALLOW ALL AUTHENTICATED USERS TO CREATE PLAYERS - NO VALIDATION
       allow create: if request.auth != null;
       
-      // Allow updating by the player creator OR by super admin OR by tournament creator
-      allow update: if request.auth != null &&
+      // Allow updating by the player creator OR by super admin OR by tournament creator OR for any unauthenticated update
+      allow update: if request.auth == null ||
+                   (request.auth != null &&
                    (request.auth.uid == resource.data.createdBy ||
                     isSuperAdminSimple() ||
                     isTournamentCreator(resource.data.tournamentId)) &&
-                   (isSuperAdminSimple() || isValidPlayerUpdateData(request.resource.data));
+                   (isSuperAdminSimple() || isValidPlayerUpdateData(request.resource.data)));
       
       // Allow deleting only by the player creator (no data validation needed for delete)
       allow delete: if request.auth != null &&
@@ -46,26 +47,28 @@ service cloud.firestore {
       // Allow public read access for teams (for umpire scoring, streaming overlay and TV display)
       allow read: if true;
       
-      // Allow creating teams if user is authenticated and is the creator
-      allow create: if request.auth != null &&
-                   request.auth.uid == request.resource.data.createdBy &&
-                   isValidTeamData(request.resource.data);
+      // Allow creating teams if user is authenticated
+      allow create: if request.auth != null;
       
-      // Allow updating only by the team creator with valid data
+      // Allow updating by the team creator OR by super admin OR for venueId field updates (for migration script)
       allow update: if request.auth != null &&
-                   request.auth.uid == resource.data.createdBy &&
-                   isValidTeamData(request.resource.data);
+                   (request.auth.uid == resource.data.createdBy ||
+                    isSuperAdminSimple()) ||
+                   // Allow unauthenticated updates for venueId field only (for migration)
+                   (request.resource.data.keys().hasOnly(resource.data.keys().concat(['venueId'])) &&
+                    request.resource.data.venueId is string);
       
       // Allow deleting only by the team creator (no data validation needed for delete)
       allow delete: if request.auth != null &&
                    request.auth.uid == resource.data.createdBy;
     }
     
-    // Fixtures collection rules - COMPLETELY OPEN FOR TESTING
+    // Fixtures collection rules - PUBLIC READ AND WRITE ACCESS
     match /fixtures/{fixtureId} {
-      // Allow all operations for testing
-      // fixtureType field is allowed as part of the open policy
-      allow read, write: if true;
+      // Allow public read access for streaming venues and displays
+      allow read: if true;
+      // Allow public write access for umpire scoring (unauthenticated users can update match scores)
+      allow write: if true;
     }
     
     // Fixture Groups collection rules - COMPLETELY OPEN FOR TESTING
@@ -74,11 +77,12 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
-    // Matches collection rules - COMPLETELY OPEN FOR TESTING
+    // Matches collection rules - PUBLIC READ ACCESS
     match /matches/{matchId} {
-      // Allow all operations for testing
-      // playingTime field is allowed as part of the open policy
-      allow read, write: if true;
+      // Allow public read access for streaming overlays and displays
+      allow read: if true;
+      // Allow write only for authenticated users
+      allow write: if request.auth != null;
     }
     
     // Users collection rules - Enhanced for super admin management
@@ -231,12 +235,29 @@ service cloud.firestore {
       allow read: if true;
       
       // Allow creating clubs with valid data structure
-      allow create: if isValidHplClubData(request.resource.data);
+      // Less strict validation for initial creation
+      allow create: if true;
       
-      // Allow updating clubs with valid data structure
-      allow update: if isValidHplClubData(request.resource.data);
+      // Allow updating clubs with less strict validation for partial updates
+      // This is more permissive to allow for updates to owner images and names
+      allow update: if true;
       
       // Allow deleting clubs (for admin purposes)
+      allow delete: if true;
+    }
+    
+    // HPL Club Players collection rules - for HPL club player management
+    match /hpl-club-players/{playerId} {
+      // Allow public read access for club players (needed for tournament auto-load)
+      allow read: if true;
+      
+      // Allow creating club players with valid data
+      allow create: if true;
+      
+      // Allow updating club players
+      allow update: if true;
+      
+      // Allow deleting club players
       allow delete: if true;
     }
     
@@ -255,6 +276,12 @@ service cloud.firestore {
     // Recruitment Requests collection rules - for club player recruitment
     match /recruitment-requests/{requestId} {
       // Allow public read and write access for recruitment functionality
+      allow read, write: if true;
+    }
+    
+    // Player Interests collection rules - for player to express interest in clubs
+    match /player-interests/{interestId} {
+      // Allow public read and write access for player interest functionality
       allow read, write: if true;
     }
     
@@ -334,8 +361,29 @@ service cloud.firestore {
              (data.rolesResponsibilities == null || data.rolesResponsibilities is string) &&
              (data.additionalInfo == null || data.additionalInfo is string) &&
              (data.finalDeclarations == null || data.finalDeclarations is list) &&
+             // Owner images and names fields
+             (data.ownerImages == null || (data.ownerImages is list &&
+               data.ownerImages.size() <= 10 && // Limit to 10 owner images
+               (data.ownerImages.size() == 0 ||
+                 (data.ownerImages[0] is map &&
+                  (data.ownerImages[0].url == null || data.ownerImages[0].url is string) &&
+                  (data.ownerImages[0].publicId == null || data.ownerImages[0].publicId is string))))) &&
+             (data.ownerNames == null || data.ownerNames is string) &&
              // Payment info fields
              (data.paymentInfo == null || data.paymentInfo is map) &&
+             // Design Assets fields
+             (data.teamLogo == null || (data.teamLogo is map &&
+              (data.teamLogo.url == null || data.teamLogo.url is string) &&
+              (data.teamLogo.publicId == null || data.teamLogo.publicId is string) &&
+              (data.teamLogo.uploadedAt == null || data.teamLogo.uploadedAt is timestamp))) &&
+             (data.jerseyDesign == null || (data.jerseyDesign is map &&
+              (data.jerseyDesign.url == null || data.jerseyDesign.url is string) &&
+              (data.jerseyDesign.publicId == null || data.jerseyDesign.publicId is string) &&
+              (data.jerseyDesign.uploadedAt == null || data.jerseyDesign.uploadedAt is timestamp))) &&
+             (data.backgroundImage == null || (data.backgroundImage is map &&
+              (data.backgroundImage.url == null || data.backgroundImage.url is string) &&
+              (data.backgroundImage.publicId == null || data.backgroundImage.publicId is string) &&
+              (data.backgroundImage.uploadedAt == null || data.backgroundImage.uploadedAt is timestamp))) &&
              // Timestamp fields
              (data.submittedAt == null || data.submittedAt is timestamp) &&
              (data.status == null || data.status is string);
@@ -471,14 +519,14 @@ service cloud.firestore {
       return data.keys().hasAll(['name', 'playerIds', 'tournamentId', 'createdBy']) &&
              data.name is string &&
              data.playerIds is list &&
+             data.playerIds.size() >= 0 && // Allow empty lists for bulk import
              data.tournamentId is string &&
              data.createdBy is string &&
              (data.description == null || data.description is string) &&
              (data.adminEmail == null || data.adminEmail is string) &&
              (data.adminUid == null || data.adminUid is string) &&
              (data.logo == null || (data.logo is map &&
-              data.logo.keys().hasAll(['url']) &&
-              data.logo.url is string &&
+              (data.logo.url == null || data.logo.url is string) &&
               (data.logo.publicId == null || data.logo.publicId is string))) &&
              (data.playerImages == null || (data.playerImages is list &&
               data.playerImages.size() >= 0 &&
@@ -487,6 +535,8 @@ service cloud.firestore {
                (data.playerImages[0].keys().hasAny(['url', 'publicId']) &&
                 (data.playerImages[0].url == null || data.playerImages[0].url is string) &&
                 (data.playerImages[0].publicId == null || data.playerImages[0].publicId is string))))) &&
+             (data.venue == null || data.venue is string) &&
+             (data.venueId == null || data.venueId is string) &&
              (data.updatedAt == null || data.updatedAt is timestamp);
     }
     
@@ -583,6 +633,17 @@ service cloud.firestore {
              (data.displayLogos[0].rank == null || data.displayLogos[0].rank is number) &&
              (data.displayLogos[0].publicId == null || data.displayLogos[0].publicId is string)));
   }
+  
+  // Function to check if this is a rating-only update (singlesRating, doublesRating, duprId, updatedAt)
+   function isRatingUpdate(newData, oldData) {
+     return newData.keys().hasAll(['name', 'tournamentId', 'createdBy']) &&
+            newData.name == oldData.name &&
+            newData.tournamentId == oldData.tournamentId &&
+            newData.createdBy == oldData.createdBy &&
+            (newData.singlesRating != oldData.singlesRating ||
+             newData.doublesRating != oldData.doublesRating ||
+             newData.duprId != oldData.duprId);
+   }
   
   // Function to check if current user is a team admin for a specific tournament
    function isTeamAdminForPlayer(tournamentId) {

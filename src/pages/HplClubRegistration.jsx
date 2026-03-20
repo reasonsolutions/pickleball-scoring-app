@@ -17,6 +17,8 @@ import AvantiqueMediumFont from '../assets/fonts/Avantique/Avantique-Medium.woff
 import AvantiqueSemiboldFont from '../assets/fonts/Avantique/Avantique-Semibold.woff';
 
 export default function HplClubRegistration() {
+  // Registration is closed for 2026 season
+  const registrationClosed = true;
   const navigate = useNavigate();
   const [selectedTournament, setSelectedTournament] = useState('');
   const [tournaments, setTournaments] = useState([]);
@@ -851,13 +853,32 @@ export default function HplClubRegistration() {
       <div className="py-12 sm:py-16 lg:py-20">
         <div className="mx-auto px-6 sm:px-8 lg:px-12 max-w-full sm:max-w-none lg:max-w-none xl:max-w-[1600px]">
           <div className="space-y-8 lg:space-y-12">
-            {/* Form Title */}
-            <h2 className="text-gray-400 text-2xl sm:text-3xl lg:text-4xl font-bold italic leading-tight" style={{fontFamily: 'Avantique, sans-serif'}}>
-              REGISTRATION FORM
-            </h2>
+            {/* Registration Closed Message */}
+            {registrationClosed && (
+              <div className="bg-gray-800 rounded-xl p-8 md:p-12 lg:p-16 text-center">
+                <h2 className="text-orange-400 text-3xl sm:text-4xl lg:text-5xl font-bold mb-8" style={{fontFamily: 'Avantique, sans-serif'}}>
+                  Club Registration has been closed for the Season of 2026
+                </h2>
+                <div className="w-24 h-1 bg-orange-500 mx-auto mb-8"></div>
+                <p className="text-white text-xl max-w-3xl mx-auto mb-8" style={{fontFamily: 'Avantique, sans-serif'}}>
+                  Thank you for your interest in the HPL Community League. Registration for clubs is currently closed for this season.
+                </p>
+                <p className="text-gray-300 text-lg max-w-2xl mx-auto" style={{fontFamily: 'Avantique, sans-serif'}}>
+                  Please check back later for updates on future registration opportunities or follow our social media channels for announcements.
+                </p>
+              </div>
+            )}
             
-            {/* Form */}
-            <form className="space-y-8" onSubmit={handleSubmit}>
+            {/* Form Title */}
+            {!registrationClosed && (
+              <h2 className="text-gray-400 text-2xl sm:text-3xl lg:text-4xl font-bold italic leading-tight" style={{fontFamily: 'Avantique, sans-serif'}}>
+                REGISTRATION FORM
+              </h2>
+            )}
+            
+            {/* Form - Hidden when registration is closed */}
+            {!registrationClosed && (
+              <form className="space-y-8" onSubmit={handleSubmit}>
               {/* Success Message */}
               {submitSuccess && (
                 <div className="bg-green-600 text-white p-4 rounded-lg mb-6">
@@ -1617,6 +1638,7 @@ export default function HplClubRegistration() {
                 )}
               </div>
             </form>
+            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 // Cloudinary Admin API functions
-const CLOUDINARY_CLOUD_NAME = 'dnfcybtnn';
-const CLOUDINARY_API_KEY = '286571998287272';
-const CLOUDINARY_API_SECRET = '8vzJDzIyxf9S9WxqEH9Enegy26o';
+const CLOUDINARY_CLOUD_NAME = 'dchlpsvwh';
+const CLOUDINARY_API_KEY = '177176766543861';
+const CLOUDINARY_API_SECRET = 'lPyZYWStoPEby5WRgPBag370sMQ';
 
 // Generate signature for authenticated requests
 const generateSignature = (params, apiSecret) => {

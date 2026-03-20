@@ -440,209 +440,132 @@ export default function StreamingOverlay() {
 
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden">
-      {/* Streaming Overlay positioned at bottom center */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-7xl px-4">
-        <div className="relative h-20 sm:h-24 lg:h-28">
-          
-          {/* Left Team Card */}
-          <div className="absolute left-0 top-0 h-full flex items-center pl-20 pr-20 overflow-hidden border-2 border-orange-500" style={{
-            width: '45%',
-            clipPath: 'polygon(0 0, calc(100% - 40px) 0, 100% 100%, 0 100%)',
-            background: `
-              linear-gradient(145deg, #334155 0%, #1e293b 50%, #0f172a 100%),
-              linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 1px, transparent 1px, transparent calc(100% - 1px), rgba(0,0,0,0.2) calc(100% - 1px), rgba(0,0,0,0.1) 100%)
-            `,
-            boxShadow: `
-              inset 0 1px 0 rgba(255,255,255,0.15),
-              inset 0 -1px 0 rgba(0,0,0,0.25),
-              inset 1px 0 0 rgba(255,255,255,0.1),
-              inset -1px 0 0 rgba(0,0,0,0.1)
-            `
-          }}>
-            {/* Pickleball pattern background */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
-              backgroundImage: `
-                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 1px, transparent 1px),
-                linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
-                linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%)
-              `,
-              backgroundSize: '40px 40px, 40px 40px, 40px 40px, 40px 40px, 20px 20px, 60px 60px, 60px 60px',
-              filter: 'blur(0.5px) contrast(1.2)'
-            }} />
-            {/* Noise filter overlay */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-              mixBlendMode: 'overlay'
-            }} />
-            
-            {/* Team 1 Info */}
-            <div className="flex flex-col min-w-0 flex-1 relative z-10">
-              <div className="text-lg sm:text-xl lg:text-2xl font-black text-white uppercase tracking-wider truncate font-anthem">
-                {match.team1Name}
-              </div>
-              {(!match.matchType || match.matchType !== 'dreamBreaker') && (
-                <div className="text-sm sm:text-base lg:text-lg font-bold text-orange-300 truncate font-danson">
-                  {match.player1Team1 && match.player2Team1
-                    ? `${match.player1Team1}/${match.player2Team1}`
-                    : match.player1Team1 || 'TBD'
-                  }
-                </div>
-              )}
-            </div>
-            
-            {/* Pool/Court indicator for Team 1 */}
-            {match.pool && (
-              <div className="bg-orange-500 text-white px-2 py-1 font-bold text-sm flex-shrink-0 ml-2 border border-orange-400 relative z-10 font-danson">
-                {match.pool}
-              </div>
-            )}
-          </div>
-
-          {/* Right Team Card */}
-          <div className="absolute right-0 top-0 h-full flex items-center justify-end pl-20 pr-20 overflow-hidden border-2 border-orange-500" style={{
-            width: '45%',
-            clipPath: 'polygon(40px 0, 100% 0, 100% 100%, 0 100%)',
-            background: `
-              linear-gradient(145deg, #334155 0%, #1e293b 50%, #0f172a 100%),
-              linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 1px, transparent 1px, transparent calc(100% - 1px), rgba(0,0,0,0.2) calc(100% - 1px), rgba(0,0,0,0.1) 100%)
-            `,
-            boxShadow: `
-              inset 0 1px 0 rgba(255,255,255,0.15),
-              inset 0 -1px 0 rgba(0,0,0,0.25),
-              inset 1px 0 0 rgba(255,255,255,0.1),
-              inset -1px 0 0 rgba(0,0,0,0.1)
-            `
-          }}>
-            {/* Pickleball pattern background */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{
-              backgroundImage: `
-                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 2px, transparent 2px),
-                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 1px, transparent 1px),
-                linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
-                linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%)
-              `,
-              backgroundSize: '40px 40px, 40px 40px, 40px 40px, 40px 40px, 20px 20px, 60px 60px, 60px 60px',
-              filter: 'blur(0.5px) contrast(1.2)'
-            }} />
-            {/* Noise filter overlay */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none z-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-              mixBlendMode: 'overlay'
-            }} />
-            
-            {/* Team 2 Info */}
-            <div className="flex flex-col min-w-0 flex-1 text-right relative z-10">
-              <div className="text-lg sm:text-xl lg:text-2xl font-black text-white uppercase tracking-wider truncate font-anthem">
-                {match.team2Name}
-              </div>
-              {(!match.matchType || match.matchType !== 'dreamBreaker') && (
-                <div className="text-sm sm:text-base lg:text-lg font-bold text-orange-300 truncate font-danson">
-                  {match.player1Team2 && match.player2Team2
-                    ? `${match.player1Team2}/${match.player2Team2}`
-                    : match.player1Team2 || 'TBD'
-                  }
-                </div>
-              )}
-            </div>
-            
-          </div>
-
-          {/* Team Logos as Overlays */}
-          {/* Team 1 Logo Overlay - 90% outside to the left, 10% inside the left box */}
-          <div className="absolute top-1/2 transform -translate-y-1/2 z-20" style={{ left: '-72px' }}>
-            <div className="relative">
-              {/* White glow background */}
-              <div className="absolute inset-0 rounded-full" style={{
-                background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.05) 70%, transparent 100%)',
-                filter: 'blur(8px)',
-                transform: 'scale(1.2)',
-                zIndex: -1
-              }} />
-              <img
-                src={getTeamLogo('team1')}
-                alt={match.team1Name}
-                className="w-20 h-20 sm:w-26 sm:h-26 lg:w-32 lg:h-32 object-contain drop-shadow-lg relative z-10"
-                style={{
-                  filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.4)) drop-shadow(0 0 24px rgba(255,255,255,0.2))'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Team 2 Logo Overlay - 90% outside to the right, 10% inside the right box */}
-          <div className="absolute top-1/2 transform -translate-y-1/2 z-20" style={{ right: '-72px' }}>
-            <div className="relative">
-              {/* White glow background */}
-              <div className="absolute inset-0 rounded-full" style={{
-                background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.05) 70%, transparent 100%)',
-                filter: 'blur(8px)',
-                transform: 'scale(1.2)',
-                zIndex: -1
-              }} />
-              <img
-                src={getTeamLogo('team2')}
-                alt={match.team2Name}
-                className="w-20 h-20 sm:w-26 sm:h-26 lg:w-32 lg:h-32 object-contain drop-shadow-lg relative z-10"
-                style={{
-                  filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.4)) drop-shadow(0 0 24px rgba(255,255,255,0.2))'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Serve Indicators and Tickers */}
-          {(!match.matchType || match.matchType !== 'dreamBreaker') && (
-            <>
-              {/* Static serve indicators */}
-              <ServeIndicator side="left" />
-              <ServeIndicator side="right" />
-              
-              {/* Animated serve change tickers */}
-              <ServeTicker ticker={serveTicker} side="left" />
-              <ServeTicker ticker={serveTicker} side="right" />
-            </>
-          )}
-
-          {/* Center Section */}
-          <div className="absolute left-1/2 top-0 transform -translate-x-1/2 h-full flex flex-col items-center justify-center space-y-1 z-10">
-            {/* Match Number */}
-            <div className="text-xs sm:text-sm lg:text-base font-bold text-white uppercase tracking-wider bg-black px-3 py-1 border-2 border-orange-500 font-danson">
+      {/* Score Display - Top Left Corner (Tennis Style) */}
+      <div className="absolute top-4 left-4 z-40">
+        <div className="flex flex-col space-y-0 w-80">
+          {/* Match Info Header */}
+          <div className="flex items-center space-x-0 mb-0">
+            <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider bg-black px-2 py-1 border-2 border-orange-500 font-danson">
               {(() => {
-                // Use matchNumber if available, otherwise default to Match 1
                 const matchNumber = match.matchNumber || 1;
                 return `Match ${matchNumber}`;
               })()}
             </div>
-            
-            {/* Score Display */}
-            <div className="bg-gradient-to-r from-red-700 to-red-800 text-white px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 shadow-2xl border-4 border-orange-500 transform skew-x-[-2deg]">
-              <div className="flex items-center space-x-3 sm:space-x-4">
-                <span className={`text-2xl sm:text-3xl lg:text-4xl font-black ${pointTicker && pointTicker.team === 'player1' ? 'animate-score-pulse' : ''}`}>
-                  {formatScore('player1')}
-                </span>
-                <span className="text-xl sm:text-2xl lg:text-3xl font-light text-red-200">|</span>
-                <span className={`text-2xl sm:text-3xl lg:text-4xl font-black ${pointTicker && pointTicker.team === 'player2' ? 'animate-score-pulse' : ''}`}>
-                  {formatScore('player2')}
-                </span>
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-2 py-1 shadow-lg border-2 border-orange-400 text-xs sm:text-sm font-bold font-danson">
+              {(match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel) || match.matchType || 'Match'}
+            </div>
+          </div>
+
+          {/* Team 1 Row */}
+          <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-3 py-2 shadow-lg border-2 border-orange-500 grid grid-cols-12 items-center gap-2">
+            {/* Team 1 Logo - Column 1 */}
+            <div className="col-span-2 flex justify-center">
+              <div className="w-10 h-10">
+                <img
+                  src={getTeamLogo('team1')}
+                  alt={match.team1Name}
+                  className="w-full h-full object-contain"
+                />
               </div>
             </div>
             
-            {/* Match Type */}
-            <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-4 sm:px-5 lg:px-6 py-1 sm:py-2 shadow-lg border-2 border-orange-400">
-              <span className="text-sm sm:text-base lg:text-lg font-bold font-danson">
-                {(match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel) || match.matchType || 'Match'}
-              </span>
+            {/* Team 1 Players - Column 2 */}
+            <div className="col-span-5 flex flex-col min-w-0 space-y-0.5">
+              {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+                <>
+                  <div className="text-xs font-semibold text-orange-300 whitespace-nowrap">
+                    {match.player1Team1 || 'TBD'}
+                  </div>
+                  {match.player2Team1 && (
+                    <div className="text-xs font-semibold text-orange-300 whitespace-nowrap">
+                      {match.player2Team1}
+                    </div>
+                  )}
+                </>
+              )}
+              {(match.matchType === 'dreamBreaker') && (
+                <div className="text-xs sm:text-sm font-bold text-white whitespace-nowrap">
+                  {match.team1Name}
+                </div>
+              )}
+            </div>
+            
+            {/* Team 1 Serve Counter - Column 2.5 */}
+            {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+              <div className="col-span-2 flex justify-center items-center space-x-1">
+                {match.servingPlayer === 'player1' && (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                    {(match.teamServeCount || 0) === 1 && (
+                      <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+            
+            {/* Team 1 Score - Column 3 */}
+            <div className={`col-span-3 text-2xl sm:text-3xl font-black text-right ${pointTicker && pointTicker.team === 'player1' ? 'animate-score-pulse' : ''}`}>
+              {formatScore('player1')}
+            </div>
+          </div>
+
+          {/* Team 2 Row */}
+          <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-3 py-2 shadow-lg border-2 border-orange-500 grid grid-cols-12 items-center gap-2">
+            {/* Team 2 Logo - Column 1 */}
+            <div className="col-span-2 flex justify-center">
+              <div className="w-10 h-10">
+                <img
+                  src={getTeamLogo('team2')}
+                  alt={match.team2Name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+            
+            {/* Team 2 Players - Column 2 */}
+            <div className="col-span-5 flex flex-col min-w-0 space-y-0.5">
+              {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+                <>
+                  <div className="text-xs font-semibold text-orange-300 whitespace-nowrap">
+                    {match.player1Team2 || 'TBD'}
+                  </div>
+                  {match.player2Team2 && (
+                    <div className="text-xs font-semibold text-orange-300 whitespace-nowrap">
+                      {match.player2Team2}
+                    </div>
+                  )}
+                </>
+              )}
+              {(match.matchType === 'dreamBreaker') && (
+                <div className="text-xs sm:text-sm font-bold text-white whitespace-nowrap">
+                  {match.team2Name}
+                </div>
+              )}
+            </div>
+            
+            {/* Team 2 Serve Counter - Column 2.5 */}
+            {(!match.matchType || match.matchType !== 'dreamBreaker') && (
+              <div className="col-span-2 flex justify-center items-center space-x-1">
+                {match.servingPlayer === 'player2' && (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                    {(match.teamServeCount || 0) === 1 && (
+                      <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+            
+            {/* Team 2 Score - Column 3 */}
+            <div className={`col-span-3 text-2xl sm:text-3xl font-black text-right ${pointTicker && pointTicker.team === 'player2' ? 'animate-score-pulse' : ''}`}>
+              {formatScore('player2')}
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Point Ticker */}
       <PointTicker ticker={pointTicker} />

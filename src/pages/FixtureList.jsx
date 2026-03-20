@@ -158,6 +158,27 @@ export default function FixtureList() {
     return () => clearInterval(timer);
   }, []);
 
+  // Helper function to normalize gender values (supports M/F and Male/Female)
+  const normalizeGender = (gender) => {
+    if (!gender) return '';
+    const normalized = gender.toLowerCase().trim();
+    if (normalized === 'm' || normalized === 'male') return 'Male';
+    if (normalized === 'f' || normalized === 'female') return 'Female';
+    return gender; // Return original if not recognized
+  };
+
+  // Helper function to check if player is female (supports M/F and Male/Female)
+  const isFemale = (gender) => {
+    const normalized = normalizeGender(gender);
+    return normalized === 'Female';
+  };
+
+  // Helper function to check if player is male (supports M/F and Male/Female)
+  const isMale = (gender) => {
+    const normalized = normalizeGender(gender);
+    return normalized === 'Male';
+  };
+
   const getTeamPlayers = (teamId) => {
     const team = teams.find(t => t.id === teamId);
     if (!team || !team.playerIds) return [];
@@ -276,12 +297,12 @@ export default function FixtureList() {
       const isMensMatch = matchTypeLabel.toLowerCase().includes('men') &&
                          !matchTypeLabel.toLowerCase().includes('women');
       
-      if (available && isWomensMatch && player.gender !== 'Female') {
+      if (available && isWomensMatch && !isFemale(player.gender)) {
         available = false;
         reason = 'Women only match';
       }
       
-      if (available && isMensMatch && player.gender !== 'Male') {
+      if (available && isMensMatch && !isMale(player.gender)) {
         available = false;
         reason = 'Men only match';
       }
@@ -296,7 +317,7 @@ export default function FixtureList() {
         if (otherPlayerName) {
           // Find the other player's gender
           const otherPlayer = playersList.find(p => p.name === otherPlayerName);
-          if (otherPlayer && otherPlayer.gender === player.gender) {
+          if (otherPlayer && normalizeGender(otherPlayer.gender) === normalizeGender(player.gender)) {
             available = false;
             reason = 'Mixed doubles requires opposite gender';
           }
@@ -507,7 +528,9 @@ export default function FixtureList() {
         team2Name: editingMatch.team2Name,
         status: editingMatch.status,
         createdBy: editingMatch.createdBy,
-        createdAt: editingMatch.createdAt,
+        // Only include createdAt if it exists, otherwise use current timestamp
+        ...(editingMatch.createdAt && { createdAt: editingMatch.createdAt }),
+        ...(!editingMatch.createdAt && { createdAt: serverTimestamp() }),
         // Update the editable fields
         date: Timestamp.fromDate(new Date(editForm.date)),
         time: editForm.time,
@@ -1564,7 +1587,7 @@ export default function FixtureList() {
                                     }
                                     
                                     // If next position requires female, only show females
-                                    if (isNextPositionFemale && player.gender !== 'Female') {
+                                    if (isNextPositionFemale && !isFemale(player.gender)) {
                                       return false;
                                     }
                                     
@@ -1695,7 +1718,7 @@ export default function FixtureList() {
                                     }
                                     
                                     // If next position requires female, only show females
-                                    if (isNextPositionFemale && player.gender !== 'Female') {
+                                    if (isNextPositionFemale && !isFemale(player.gender)) {
                                       return false;
                                     }
                                     

@@ -4,6 +4,7 @@ import { collection, getDocs, query, where, updateDoc, doc } from 'firebase/fire
 import { db } from '../utils/firebase';
 import NewHomeNavbar from '../components/NewHomeNavbar';
 import Footer from '../components/Footer';
+import OptimizedImage from '../components/OptimizedImage';
 import { shouldShowPlayerNames, parseDate, formatDateForDisplay } from '../utils/dateTimeUtils';
 import AvantiqueBoldFont from '../assets/fonts/Avantique/Avantique-Bold.woff';
 import AvantiqueRegularFont from '../assets/fonts/Avantique/Avantique-Regular.woff';
@@ -86,10 +87,14 @@ export default function Results() {
       try {
         const tournamentsRef = collection(db, 'tournaments');
         const snapshot = await getDocs(tournamentsRef);
-        const tournamentsList = snapshot.docs.map(doc => ({
+        const allTournaments = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Filter out "HPL Clubs" tournament
+        const tournamentsList = allTournaments.filter(
+          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+        );
         setTournaments(tournamentsList);
         
         // Set first tournament as default if available
@@ -519,9 +524,10 @@ export default function Results() {
                                 {/* Team 1 */}
                                 <div className="flex items-center space-x-2 flex-1 min-w-0">
                                   {fixture.team1Details?.logo?.url && (
-                                    <img
+                                    <OptimizedImage
                                       src={fixture.team1Details.logo.url}
                                       alt={fixture.team1Details.name}
+                                      type="logoSmall"
                                       className="w-8 h-8 rounded-full flex-shrink-0"
                                     />
                                   )}
@@ -539,9 +545,10 @@ export default function Results() {
                                     {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
                                   </span>
                                   {fixture.team2Details?.logo?.url && (
-                                    <img
+                                    <OptimizedImage
                                       src={fixture.team2Details.logo.url}
                                       alt={fixture.team2Details.name}
+                                      type="logoSmall"
                                       className="w-8 h-8 rounded-full flex-shrink-0"
                                     />
                                   )}
@@ -683,9 +690,10 @@ export default function Results() {
                                           <div className="space-y-2 flex-1">
                                             <div className="flex items-center space-x-2">
                                               {fixture.team1Details?.logo?.url && (
-                                                <img
+                                                <OptimizedImage
                                                   src={fixture.team1Details.logo.url}
                                                   alt={fixture.team1Details.name}
+                                                  type="logoSmall"
                                                   className="w-6 h-6 rounded-full"
                                                 />
                                               )}
@@ -773,9 +781,10 @@ export default function Results() {
                                                 {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
                                               </span>
                                               {fixture.team2Details?.logo?.url && (
-                                                <img
-                                                  src={fixture.team2Details.logo.url}
-                                                  alt={fixture.team2Details.name}
+                                               <OptimizedImage
+                                                 src={fixture.team2Details.logo.url}
+                                                 alt={fixture.team2Details.name}
+                                                 type="logoSmall"
                                                   className="w-6 h-6 rounded-full"
                                                 />
                                               )}

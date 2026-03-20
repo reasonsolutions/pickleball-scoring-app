@@ -4,6 +4,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserAuthProvider } from './contexts/UserAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import UserProtectedRoute from './components/UserProtectedRoute';
+import HybridProtectedRoute from './components/HybridProtectedRoute';
 import Login from './pages/Login';
 import Logins from './pages/Logins';
 import ResetPassword from './pages/ResetPassword';
@@ -12,6 +14,9 @@ import Home from './pages/Home';
 import NewHome from './pages/NewHome';
 import HplClubs from './pages/HplClubs';
 import HplClubRules from './pages/HplClubRules';
+import Clubs from './pages/Clubs';
+import ClubInfo from './pages/ClubInfo';
+import ClubsResults from './pages/ClubsResults';
 import HplClubRegistration from './pages/HplClubRegistration';
 import HplPlayerRegistration from './pages/HplPlayerRegistration';
 import PlayerProfile from './pages/PlayerProfile';
@@ -23,6 +28,7 @@ import TournamentDetails from './pages/TournamentDetails';
 import AddPlayersTeams from './pages/AddPlayersTeams';
 import AddFixtures from './pages/AddFixtures';
 import FixtureList from './pages/FixtureList';
+import FixtureAnalytics from './pages/FixtureAnalytics';
 import AdminCleanup from './pages/AdminCleanup';
 import UmpireScoring from './pages/UmpireScoring';
 import UmpireMatchList from './pages/UmpireMatchList';
@@ -31,13 +37,16 @@ import ApiMatchList from './pages/ApiMatchList';
 import ApiFixtureMatches from './pages/ApiFixtureMatches';
 import StreamingMatchList from './pages/StreamingMatchList';
 import StreamingFixtureMatches from './pages/StreamingFixtureMatches';
+import StreamingVenues from './pages/StreamingVenues';
 import TVDisplay from './pages/TVDisplay';
 import BasicScore from './pages/BasicScore';
 import MatchDetails from './pages/MatchDetails';
 import XmlFeed from './pages/XmlFeed';
 import StreamingOverlay from './pages/StreamingOverlay';
 import StreamingOverlayController from './pages/StreamingOverlayController';
+import StreamingVenueOverlay from './pages/StreamingVenueOverlay';
 import Rankings from './pages/Rankings';
+import ClubsTable from './pages/ClubsTable';
 import Settings from './pages/Settings';
 import ContentManagement from './pages/ContentManagement';
 import Videos from './pages/Videos';
@@ -66,13 +75,19 @@ import ShippingPolicy from './pages/ShippingPolicy';
 import DuprApi from './pages/DuprApi';
 
 function App() {
+  // Debug logging for routing
+  React.useEffect(() => {
+    console.log('🚀 App component mounted');
+    console.log('📍 Current pathname:', window.location.pathname);
+  }, []);
+
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <UserAuthProvider>
-          <Router>
+      <Router>
+        <AuthProvider>
+          <UserAuthProvider>
             <div className="App">
-          <Routes>
+            <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/logins" element={<Logins />} />
@@ -83,10 +98,22 @@ function App() {
             <Route path="/hpl-club-rules" element={<HplClubRules />} />
             <Route path="/hpl-club-registration" element={<HplClubRegistration />} />
             <Route path="/hpl-player-registration" element={<HplPlayerRegistration />} />
+            <Route path="/clubs" element={<Clubs />} />
+            <Route path="/club-info/:clubId" element={<ClubInfo />} />
+            <Route path="/clubs-results" element={<ClubsResults />} />
             <Route path="/resetpassword" element={<ResetPassword />} />
-            <Route path="/player-profile/:playerId" element={<PlayerProfile />} />
-            <Route path="/club-profile/:clubId" element={<ClubProfile />} />
+            <Route path="/player-profile/:playerId" element={
+              <UserProtectedRoute>
+                <PlayerProfile />
+              </UserProtectedRoute>
+            } />
+            <Route path="/club-profile/:clubId" element={
+              <UserProtectedRoute>
+                <ClubProfile />
+              </UserProtectedRoute>
+            } />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/clubs-table" element={<ClubsTable />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/:id" element={<NewsArticle />} />
@@ -120,27 +147,33 @@ function App() {
             } />
             
             <Route path="/admin/tournaments/:id" element={
-              <ProtectedRoute>
+              <HybridProtectedRoute>
                 <TournamentDetails />
-              </ProtectedRoute>
+              </HybridProtectedRoute>
             } />
             
             <Route path="/admin/tournaments/:id/players-teams" element={
-              <ProtectedRoute>
+              <HybridProtectedRoute>
                 <AddPlayersTeams />
-              </ProtectedRoute>
+              </HybridProtectedRoute>
             } />
             
             <Route path="/admin/tournaments/:id/fixtures" element={
-              <ProtectedRoute>
+              <HybridProtectedRoute>
                 <AddFixtures />
-              </ProtectedRoute>
+              </HybridProtectedRoute>
             } />
             
             <Route path="/admin/tournaments/:id/fixtures/:fixtureId" element={
-              <ProtectedRoute>
+              <HybridProtectedRoute>
                 <FixtureList />
-              </ProtectedRoute>
+              </HybridProtectedRoute>
+            } />
+            
+            <Route path="/admin/tournaments/:id/analytics" element={
+              <HybridProtectedRoute>
+                <FixtureAnalytics />
+              </HybridProtectedRoute>
             } />
             
             <Route path="/admin/cleanup" element={
@@ -221,6 +254,14 @@ function App() {
             {/* Streaming Match List Route - Public access for streaming overlays */}
             <Route path="/streaming-matches/:tournamentId" element={<StreamingMatchList />} />
             
+            {/* Streaming Venues Route - Public access for streaming overlays grouped by venue */}
+            <Route path="/streaming-venues/:tournamentId" element={
+              <>
+                {console.log('✅ Matched /streaming-venues route')}
+                <StreamingVenues />
+              </>
+            } />
+            
             {/* Streaming Fixture Matches Route - Public access for streaming overlays in a fixture */}
             <Route path="/streaming-matches/:tournamentId/fixture/:fixtureGroupId" element={<StreamingFixtureMatches />} />
             
@@ -260,6 +301,9 @@ function App() {
             {/* Streaming Overlay Route - Public access for streaming overlay */}
             <Route path="/streaming-overlay/:matchId" element={<StreamingOverlay />} />
             
+            {/* Streaming Venue Overlay Route - Public access for venue-specific streaming overlay */}
+            <Route path="/streaming-venue-overlay/:venueId/:tournamentId" element={<StreamingVenueOverlay />} />
+            
             {/* Streaming Overlay Controller Route - Public access for overlay control */}
             <Route path="/streaming-overlay-controller/:matchId" element={<StreamingOverlayController />} />
 
@@ -272,11 +316,11 @@ function App() {
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          </div>
-        </Router>
-      </UserAuthProvider>
-    </AuthProvider>
-  </ThemeProvider>
+            </div>
+          </UserAuthProvider>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 

@@ -3,6 +3,7 @@ import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
 import Footer from '../components/Footer';
+import OptimizedImage from '../components/OptimizedImage';
 import { shouldShowPlayerNames, parseDate, formatDateForDisplay } from '../utils/dateTimeUtils';
 
 // Utility function to convert 24-hour time to 12-hour format with AM/PM
@@ -34,10 +35,14 @@ export default function Rankings() {
       try {
         const tournamentsRef = collection(db, 'tournaments');
         const snapshot = await getDocs(tournamentsRef);
-        const tournamentsList = snapshot.docs.map(doc => ({
+        const allTournaments = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Filter out "HPL Clubs" tournament
+        const tournamentsList = allTournaments.filter(
+          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+        );
         setTournaments(tournamentsList);
         
         // Set first tournament as default if available
@@ -532,9 +537,10 @@ export default function Rankings() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {team.logo?.url && (
-                              <img
+                              <OptimizedImage
                                 src={team.logo.url}
                                 alt={team.name}
+                                type="logoSmall"
                                 className="w-8 h-8 rounded-full mr-3"
                               />
                             )}
@@ -660,9 +666,10 @@ export default function Rankings() {
                                 {/* Team 1 */}
                                 <div className="flex items-center space-x-2 flex-1 min-w-0">
                                   {fixture.team1Details?.logo?.url && (
-                                    <img
+                                    <OptimizedImage
                                       src={fixture.team1Details.logo.url}
                                       alt={fixture.team1Details.name}
+                                      type="logoSmall"
                                       className="w-8 h-8 rounded-full flex-shrink-0"
                                     />
                                   )}
@@ -680,9 +687,10 @@ export default function Rankings() {
                                     {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
                                   </span>
                                   {fixture.team2Details?.logo?.url && (
-                                    <img
+                                    <OptimizedImage
                                       src={fixture.team2Details.logo.url}
                                       alt={fixture.team2Details.name}
+                                      type="logoSmall"
                                       className="w-8 h-8 rounded-full flex-shrink-0"
                                     />
                                   )}
@@ -823,9 +831,10 @@ export default function Rankings() {
                                           <div className="space-y-2 flex-1">
                                             <div className="flex items-center space-x-2">
                                               {fixture.team1Details?.logo?.url && (
-                                                <img
+                                                <OptimizedImage
                                                   src={fixture.team1Details.logo.url}
                                                   alt={fixture.team1Details.name}
+                                                  type="logoSmall"
                                                   className="w-6 h-6 rounded-full"
                                                 />
                                               )}
@@ -913,9 +922,10 @@ export default function Rankings() {
                                                 {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
                                               </span>
                                               {fixture.team2Details?.logo?.url && (
-                                                <img
-                                                  src={fixture.team2Details.logo.url}
-                                                  alt={fixture.team2Details.name}
+                                               <OptimizedImage
+                                                 src={fixture.team2Details.logo.url}
+                                                 alt={fixture.team2Details.name}
+                                                 type="logoSmall"
                                                   className="w-6 h-6 rounded-full"
                                                 />
                                               )}

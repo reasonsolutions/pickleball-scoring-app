@@ -4,6 +4,7 @@ import { doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebas
 import { db } from '../utils/firebase';
 import LeagueNavbar from '../components/LeagueNavbar';
 import Footer from '../components/Footer';
+import OptimizedImage from '../components/OptimizedImage';
 import MarkdownPreview from '@uiw/react-markdown-preview';
 import '@uiw/react-md-editor/markdown-editor.css';
 
@@ -39,10 +40,14 @@ export default function NewsArticle() {
       try {
         const tournamentsRef = collection(db, 'tournaments');
         const snapshot = await getDocs(tournamentsRef);
-        const tournamentsList = snapshot.docs.map(doc => ({
+        const allTournaments = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Filter out "HPL Clubs" tournament
+        const tournamentsList = allTournaments.filter(
+          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+        );
         setTournaments(tournamentsList);
         
         // Set first tournament as default if available
@@ -343,9 +348,10 @@ export default function NewsArticle() {
           {/* Featured Image with Instagram browser optimizations */}
           {(article.featuredImage?.url || article.featuredImage) && (
             <div className="aspect-video w-full">
-              <img
+              <OptimizedImage
                 src={article.featuredImage?.url || article.featuredImage}
                 alt={article.title}
+                type="featured"
                 className="w-full h-full object-cover"
                 loading={isInstagramBrowser ? "eager" : "lazy"}
                 onError={(e) => {

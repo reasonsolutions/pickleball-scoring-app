@@ -39,13 +39,52 @@ export default function Logins() {
 
     try {
       if (activeTab === 'player') {
-        // Check clubs-players collection for player authentication
-        const playersQuery = query(
+        // Check clubs-players collection for player authentication - with case-insensitive email check
+        let playersSnapshot;
+        
+        // First try with lowercase (standard way)
+        let playersQuery = query(
           collection(db, 'clubs-players'),
           where('emailId', '==', email.toLowerCase())
         );
         
-        const playersSnapshot = await getDocs(playersQuery);
+        playersSnapshot = await getDocs(playersQuery);
+        
+        // If not found with lowercase, try with original case
+        if (playersSnapshot.empty) {
+          playersQuery = query(
+            collection(db, 'clubs-players'),
+            where('emailId', '==', email)
+          );
+          
+          playersSnapshot = await getDocs(playersQuery);
+          
+          // If still empty, try checking if there's any similar email with different case
+          if (playersSnapshot.empty) {
+            // Get all documents and filter client-side (not efficient but works for small collections)
+            const allPlayersQuery = query(collection(db, 'clubs-players'));
+            const allPlayersSnapshot = await getDocs(allPlayersQuery);
+            
+            // Filter manually for case-insensitive match
+            const matchingDocs = [];
+            allPlayersSnapshot.forEach(doc => {
+              const data = doc.data();
+              if (data.emailId && data.emailId.toLowerCase() === email.toLowerCase()) {
+                matchingDocs.push(doc);
+              }
+            });
+            
+            // If we found matches with case-insensitive comparison
+            if (matchingDocs.length > 0) {
+              // Create a snapshot-like object with our matching docs
+              playersSnapshot = {
+                empty: false,
+                docs: matchingDocs,
+                forEach: callback => matchingDocs.forEach(callback)
+              };
+            }
+          }
+        }
         
         if (playersSnapshot.empty) {
           setError('No player found with this email address');
@@ -79,18 +118,60 @@ export default function Logins() {
           return;
         }
         
-        // Navigate to player profile
-        navigate(`/player-profile/${playerId}`);
+        // Navigate to player profile after a delay to ensure state is updated
+        setTimeout(() => {
+          navigate(`/player-profile/${playerId}`);
+        }, 300);
         
       } else {
-        // Check hpl-clubs collection for club admin authentication
-        const clubsQuery = query(
+        // Check hpl-clubs collection for club admin authentication - with case-insensitive email check
+        let clubsSnapshot;
+        
+        // First try with lowercase (standard way)
+        let clubsQuery = query(
           collection(db, 'hpl-clubs'),
           where('emailId', '==', email.toLowerCase())
         );
         
-        const clubsSnapshot = await getDocs(clubsQuery);
+        clubsSnapshot = await getDocs(clubsQuery);
         
+        // If not found with lowercase, try with original case
+        if (clubsSnapshot.empty) {
+          clubsQuery = query(
+            collection(db, 'hpl-clubs'),
+            where('emailId', '==', email)
+          );
+          
+          clubsSnapshot = await getDocs(clubsQuery);
+          
+          // If still empty, try checking if there's any similar email with different case
+          if (clubsSnapshot.empty) {
+            // Get all documents and filter client-side (not efficient but works for small collections)
+            const allClubsQuery = query(collection(db, 'hpl-clubs'));
+            const allClubsSnapshot = await getDocs(allClubsQuery);
+            
+            // Filter manually for case-insensitive match
+            const matchingDocs = [];
+            allClubsSnapshot.forEach(doc => {
+              const data = doc.data();
+              if (data.emailId && data.emailId.toLowerCase() === email.toLowerCase()) {
+                matchingDocs.push(doc);
+              }
+            });
+            
+            // If we found matches with case-insensitive comparison
+            if (matchingDocs.length > 0) {
+              // Create a snapshot-like object with our matching docs
+              clubsSnapshot = {
+                empty: false,
+                docs: matchingDocs,
+                forEach: callback => matchingDocs.forEach(callback)
+              };
+            }
+          }
+        }
+        
+        // If still empty after all attempts
         if (clubsSnapshot.empty) {
           setError('No club admin found with this email address');
           return;
@@ -123,8 +204,10 @@ export default function Logins() {
           return;
         }
         
-        // Navigate to club profile
-        navigate(`/club-profile/${clubId}`);
+        // Navigate to club profile after a delay to ensure state is updated
+        setTimeout(() => {
+          navigate(`/club-profile/${clubId}`);
+        }, 300);
       }
     } catch (error) {
       setError(error.message || 'Login failed. Please try again.');
@@ -158,13 +241,52 @@ export default function Logins() {
       const userType = activeTab === 'player' ? 'player' : 'club';
       let collection_name = userType === 'player' ? 'clubs-players' : 'hpl-clubs';
       
-      // Check if email exists in the appropriate collection
-      const usersQuery = query(
+      // Case-insensitive email check for password reset
+      let usersSnapshot;
+      
+      // First try with lowercase (standard way)
+      let usersQuery = query(
         collection(db, collection_name),
         where('emailId', '==', email.toLowerCase())
       );
       
-      const usersSnapshot = await getDocs(usersQuery);
+      usersSnapshot = await getDocs(usersQuery);
+      
+      // If not found with lowercase, try with original case
+      if (usersSnapshot.empty) {
+        usersQuery = query(
+          collection(db, collection_name),
+          where('emailId', '==', email)
+        );
+        
+        usersSnapshot = await getDocs(usersQuery);
+        
+        // If still empty, try checking if there's any similar email with different case
+        if (usersSnapshot.empty && userType === 'club') {
+          // Get all documents and filter client-side for case-insensitive match
+          const allUsersQuery = query(collection(db, collection_name));
+          const allUsersSnapshot = await getDocs(allUsersQuery);
+          
+          // Filter manually for case-insensitive match
+          const matchingDocs = [];
+          allUsersSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.emailId && data.emailId.toLowerCase() === email.toLowerCase()) {
+              matchingDocs.push(doc);
+            }
+          });
+          
+          // If we found matches with case-insensitive comparison
+          if (matchingDocs.length > 0) {
+            // Create a snapshot-like object with our matching docs
+            usersSnapshot = {
+              empty: false,
+              docs: matchingDocs,
+              forEach: callback => matchingDocs.forEach(callback)
+            };
+          }
+        }
+      }
       
       if (usersSnapshot.empty) {
         setError(`No ${userType} found with this email address`);

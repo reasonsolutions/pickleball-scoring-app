@@ -1,11 +1,4 @@
 {
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "functions": {
-    "source": "functions"
-  },
   "hosting": {
     "public": "dist",
     "ignore": [
@@ -15,29 +8,25 @@
     ],
     "rewrites": [
       {
-        "source": "/api/match/*/score",
-        "function": "getMatchScore"
+        "source": "/streaming-venues/**",
+        "destination": "/index.html"
       },
       {
-        "source": "/api/match/*/events",
-        "function": "getMatchEvents"
+        "source": "/umpire-matches/**",
+        "destination": "/index.html"
       },
       {
-        "source": "/api/match/*",
-        "function": "getMatch"
-      },
-      {
-        "source": "/api/matches",
-        "function": "getMatches"
-      },
-      {
-        "source": "/basic-score/**",
-        "function": "getMatchData"
+        "source": "/streaming-matches/**",
+        "destination": "/index.html"
       },
       {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }

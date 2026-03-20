@@ -16,6 +16,7 @@ export default function CreateTournament() {
     startDate: '',
     endDate: '',
     coverImageUrl: '',
+    format: '',
     categories: {
       mensSingles: false,
       mensDoubles: false,
@@ -68,6 +69,10 @@ export default function CreateTournament() {
       setError('Rules are required');
       return false;
     }
+    if (!formData.format.trim()) {
+      setError('Tournament format is required');
+      return false;
+    }
     if (!formData.prizeMoney || parseFloat(formData.prizeMoney) <= 0) {
       setError('Prize money must be greater than 0');
       return false;
@@ -114,6 +119,7 @@ export default function CreateTournament() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         rules: formData.rules.trim(),
+        format: formData.format.trim(),
         prizeMoney: parseFloat(formData.prizeMoney),
         registrationFee: formData.registrationFee ? parseFloat(formData.registrationFee) : 0,
         startDate: new Date(formData.startDate),
@@ -188,7 +194,7 @@ export default function CreateTournament() {
                 </div>
 
                 {/* Description */}
-                <div className="form-control w-full">
+                <div className="form-control w-full mb-4">
                   <label className="label">
                     <span className="label-text font-medium">Description *</span>
                   </label>
@@ -200,6 +206,24 @@ export default function CreateTournament() {
                     onChange={handleChange}
                     required
                   ></textarea>
+                </div>
+
+                {/* Tournament Format */}
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-medium">Tournament Format *</span>
+                  </label>
+                  <select
+                    name="format"
+                    className="select select-bordered w-full focus:select-primary"
+                    value={formData.format}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select a format</option>
+                    <option value="HPL Main">HPL Main</option>
+                    <option value="HPL Clubs">HPL Clubs</option>
+                  </select>
                 </div>
               </div>
 

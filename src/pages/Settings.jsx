@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import MainLayout from '../components/MainLayout';
 
@@ -36,8 +36,14 @@ export default function Settings() {
   // Venue management state
   const [venues, setVenues] = useState([]);
   const [newVenueName, setNewVenueName] = useState('');
+  const [newVenueCourtId, setNewVenueCourtId] = useState('');
+  const [newVenueFacilityId, setNewVenueFacilityId] = useState('');
   const [addingVenue, setAddingVenue] = useState(false);
   const [deletingVenue, setDeletingVenue] = useState(null);
+  const [editingVenueId, setEditingVenueId] = useState(null);
+  const [editingCourtId, setEditingCourtId] = useState('');
+  const [editingFacilityId, setEditingFacilityId] = useState('');
+  const [updatingVenue, setUpdatingVenue] = useState(false);
 
   useEffect(() => {
     // Wait for user data to be loaded before checking permissions
@@ -98,6 +104,54 @@ export default function Settings() {
     }
   };
 
+  const updateFixturesWithVenueCourtId = async (venueId, courtId) => {
+    try {
+      // Find all fixtures with this venue ID
+      const fixturesQuery = query(
+        collection(db, 'fixtures'),
+        where('venue', '==', venueId)
+      );
+      const fixturesSnapshot = await getDocs(fixturesQuery);
+      
+      // Update each fixture with the venue court ID
+      const updatePromises = fixturesSnapshot.docs.map(fixtureDoc =>
+        updateDoc(doc(db, 'fixtures', fixtureDoc.id), {
+          venueCourtId: courtId
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      console.log(`Updated ${fixturesSnapshot.docs.length} fixtures with venue court ID`);
+    } catch (error) {
+      console.error('Error updating fixtures with venue court ID:', error);
+      throw error;
+    }
+  };
+
+  const updateFixturesWithFacilityId = async (venueId, facilityId) => {
+    try {
+      // Find all fixtures with this venue ID
+      const fixturesQuery = query(
+        collection(db, 'fixtures'),
+        where('venue', '==', venueId)
+      );
+      const fixturesSnapshot = await getDocs(fixturesQuery);
+      
+      // Update each fixture with the facility ID
+      const updatePromises = fixturesSnapshot.docs.map(fixtureDoc =>
+        updateDoc(doc(db, 'fixtures', fixtureDoc.id), {
+          facilityId: facilityId
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      console.log(`Updated ${fixturesSnapshot.docs.length} fixtures with facility ID`);
+    } catch (error) {
+      console.error('Error updating fixtures with facility ID:', error);
+      throw error;
+    }
+  };
+
   const handleAddVenue = async (e) => {
     e.preventDefault();
     if (!newVenueName.trim()) {
@@ -111,13 +165,28 @@ export default function Settings() {
       
       const venueData = {
         name: newVenueName.trim(),
+        courtId: newVenueCourtId.trim(),
+        facilityId: newVenueFacilityId.trim(),
         createdAt: serverTimestamp(),
         createdBy: currentUser.uid
       };
 
-      await addDoc(collection(db, 'venues'), venueData);
+      const venueDocRef = await addDoc(collection(db, 'venues'), venueData);
+      
+      // Update all fixtures with this venue's court ID
+      if (newVenueCourtId.trim()) {
+        await updateFixturesWithVenueCourtId(venueDocRef.id, newVenueCourtId.trim());
+      }
+      
+      // Update all fixtures with this venue's facility ID
+      if (newVenueFacilityId.trim()) {
+        await updateFixturesWithFacilityId(venueDocRef.id, newVenueFacilityId.trim());
+      }
+      
       setSuccess('Venue added successfully!');
       setNewVenueName('');
+      setNewVenueCourtId('');
+      setNewVenueFacilityId('');
       fetchVenues(); // Refresh the venues list
     } catch (error) {
       console.error('Error adding venue:', error);
@@ -125,6 +194,55 @@ export default function Settings() {
     } finally {
       setAddingVenue(false);
     }
+  };
+
+  const handleEditVenueCourtId = (venue) => {
+    setEditingVenueId(venue.id);
+    setEditingCourtId(venue.courtId || '');
+    setEditingFacilityId(venue.facilityId || '');
+    setError('');
+    setSuccess('');
+  };
+
+  const handleUpdateVenueCourtId = async (venueId) => {
+    try {
+      setUpdatingVenue(true);
+      setError('');
+      
+      // Update the venue document
+      await updateDoc(doc(db, 'venues', venueId), {
+        courtId: editingCourtId.trim(),
+        facilityId: editingFacilityId.trim()
+      });
+      
+      // Update all fixtures with this venue's new court ID
+      if (editingCourtId.trim()) {
+        await updateFixturesWithVenueCourtId(venueId, editingCourtId.trim());
+      }
+      
+      // Update all fixtures with this venue's new facility ID
+      if (editingFacilityId.trim()) {
+        await updateFixturesWithFacilityId(venueId, editingFacilityId.trim());
+      }
+      
+      setSuccess('Venue details updated successfully!');
+      setEditingVenueId(null);
+      setEditingCourtId('');
+      setEditingFacilityId('');
+      fetchVenues(); // Refresh the venues list
+    } catch (error) {
+      console.error('Error updating venue details:', error);
+      setError('Failed to update venue details');
+    } finally {
+      setUpdatingVenue(false);
+    }
+  };
+
+  const handleCancelEditVenue = () => {
+    setEditingVenueId(null);
+    setEditingCourtId('');
+    setEditingFacilityId('');
+    setError('');
   };
 
   const handleDeleteVenue = async (venueId) => {
@@ -506,6 +624,30 @@ export default function Settings() {
                     required
                   />
                 </div>
+                <div className="form-control flex-1">
+                  <label className="label">
+                    <span className="label-text font-medium">Venue Court ID</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter venue court ID"
+                    className="input input-bordered w-full"
+                    value={newVenueCourtId}
+                    onChange={(e) => setNewVenueCourtId(e.target.value)}
+                  />
+                </div>
+                <div className="form-control flex-1">
+                  <label className="label">
+                    <span className="label-text font-medium">Facility ID</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter facility ID"
+                    className="input input-bordered w-full"
+                    value={newVenueFacilityId}
+                    onChange={(e) => setNewVenueFacilityId(e.target.value)}
+                  />
+                </div>
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">&nbsp;</span>
@@ -540,6 +682,8 @@ export default function Settings() {
                   <thead>
                     <tr>
                       <th>Venue Name</th>
+                      <th>Venue Court ID</th>
+                      <th>Facility ID</th>
                       <th>Created</th>
                       <th>Actions</th>
                     </tr>
@@ -549,16 +693,78 @@ export default function Settings() {
                       <tr key={venue.id}>
                         <td className="font-medium">{venue.name}</td>
                         <td>
+                          {editingVenueId === venue.id ? (
+                            <input
+                              type="text"
+                              placeholder="Enter court ID"
+                              className="input input-bordered input-sm w-full"
+                              value={editingCourtId}
+                              onChange={(e) => setEditingCourtId(e.target.value)}
+                            />
+                          ) : (
+                            <span className="font-mono text-sm bg-base-200 px-2 py-1 rounded">
+                              {venue.courtId || '-'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {editingVenueId === venue.id ? (
+                            <input
+                              type="text"
+                              placeholder="Enter facility ID"
+                              className="input input-bordered input-sm w-full"
+                              value={editingFacilityId}
+                              onChange={(e) => setEditingFacilityId(e.target.value)}
+                            />
+                          ) : (
+                            <span className="font-mono text-sm bg-base-200 px-2 py-1 rounded">
+                              {venue.facilityId || '-'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
                           {venue.createdAt ? new Date(venue.createdAt.seconds * 1000).toLocaleDateString() : '-'}
                         </td>
                         <td>
-                          <button
-                            className={`btn btn-sm btn-error btn-outline ${deletingVenue === venue.id ? 'loading' : ''}`}
-                            onClick={() => handleDeleteVenue(venue.id)}
-                            disabled={deletingVenue === venue.id}
-                          >
-                            {deletingVenue === venue.id ? 'Deleting...' : 'Delete'}
-                          </button>
+                          <div className="flex gap-2">
+                            {editingVenueId === venue.id ? (
+                              <>
+                                <button
+                                  className={`btn btn-sm btn-success btn-outline ${updatingVenue ? 'loading' : ''}`}
+                                  onClick={() => handleUpdateVenueCourtId(venue.id)}
+                                  disabled={updatingVenue}
+                                >
+                                  {updatingVenue ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline"
+                                  onClick={handleCancelEditVenue}
+                                  disabled={updatingVenue}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  className="btn btn-sm btn-outline btn-info"
+                                  onClick={() => handleEditVenueCourtId(venue)}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  Edit
+                                </button>
+                                <button
+                                  className={`btn btn-sm btn-error btn-outline ${deletingVenue === venue.id ? 'loading' : ''}`}
+                                  onClick={() => handleDeleteVenue(venue.id)}
+                                  disabled={deletingVenue === venue.id}
+                                >
+                                  {deletingVenue === venue.id ? 'Deleting...' : 'Delete'}
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -6,6 +6,7 @@ import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
 import CloudinaryImageUpload from '../components/CloudinaryImageUpload';
+import OptimizedImage from '../components/OptimizedImage';
 import * as XLSX from 'xlsx';
 
 export default function AddPlayersTeams() {
@@ -16,7 +17,12 @@ export default function AddPlayersTeams() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [format, setFormat] = useState(''); // 'player' or 'team'
-  const [activeTab, setActiveTab] = useState('players'); // 'players' or 'teams'
+  const [activeTab, setActiveTab] = useState('players'); // 'players', 'teams', or 'conferences'
+  const [conferences, setConferences] = useState({
+    conference1: { name: 'Conference 1', teams: [], maxTeams: 10 },
+    conference2: { name: 'Conference 2', teams: [], maxTeams: 10 }
+  });
+  const [draggedTeam, setDraggedTeam] = useState(null);
   
   // Player form state
   const [playerForm, setPlayerForm] = useState({
@@ -85,6 +91,22 @@ export default function AddPlayersTeams() {
           const tournamentData = { id: tournamentDoc.id, ...tournamentDoc.data() };
           setTournament(tournamentData);
           
+          // Load saved conferences if they exist
+          if (tournamentData.conferences) {
+            setConferences({
+              conference1: {
+                name: 'Conference 1',
+                teams: tournamentData.conferences.conference1 || [],
+                maxTeams: 10
+              },
+              conference2: {
+                name: 'Conference 2',
+                teams: tournamentData.conferences.conference2 || [],
+                maxTeams: 10
+              }
+            });
+          }
+          
           // Debug logging
           console.log('Tournament data:', tournamentData);
           console.log('Current user:', currentUser);
@@ -148,13 +170,141 @@ export default function AddPlayersTeams() {
         where('tournamentId', '==', id)
       );
       const teamsSnapshot = await getDocs(teamsQuery);
-      const teamsData = teamsSnapshot.docs.map(doc => ({
+      let teamsData = teamsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      // For HPL Clubs format, fetch logos from hpl-clubs collection
+      if (tournament?.format === 'HPL Clubs') {
+        try {
+          const clubsRef = collection(db, 'hpl-clubs');
+          const clubsSnapshot = await getDocs(clubsRef);
+          const clubsData = {};
+          clubsSnapshot.docs.forEach(doc => {
+            clubsData[doc.id] = doc.data();
+          });
+
+          // Match teams with clubs and update logos
+          teamsData = teamsData.map(team => {
+            let clubLogo = null;
+            for (const clubId in clubsData) {
+              const club = clubsData[clubId];
+              if (club.name === team.name || club.clubName === team.name) {
+                // Handle teamLogo structure with url property
+                if (club.teamLogo && club.teamLogo.url) {
+                  clubLogo = { url: club.teamLogo.url };
+                } else if (club.logo && club.logo.url) {
+                  clubLogo = { url: club.logo.url };
+                } else if (club.teamLogo && typeof club.teamLogo === 'string') {
+                  clubLogo = { url: club.teamLogo };
+                } else if (club.logo && typeof club.logo === 'string') {
+                  clubLogo = { url: club.logo };
+                }
+                break;
+              }
+            }
+            return {
+              ...team,
+              logo: clubLogo || team.logo // Use club logo if found, otherwise use team logo
+            };
+          });
+        } catch (error) {
+          console.error('Error fetching HPL Clubs logos:', error);
+          // Continue with teams data even if club logo fetch fails
+        }
+      }
+
       setTeams(teamsData);
     } catch (error) {
       console.error('Error fetching teams:', error);
+    }
+  };
+
+  const handleDragStart = (e, team, fromConference = null) => {
+    setDraggedTeam({ team, fromConference });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDropOnConference = (e, conferenceKey) => {
+    e.preventDefault();
+    if (!draggedTeam) return;
+
+    const { team, fromConference } = draggedTeam;
+    
+    // Check if conference is full
+    if (conferences[conferenceKey].teams.length >= 10) {
+      alert('This conference is full (max 10 teams)');
+      setDraggedTeam(null);
+      return;
+    }
+
+    // Check if team is already in this conference
+    if (conferences[conferenceKey].teams.includes(team.id)) {
+      setDraggedTeam(null);
+      return;
+    }
+
+    // Remove from previous conference if it was in one
+    if (fromConference) {
+      setConferences(prev => ({
+        ...prev,
+        [fromConference]: {
+          ...prev[fromConference],
+          teams: prev[fromConference].teams.filter(teamId => teamId !== team.id)
+        }
+      }));
+    }
+
+    // Add to new conference
+    setConferences(prev => ({
+      ...prev,
+      [conferenceKey]: {
+        ...prev[conferenceKey],
+        teams: [...prev[conferenceKey].teams, team.id]
+      }
+    }));
+
+    setDraggedTeam(null);
+  };
+
+  const handleRemoveFromConference = (conferenceKey, teamId) => {
+    setConferences(prev => ({
+      ...prev,
+      [conferenceKey]: {
+        ...prev[conferenceKey],
+        teams: prev[conferenceKey].teams.filter(t => t !== teamId)
+      }
+    }));
+  };
+
+  const saveConferences = async () => {
+    try {
+      setSubmitting(true);
+      const conferenceData = {
+        conference1: conferences.conference1.teams,
+        conference2: conferences.conference2.teams,
+        updatedAt: serverTimestamp()
+      };
+
+      // Save to tournament document
+      const docRef = doc(db, 'tournaments', id);
+      await updateDoc(docRef, {
+        conferences: conferenceData,
+        updatedAt: serverTimestamp()
+      });
+
+      alert('Conferences saved successfully!');
+    } catch (error) {
+      console.error('Error saving conferences:', error);
+      alert('Failed to save conferences');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -788,6 +938,34 @@ export default function AddPlayersTeams() {
     } catch (error) {
       console.error('Error deleting team:', error);
       setError('Failed to delete team. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Handle superadmin login to club profile
+  const handleLoginToClubProfile = async (team) => {
+    try {
+      setSubmitting(true);
+      
+      // Check if team has hplClubId
+      if (!team.hplClubId) {
+        setError(`Team "${team.name}" is not linked to an HPL Club. Please link it first.`);
+        return;
+      }
+
+      // Verify the club exists in hpl-clubs collection
+      const clubDoc = await getDoc(doc(db, 'hpl-clubs', team.hplClubId));
+      if (!clubDoc.exists()) {
+        setError(`Club with ID ${team.hplClubId} not found in the system.`);
+        return;
+      }
+
+      // Navigate to the club profile
+      navigate(`/club-profile/${team.hplClubId}`);
+    } catch (error) {
+      console.error('Error logging in to club profile:', error);
+      setError(`Failed to access club profile: ${error.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -1702,18 +1880,26 @@ export default function AddPlayersTeams() {
 
             {/* Tabs */}
             <div className="tabs tabs-boxed">
-              <button 
+              <button
                 className={`tab ${activeTab === 'players' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('players')}
               >
                 Players
               </button>
-              <button 
+              <button
                 className={`tab ${activeTab === 'teams' ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab('teams')}
               >
                 Teams
               </button>
+              {tournament?.format === 'HPL Clubs' && (
+                <button
+                  className={`tab ${activeTab === 'conferences' ? 'tab-active' : ''}`}
+                  onClick={() => setActiveTab('conferences')}
+                >
+                  Conferences
+                </button>
+              )}
             </div>
 
             {/* Players Tab */}
@@ -2017,7 +2203,7 @@ export default function AddPlayersTeams() {
                                     {player.photo?.url ? (
                                       <div className="avatar">
                                         <div className="w-12 h-12 rounded-full">
-                                          <img src={player.photo.url} alt={player.name} />
+                                          <OptimizedImage src={player.photo.url} alt={player.name} type="avatar" className="w-full h-full rounded-full object-cover" />
                                         </div>
                                       </div>
                                     ) : (
@@ -2139,41 +2325,71 @@ export default function AddPlayersTeams() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {teams.map((team) => (
                     <div key={team.id} className="card bg-base-100 shadow-xl">
+                      {/* Team Logo */}
+                      {team.logo?.url && (
+                        <figure className="px-4 pt-4">
+                          <div className="w-full h-32 bg-base-200 rounded-lg overflow-hidden flex items-center justify-center">
+                            <OptimizedImage
+                              src={team.logo.url}
+                              alt={team.name}
+                              type="team"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        </figure>
+                      )}
                       <div className="card-body">
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="card-title">{team.name}</h4>
-                          <div className="dropdown dropdown-end">
-                            <div tabIndex={0} role="button" className="btn btn-ghost btn-sm btn-circle">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01" />
-                              </svg>
+                            <h4 className="card-title">{team.name}</h4>
+                            <div className="dropdown dropdown-end">
+                              <div tabIndex={0} role="button" className="btn btn-ghost btn-sm btn-circle">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01" />
+                                </svg>
+                              </div>
+                              <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                                <li>
+                                  <button onClick={() => handleEditTeam(team)}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit Team
+                                  </button>
+                                </li>
+                                <li>
+                                  <button
+                                    onClick={() => handleDeleteTeam(team.id, team.name)}
+                                    className="text-error"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete Team
+                                  </button>
+                                </li>
+                              </ul>
                             </div>
-                            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                              <li>
-                                <button onClick={() => handleEditTeam(team)}>
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  Edit Team
-                                </button>
-                              </li>
-                              <li>
-                                <button
-                                  onClick={() => handleDeleteTeam(team.id, team.name)}
-                                  className="text-error"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  Delete Team
-                                </button>
-                              </li>
-                            </ul>
                           </div>
-                        </div>
                         {team.description && (
                           <p className="text-base-content/70 text-sm mb-3">{team.description}</p>
                         )}
+                        
+                        {/* Superadmin Login Button */}
+                        {currentUser?.role === 'super_admin' && team.hplClubId && (
+                          <div className="mb-3">
+                            <button
+                              onClick={() => handleLoginToClubProfile(team)}
+                              className="btn btn-sm btn-success w-full"
+                              disabled={submitting}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                              </svg>
+                              Login to Club Profile
+                            </button>
+                          </div>
+                        )}
+                        
                         <div className="mt-4">
                           <div className="text-sm text-base-content/60 mb-2">
                             Players ({team.playerIds?.length || 0}):
@@ -2195,10 +2411,154 @@ export default function AddPlayersTeams() {
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Team Creation Modal */}
+            {/* Conferences Tab */}
+            {activeTab === 'conferences' && tournament?.format === 'HPL Clubs' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">Conference Management</h3>
+                  <button
+                    className={`btn btn-success ${submitting ? 'loading' : ''}`}
+                    onClick={saveConferences}
+                    disabled={submitting || teams.length === 0}
+                  >
+                    {submitting ? 'Saving...' : 'Save Conferences'}
+                  </button>
+                </div>
+
+                {teams.length === 0 && (
+                  <div className="alert alert-warning">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>Add teams first before assigning to conferences</span>
+                  </div>
+                )}
+
+                {teams.length > 0 && (
+                  <div className="space-y-6">
+                    {/* Unassigned Teams */}
+                    <div className="card bg-base-100 shadow-xl">
+                      <div className="card-body">
+                        <h4 className="card-title text-lg mb-4">Unassigned Teams ({teams.filter(t => !conferences.conference1.teams.includes(t.id) && !conferences.conference2.teams.includes(t.id)).length})</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {teams.filter(t => !conferences.conference1.teams.includes(t.id) && !conferences.conference2.teams.includes(t.id)).map((team) => (
+                            <div
+                              key={team.id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, team)}
+                              className="card bg-primary/10 border-2 border-primary/30 cursor-move hover:border-primary/60 transition-colors"
+                            >
+                              <div className="card-body p-4">
+                                <h5 className="card-title text-sm">{team.name}</h5>
+                                <p className="text-xs text-base-content/60">Players: {team.playerIds?.length || 0}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Conferences Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Conference 1 */}
+                      <div className="card bg-base-100 shadow-xl">
+                        <div className="card-body">
+                          <h4 className="card-title text-lg mb-4">Conference 1 ({conferences.conference1.teams.length}/10)</h4>
+                          <div
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDropOnConference(e, 'conference1')}
+                            className="min-h-96 border-2 border-dashed border-base-300 rounded-lg p-4 space-y-3 bg-base-200/30"
+                          >
+                            {conferences.conference1.teams.length === 0 ? (
+                              <div className="flex items-center justify-center h-full text-base-content/40">
+                                <p className="text-center">Drag teams here</p>
+                              </div>
+                            ) : (
+                              conferences.conference1.teams.map((teamId) => {
+                                const team = teams.find(t => t.id === teamId);
+                                return team ? (
+                                  <div
+                                    key={teamId}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, team, 'conference1')}
+                                    className="card bg-success/20 border border-success/40 cursor-move hover:border-success/70 transition-colors"
+                                  >
+                                    <div className="card-body p-3 flex flex-row items-center justify-between">
+                                      <div className="flex-1">
+                                        <h5 className="card-title text-sm">{team.name}</h5>
+                                        <p className="text-xs text-base-content/60">Players: {team.playerIds?.length || 0}</p>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemoveFromConference('conference1', teamId)}
+                                        className="btn btn-ghost btn-xs btn-circle"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Conference 2 */}
+                      <div className="card bg-base-100 shadow-xl">
+                        <div className="card-body">
+                          <h4 className="card-title text-lg mb-4">Conference 2 ({conferences.conference2.teams.length}/10)</h4>
+                          <div
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDropOnConference(e, 'conference2')}
+                            className="min-h-96 border-2 border-dashed border-base-300 rounded-lg p-4 space-y-3 bg-base-200/30"
+                          >
+                            {conferences.conference2.teams.length === 0 ? (
+                              <div className="flex items-center justify-center h-full text-base-content/40">
+                                <p className="text-center">Drag teams here</p>
+                              </div>
+                            ) : (
+                              conferences.conference2.teams.map((teamId) => {
+                                const team = teams.find(t => t.id === teamId);
+                                return team ? (
+                                  <div
+                                    key={teamId}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, team, 'conference2')}
+                                    className="card bg-info/20 border border-info/40 cursor-move hover:border-info/70 transition-colors"
+                                  >
+                                    <div className="card-body p-3 flex flex-row items-center justify-between">
+                                      <div className="flex-1">
+                                        <h5 className="card-title text-sm">{team.name}</h5>
+                                        <p className="text-xs text-base-content/60">Players: {team.playerIds?.length || 0}</p>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemoveFromConference('conference2', teamId)}
+                                        className="btn btn-ghost btn-xs btn-circle"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+           </div>
+         )}
+
+         {/* Team Creation Modal */}
         {showTeamModal && (
           <div className="modal modal-open">
             <div className="modal-box max-w-2xl">
@@ -2433,9 +2793,10 @@ export default function AddPlayersTeams() {
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {editTeamForm.playerImages.map((image, index) => (
                           <div key={index} className="relative group">
-                            <img
+                            <OptimizedImage
                               src={image.url}
                               alt={`Player ${index + 1}`}
+                              type="playerPhoto"
                               className="w-full h-24 object-cover rounded-lg border border-base-300"
                             />
                             <button

@@ -25,10 +25,14 @@ export default function MatchDetails() {
       try {
         const tournamentsRef = collection(db, 'tournaments');
         const snapshot = await getDocs(tournamentsRef);
-        const tournamentsList = snapshot.docs.map(doc => ({
+        const allTournaments = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Filter out "HPL Clubs" tournament
+        const tournamentsList = allTournaments.filter(
+          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+        );
         setTournaments(tournamentsList);
         
         // Set first tournament as default if available

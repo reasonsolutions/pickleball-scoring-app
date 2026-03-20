@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug Club Admin Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #results {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    input {
+      padding: 8px;
+      width: 300px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .password-input {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .field {
+      margin-bottom: 15px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Debug Club Admin Login</h1>
+    
+    <div class="field">
+      <label for="emailInput">Email:</label>
+      <input type="text" id="emailInput" value="Abhimanrecspofit@gmail.com">
+    </div>
+    
+    <div class="field">
+      <label for="passwordInput">Password to test:</label>
+      <input type="password" id="passwordInput" placeholder="Enter your password">
+    </div>
+    
+    <button onclick="debugLogin()">Debug Login Process</button>
+    
+    <div id="results">Results will appear here after clicking the button above...</div>
+  </div>
+
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <!-- Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Initialize Firebase with your config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDFO4nUrgpBBydJoim9HFBLAOan94Bg7Fw",
+      authDomain: "pickleball-app-9ccf7.firebaseapp.com",
+      projectId: "pickleball-app-9ccf7",
+      storageBucket: "pickleball-app-9ccf7.firebasestorage.app",
+      messagingSenderId: "248577092150",
+      appId: "1:248577092150:web:fb1415679f016111c2c697",
+      measurementId: "G-6FRPZQJQ3B"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    
+    // Get a reference to the Firestore database
+    const db = firebase.firestore();
+
+    // Function to hash a string (using the same method as the login page)
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+
+    async function debugLogin() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = 'Debugging login process...';
+      
+      try {
+        const email = document.getElementById('emailInput').value.trim();
+        const passwordToTest = document.getElementById('passwordInput').value;
+        
+        let output = `DEBUGGING LOGIN FOR: ${email}\n\n`;
+        output += `1. EXAMINING EMAIL FORMAT\n`;
+        output += `   Original email: "${email}"\n`;
+        output += `   Lowercase email: "${email.toLowerCase()}"\n`;
+        
+        if (email !== email.toLowerCase()) {
+          output += `   ⚠️ NOTE: Email contains uppercase characters. Login process converts to lowercase.\n`;
+        }
+        
+        if (email.includes(' ')) {
+          output += `   ❌ ERROR: Email contains spaces which might cause issues.\n`;
+        }
+        
+        output += `\n2. CHECKING DATABASE FOR EMAIL (LOWERCASE SEARCH)\n`;
+        
+        // This is exactly what happens in the Logins.jsx handleLogin function
+        // We query the hpl-clubs collection with the lowercase version of the email
+        let clubsSnapshot = await db.collection('hpl-clubs')
+          .where('emailId', '==', email.toLowerCase())
+          .get();
+        
+        if (clubsSnapshot.empty) {
+          output += `   ❌ EMAIL NOT FOUND WITH LOWERCASE SEARCH\n`;
+          output += `   This explains the error: "No club admin found with this email address"\n\n`;
+          
+          // Try exact case
+          output += `3. CHECKING DATABASE FOR EMAIL (EXACT CASE SEARCH)\n`;
+          clubsSnapshot = await db.collection('hpl-clubs')
+            .where('emailId', '==', email)
+            .get();
+          
+          if (!clubsSnapshot.empty) {
+            output += `   ✅ FOUND WITH EXACT CASE! This indicates a case sensitivity issue.\n\n`;
+            output += `   Login system is looking for: "${email.toLowerCase()}"\n`;
+            output += `   But found in database as: "${email}"\n\n`;
+            
+            // Get the document data
+            clubsSnapshot.forEach(doc => {
+              const data = doc.data();
+              output += `   Document ID: ${doc.id}\n`;
+              output += `   Club Name: ${data.clubName || data.fullName || '(not set)'}\n`;
+              output += `   Email field in DB: "${data.emailId}"\n\n`;
+            });
+            
+            output += `   SOLUTION: Update the database to use the lowercase version of the email\n`;
+          } else {
+            output += `   ❌ EMAIL NOT FOUND WITH EXACT CASE EITHER\n\n`;
+            
+            // Check alternative fields
+            output += `4. CHECKING ALTERNATIVE EMAIL FIELDS\n`;
+            const alternativeFields = ['email', 'clubEmail', 'adminEmail', 'contactEmail'];
+            let foundInAlt = false;
+            
+            for (const field of alternativeFields) {
+              clubsSnapshot = await db.collection('hpl-clubs')
+                .where(field, '==', email.toLowerCase())
+                .get();
+              
+              if (!clubsSnapshot.empty) {
+                output += `   ✅ FOUND EMAIL IN FIELD '${field}' INSTEAD OF 'emailId'!\n\n`;
+                
+                clubsSnapshot.forEach(doc => {
+                  const data = doc.data();
+                  output += `   Document ID: ${doc.id}\n`;
+                  output += `   Club Name: ${data.clubName || data.fullName || '(not set)'}\n`;
+                  output += `   Field in DB: ${field}: "${data[field]}"\n\n`;
+                });
+                
+                output += `   SOLUTION: Login system looks for 'emailId' but found in '${field}'\n`;
+                output += `   Either update the database or modify the login code.\n`;
+                foundInAlt = true;
+                break;
+              }
+            }
+            
+            if (!foundInAlt) {
+              output += `   ❌ EMAIL NOT FOUND IN ANY ALTERNATIVE FIELDS\n\n`;
+              
+              // List similar emails
+              output += `5. LISTING ALL EMAILS IN DATABASE FOR COMPARISON\n`;
+              
+              clubsSnapshot = await db.collection('hpl-clubs').get();
+              
+              if (!clubsSnapshot.empty) {
+                output += `   Found ${clubsSnapshot.size} club records:\n\n`;
+                
+                let foundSimilar = false;
+                clubsSnapshot.forEach(doc => {
+                  const data = doc.data();
+                  if (data.emailId) {
+                    const similarity = calculateSimilarity(email.toLowerCase(), data.emailId.toLowerCase());
+                    const similarityIndicator = similarity > 0.8 ? '⚠️ SIMILAR' : '';
+                    
+                    output += `   - "${data.emailId}" (${doc.id}) ${similarityIndicator}\n`;
+                    
+                    if (similarity > 0.8 && similarity < 1) {
+                      foundSimilar = true;
+                    }
+                  } else {
+                    output += `   - Document ${doc.id} has no emailId field\n`;
+                  }
+                });
+                
+                if (foundSimilar) {
+                  output += `\n   ⚠️ Found similar emails. Check for typos or variations.\n`;
+                }
+              } else {
+                output += `   No club records found in the database.\n`;
+              }
+            }
+          }
+        } else {
+          output += `   ✅ EMAIL FOUND! The email exists with the expected case format.\n\n`;
+          
+          output += `3. CHECKING PASSWORD AND DOCUMENT FIELDS\n`;
+          
+          let hasPasswordField = false;
+          let hasClubNameField = false;
+          let documentId = '';
+          let storedPasswordHash = '';
+          
+          clubsSnapshot.forEach(doc => {
+            const data = doc.data();
+            documentId = doc.id;
+            
+            output += `   Document ID: ${doc.id}\n`;
+            output += `   Club Name: ${data.clubName || data.fullName || '(not set)'}\n\n`;
+            
+            hasPasswordField = !!data.password;
+            hasClubNameField = !!data.clubName || !!data.fullName;
+            
+            if (data.password) {
+              storedPasswordHash = data.password;
+              output += `   ✅ Password field exists\n`;
+            } else {
+              output += `   ❌ Password field is missing! This would prevent login.\n`;
+            }
+            
+            if (data.clubName || data.fullName) {
+              output += `   ✅ Club name field exists (${data.clubName ? 'clubName' : 'fullName'})\n`;
+            } else {
+              output += `   ❌ Both clubName and fullName fields are missing! This might cause issues.\n`;
+            }
+          });
+          
+          if (passwordToTest && storedPasswordHash) {
+            output += `\n4. TESTING PROVIDED PASSWORD\n`;
+            const hashedInputPassword = await hashPassword(passwordToTest);
+            
+            output += `   Input password hash: ${hashedInputPassword.substring(0, 10)}...\n`;
+            output += `   Stored password hash: ${storedPasswordHash.substring(0, 10)}...\n\n`;
+            
+            if (hashedInputPassword === storedPasswordHash) {
+              output += `   ✅ PASSWORD MATCHES! The provided password is correct.\n`;
+            } else {
+              output += `   ❌ PASSWORD DOES NOT MATCH. This would cause a login failure.\n`;
+              output += `   Error message would be: "Invalid password"\n`;
+            }
+          } else if (!passwordToTest) {
+            output += `\n4. NO PASSWORD PROVIDED FOR TESTING\n`;
+            output += `   Enter a password above to test if it matches the stored hash.\n`;
+          }
+          
+          // Overall assessment
+          output += `\n5. DIAGNOSIS SUMMARY\n`;
+          
+          if (hasPasswordField && hasClubNameField) {
+            output += `   ✅ The email exists and has all required fields.\n`;
+            
+            if (passwordToTest) {
+              if (await hashPassword(passwordToTest) === storedPasswordHash) {
+                output += `   ✅ The provided password is correct.\n`;
+                output += `   ✅ Login should work! If it's still failing, there might be an issue with the login code.\n`;
+                output += `      Try clearing browser cache or using a different browser.\n`;
+              } else {
+                output += `   ❌ The provided password is incorrect.\n`;
+                output += `   ❌ Login will fail with message: "Invalid password"\n`;
+              }
+            } else {
+              output += `   ⚠️ Enter your password above to test if it's correct.\n`;
+            }
+          } else {
+            output += `   ❌ The email exists but document is missing required fields.\n`;
+            
+            if (!hasPasswordField) {
+              output += `   ❌ Missing password field would prevent login.\n`;
+            }
+            
+            if (!hasClubNameField) {
+              output += `   ❌ Missing club name field might cause issues after login.\n`;
+            }
+          }
+        }
+        
+        resultsDiv.innerHTML = output;
+        
+      } catch (error) {
+        resultsDiv.innerHTML = `Error during debugging: ${error.message}\n\n${error.stack}`;
+      }
+    }
+    
+    // Calculate string similarity (Levenshtein distance based)
+    function calculateSimilarity(s1, s2) {
+      if (!s1 || !s2) return 0;
+      
+      const costs = [];
+      for (let i = 0; i <= s1.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= s2.length; j++) {
+          if (i === 0) {
+            costs[j] = j;
+          } else if (j > 0) {
+            let newValue = costs[j - 1];
+            if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+              newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+            }
+            costs[j - 1] = lastValue;
+            lastValue = newValue;
+          }
+        }
+        if (i > 0) costs[s2.length] = lastValue;
+      }
+      
+      // Return similarity as a value between 0 and 1
+      return 1 - (costs[s2.length] / Math.max(s1.length, s2.length));
+    }
+  </script>
+</body>
+</html>

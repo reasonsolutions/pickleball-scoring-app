@@ -304,16 +304,50 @@ export default function HplClubRules() {
               <span className="text-white font-bold text-lg">07</span>
             </div>
             <h2 className="text-orange-400 text-2xl md:text-3xl font-bold mb-6" style={{fontFamily: 'Avantique, sans-serif'}}>
-              7. TEAM COMPOSITION & PLAYER ELIGIBILITY
+              7. PLAYER ELIGIBILITY, CATEGORY PLACEMENT & SQUAD COMPOSITION
             </h2>
             <ul className="text-gray-300 space-y-2 mb-6 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-              <li>• Each club must field a squad of 10 players</li>
-              <li>• Players are selected only through the official platform process</li>
-              <li>• Only players with DUPR ≤ 4.2** at the time of intimation of the club league are eligible to apply</li>
-              <li>• Selection does not guarantee playing time — that remains a sporting decision</li>
+              <li>• Each squad must consist of exactly 10 players, of which a minimum of 3 must be women.</li>
+              <li>• Players with a DUPR rating of up to 4.200 are eligible to join clubs.</li>
+              <li>• The DUPR rating applicable for the tournament will be the rating recorded as of 31st January 2026.</li>
+              <li>• If a player has one DUPR rating at or below 4.200 and the other above 4.200 (Singles, Doubles), the player will only be eligible to compete in the category where their DUPR is 4.200 or below.</li>
+              <li>• Players with a Singles DUPR rating above 4.200 are not eligible to participate in the GameBreaker (the rotating player singles tie-breaker played in the event of a 3–3 tie).</li>
+              <li>• The GameBreaker will require six participating players, with at least two women being mandatory.</li>
+              <li>• Exceptions for player eligibility may be considered in cases where a player's DUPR reliability score is below 20 in any category. Eligibility requests may be submitted to info@centrecourt.ventures by the Player, Club Owner, or Manager. Approval of such requests rests solely at the League's discretion.</li>
             </ul>
-            <p className="text-gray-300 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-              **Subject to League's discretion. The eligibility will be a subject of the HPL Player index which is derived from DUPR (Ratings and Reliability)
+            
+            <h3 className="text-orange-300 text-xl font-bold mb-4" style={{fontFamily: 'Avantique, sans-serif'}}>
+              Duplicate DUPR Profiles – Zero-Tolerance Policy
+            </h3>
+            <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
+              We want to explicitly address an issue observed in the past:
+              Creating duplicate DUPR profiles to bypass eligibility rules.
+            </p>
+            <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
+              Please note:
+            </p>
+            <ul className="text-gray-300 space-y-2 mb-6 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
+              <li>• If any duplicate DUPR profiles are identified—or brought to the League's notice—the player will be immediately disqualified from the league and all subsequent HPL events for a period of 2 years from the date of disqualification.</li>
+              <li>• This rule is non-negotiable and will be enforced strictly.</li>
+              <li>• All 200 players included in the finalised squads will be verified for eligibility prior to Matchday 1.</li>
+              <li>• If any player is found to be ineligible, they will be removed from the squad, and a replacement will be randomly assigned by the League.</li>
+            </ul>
+            
+            <h3 className="text-orange-300 text-xl font-bold mb-4" style={{fontFamily: 'Avantique, sans-serif'}}>
+              Process for Raising Objections on Player Eligibility
+            </h3>
+            <ul className="text-gray-300 space-y-2 mb-6 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
+              <li>• All objections must be submitted in writing to info@centrecourt.ventures</li>
+              <li>• Objections raised will be reviewed and resolved before Matchday 1.</li>
+              <li>• Any objections raised thereafter will only be considered during the next available trading window.</li>
+            </ul>
+            
+            <p className="text-orange-400 font-semibold text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
+              We request all Club Owners to support us in maintaining a fair, transparent, and competitive league.
+              Uniform rules across all teams ensure a level playing field and help build the league we all want to be part of.
+            </p>
+            <p className="text-orange-400 font-semibold text-lg mt-2" style={{fontFamily: 'Avantique, sans-serif'}}>
+              Thank you for your cooperation and for helping us protect the integrity of the competition.
             </p>
           </div>
 

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Check Club Admin Email</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #results {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    input {
+      padding: 8px;
+      width: 300px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Check Club Admin Email</h1>
+    <div>
+      <input type="text" id="emailInput" placeholder="Enter email to check" value="abhimanrecspofit@gmail.com">
+      <button onclick="checkEmail()">Check Email</button>
+    </div>
+    <div id="results">Results will appear here...</div>
+  </div>
+
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <!-- Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Initialize Firebase with your config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDFO4nUrgpBBydJoim9HFBLAOan94Bg7Fw",
+      authDomain: "pickleball-app-9ccf7.firebaseapp.com",
+      projectId: "pickleball-app-9ccf7",
+      storageBucket: "pickleball-app-9ccf7.firebasestorage.app",
+      messagingSenderId: "248577092150",
+      appId: "1:248577092150:web:fb1415679f016111c2c697",
+      measurementId: "G-6FRPZQJQ3B"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    
+    // Get a reference to the Firestore database
+    const db = firebase.firestore();
+
+    async function checkEmail() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = 'Checking...';
+      
+      try {
+        // Get email from input
+        const emailToCheck = document.getElementById('emailInput').value.trim();
+        
+        let results = `Checking for email: ${emailToCheck}\n\n`;
+        
+        // Check the exact format as provided
+        let clubsSnapshot = await db.collection('hpl-clubs')
+          .where('emailId', '==', emailToCheck)
+          .get();
+        
+        if (!clubsSnapshot.empty) {
+          results += `✅ Found email '${emailToCheck}' exactly as provided\n`;
+          clubsSnapshot.forEach(doc => {
+            results += `Document ID: ${doc.id}\n`;
+            results += `Document data: ${JSON.stringify(doc.data(), null, 2)}\n\n`;
+          });
+        } else {
+          results += `❌ No match found for '${emailToCheck}' exactly as provided\n\n`;
+          
+          // Try with lowercase
+          const lowerCaseEmail = emailToCheck.toLowerCase();
+          
+          results += `Checking lowercase: ${lowerCaseEmail}\n`;
+          clubsSnapshot = await db.collection('hpl-clubs')
+            .where('emailId', '==', lowerCaseEmail)
+            .get();
+          
+          if (!clubsSnapshot.empty) {
+            results += `✅ Found email when converted to lowercase '${lowerCaseEmail}'\n`;
+            clubsSnapshot.forEach(doc => {
+              results += `Document ID: ${doc.id}\n`;
+              results += `Document data: ${JSON.stringify(doc.data(), null, 2)}\n\n`;
+            });
+          } else {
+            results += `❌ No match found for lowercase '${lowerCaseEmail}'\n\n`;
+            
+            // Check alternative field names that might contain email
+            const alternativeFields = ['email', 'clubEmail', 'adminEmail', 'contactEmail'];
+            let foundInAlternativeField = false;
+            
+            for (const field of alternativeFields) {
+              results += `Checking field '${field}'...\n`;
+              
+              clubsSnapshot = await db.collection('hpl-clubs')
+                .where(field, '==', emailToCheck)
+                .get();
+              
+              if (!clubsSnapshot.empty) {
+                results += `✅ Found email in field '${field}' instead of 'emailId'\n`;
+                clubsSnapshot.forEach(doc => {
+                  results += `Document ID: ${doc.id}\n`;
+                  results += `Document data: ${JSON.stringify(doc.data(), null, 2)}\n\n`;
+                });
+                foundInAlternativeField = true;
+                break;
+              }
+              
+              // Also try lowercase
+              clubsSnapshot = await db.collection('hpl-clubs')
+                .where(field, '==', lowerCaseEmail)
+                .get();
+              
+              if (!clubsSnapshot.empty) {
+                results += `✅ Found lowercase email in field '${field}' instead of 'emailId'\n`;
+                clubsSnapshot.forEach(doc => {
+                  results += `Document ID: ${doc.id}\n`;
+                  results += `Document data: ${JSON.stringify(doc.data(), null, 2)}\n\n`;
+                });
+                foundInAlternativeField = true;
+                break;
+              }
+            }
+            
+            if (!foundInAlternativeField) {
+              // List all club documents to see what's available
+              results += `\nListing all documents in hpl-clubs collection for reference:\n\n`;
+              
+              const allClubsSnapshot = await db.collection('hpl-clubs').get();
+              
+              if (!allClubsSnapshot.empty) {
+                results += `Found ${allClubsSnapshot.size} documents in hpl-clubs collection\n`;
+                
+                allClubsSnapshot.forEach(doc => {
+                  const data = doc.data();
+                  results += `Document ID: ${doc.id}\n`;
+                  
+                  // Check for email fields specifically
+                  for (const [key, value] of Object.entries(data)) {
+                    if (typeof value === 'string' && value.includes('@')) {
+                      results += `  Field '${key}': ${value} (contains an email)\n`;
+                    }
+                  }
+                  
+                  // Limit what we display to avoid overwhelming output
+                  if (data.emailId) {
+                    results += `  emailId: ${data.emailId}\n`;
+                  }
+                  if (data.clubName) {
+                    results += `  clubName: ${data.clubName}\n`;
+                  }
+                  results += `  Fields: ${Object.keys(data).join(', ')}\n\n`;
+                });
+              } else {
+                results += "The hpl-clubs collection appears to be empty\n";
+              }
+            }
+          }
+        }
+        
+        resultsDiv.innerHTML = results;
+        
+      } catch (error) {
+        resultsDiv.innerHTML = `Error checking email: ${error.message}\n\n${error.stack}`;
+      }
+    }
+  </script>
+</body>
+</html>

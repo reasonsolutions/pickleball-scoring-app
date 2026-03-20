@@ -31,10 +31,15 @@ export const fetchTournamentsOptimized = async () => {
   console.log('🔥 Fetching tournaments from Firebase');
   const tournamentsRef = collection(db, 'tournaments');
   const snapshot = await getDocs(tournamentsRef);
-  const tournaments = snapshot.docs.map(doc => ({
+  const allTournaments = snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   }));
+  
+  // Filter out "HPL Clubs" tournament
+  const tournaments = allTournaments.filter(
+    tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+  );
 
   dataCache.set(cacheKey, tournaments, 'tournaments');
   return tournaments;

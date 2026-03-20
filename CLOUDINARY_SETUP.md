@@ -27,9 +27,10 @@
 
 ### Step 2: Verify Configuration
 Your current Cloudinary credentials are already configured:
-- **Cloud Name**: `dnfcybtnn`
-- **API Key**: `286571998287272`
-- **Secret Key**: `8vzJDzIyxf9S9WxqEH9Enegy26o`
+- **Cloud Name**: `dchlpsvwh`
+- **API Key**: `177176766543861`
+- **Secret Key**: `lPyZYWStoPEby5WRgPBag370sMQ`
+- **API Environment Variable**: `CLOUDINARY_URL=cloudinary://177176766543861:lPyZYWStoPEby5WRgPBag370sMQ@dchlpsvwh`
 
 ## Features Implemented
 

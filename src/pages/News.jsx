@@ -4,6 +4,7 @@ import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NewHomeNavbar from '../components/NewHomeNavbar';
 import Footer from '../components/Footer';
+import OptimizedImage from '../components/OptimizedImage';
 
 export default function News() {
   const [news, setNews] = useState([]);
@@ -35,10 +36,14 @@ export default function News() {
       try {
         const tournamentsRef = collection(db, 'tournaments');
         const snapshot = await getDocs(tournamentsRef);
-        const tournamentsList = snapshot.docs.map(doc => ({
+        const allTournaments = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Filter out "HPL Clubs" tournament
+        const tournamentsList = allTournaments.filter(
+          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+        );
         setTournaments(tournamentsList);
         
         if (tournamentsList.length > 0) {
@@ -359,9 +364,10 @@ export default function News() {
                   >
                     {(article.featuredImage?.url || article.featuredImage) && (
                       <div className="aspect-video w-full overflow-hidden">
-                        <img
+                        <OptimizedImage
                           src={article.featuredImage?.url || article.featuredImage}
                           alt={article.title}
+                          type="featured"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading={isInstagramBrowser ? "eager" : "lazy"}
                           onError={(e) => {
@@ -419,9 +425,10 @@ export default function News() {
                   >
                     {(article.featuredImage?.url || article.featuredImage) && (
                       <div className="aspect-video w-full overflow-hidden">
-                        <img
+                        <OptimizedImage
                           src={article.featuredImage?.url || article.featuredImage}
                           alt={article.title}
+                          type="featured"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading={isInstagramBrowser ? "eager" : "lazy"}
                           onError={(e) => {
