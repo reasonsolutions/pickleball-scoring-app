@@ -4,6 +4,8 @@ import { collection, query, where, onSnapshot, getDocs, orderBy } from 'firebase
 import { db } from '../utils/firebase';
 import NewHomeNavbar from '../components/NewHomeNavbar';
 import Footer from '../components/Footer';
+import { AnimatedMarqueeHero } from '../components/ui/hero-3';
+import { FloatingLogosBackground } from '../components/ui/floating-logos-background';
 import {
   fetchTournamentsOptimized,
   fetchMinimalTournamentData,
@@ -23,6 +25,23 @@ import hplLogo from '../assets/hpl_logo.png';
 import hplClubsLogo from '../assets/hplclubs_logo.png';
 import clubOwnerImage from '../assets/hplclubs/clubowner.png';
 import clubsPlayerImage from '../assets/hplclubs/clubsplayer.jpeg';
+import praneethImage from '../assets/Praneeth.png';
+
+// Import clubs-hero images
+import clubsHero1 from '../assets/clubs-hero/hero1.png';
+import clubsHero2 from '../assets/clubs-hero/hero2.png';
+import clubsHero3 from '../assets/clubs-hero/hero3.png';
+import clubsHero4 from '../assets/clubs-hero/hero4.png';
+
+// Import team logos
+import allstarsLogo from '../assets/allstars.png';
+import bagel from '../assets/bagel_brigade.png';
+import challenger from '../assets/challenger.png';
+import dasos from '../assets/dasos.png';
+import mavericks from '../assets/mavericks.png';
+import nandi from '../assets/nandi.png';
+import raptors from '../assets/raptors.png';
+import teramor from '../assets/teramor.png';
 
 export default function HplClubs() {
   // Add font styles
@@ -66,9 +85,31 @@ export default function HplClubs() {
   const [featuredArticles, setFeaturedArticles] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentVideoSlide, setCurrentVideoSlide] = useState(0);
+  const [clubLogos, setClubLogos] = useState([]);
   
   // Ref for player photo caching
   const playerPhotoMapRef = useRef({});
+
+  // Fetch club logos for floating background
+  useEffect(() => {
+    const fetchClubLogos = async () => {
+      try {
+        const clubsQuery = query(
+          collection(db, 'hpl-clubs'),
+          where('status', '==', 'active')
+        );
+        const querySnapshot = await getDocs(clubsQuery);
+        const logos = querySnapshot.docs
+          .map(doc => doc.data().teamLogo?.url)
+          .filter(logo => logo && logo.trim() !== '');
+        setClubLogos(logos);
+      } catch (error) {
+        console.error('Error fetching club logos:', error);
+      }
+    };
+
+    fetchClubLogos();
+  }, []);
 
   // Fetch tournaments with caching
   useEffect(() => {
@@ -430,12 +471,62 @@ export default function HplClubs() {
     setCurrentVideoSlide(index);
   };
 
+  // Hero section images - from clubs-hero folder
+  const HERO_IMAGES = [
+    clubsHero1,
+    clubsHero2,
+    clubsHero3,
+    clubsHero4,
+    clubsHero1,
+    clubsHero2,
+    clubsHero3,
+    clubsHero4,
+  ];
+
+  // Team logos for floating background
+  const TEAM_LOGOS = [
+    allstarsLogo,
+    bagel,
+    challenger,
+    dasos,
+    mavericks,
+    nandi,
+    raptors,
+    teramor,
+  ];
+
   return (
     <div className="league-home min-h-screen" style={{backgroundColor: '#212121'}}>
       {/* Inject font styles */}
       <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
       {/* Navigation */}
       <NewHomeNavbar />
+
+      {/* Hero Section with Floating Logos Background */}
+      <div className="relative">
+        {clubLogos.length > 0 && <FloatingLogosBackground logos={clubLogos} opacity={0.3} />}
+        <AnimatedMarqueeHero
+          tagline=""
+          title={
+            <>
+              Home of
+              <br />
+              HPL Clubs
+            </>
+          }
+          description={
+            <div className="flex flex-col items-center gap-6">
+              <span className="text-lg md:text-xl font-semibold text-gray-300">Sponsored by</span>
+              <img src={praneethImage} alt="Praneeth" className="h-24 md:h-40 lg:h-48 object-contain" />
+            </div>
+          }
+          buttons={[
+            { text: "Read Rules", href: "/hpl-club-rules", variant: "primary" },
+            { text: "Sign Up as Player", href: "/hpl-player-registration", variant: "secondary" }
+          ]}
+          images={HERO_IMAGES}
+        />
+      </div>
 
       {/* Club Information Section */}
       <div className="py-8 sm:py-12">

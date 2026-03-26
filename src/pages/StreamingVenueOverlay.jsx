@@ -14,24 +14,7 @@ import nandiLogo from '../assets/nandi.png';
 import teramorLogo from '../assets/teramor.png';
 import raptorsLogo from '../assets/raptors.png';
 import clubLeagueLogo from '../assets/clubleaguelogo.png';
-
-// Status badge icons
-const StatusBadge = ({ status }) => {
-  const statusConfig = {
-    scheduled: { bg: 'bg-blue-600', text: 'text-white', label: 'Scheduled' },
-    'in-progress': { bg: 'bg-green-600', text: 'text-white', label: 'Live' },
-    completed: { bg: 'bg-gray-600', text: 'text-white', label: 'Completed' },
-    paused: { bg: 'bg-yellow-600', text: 'text-white', label: 'Paused' }
-  };
-  
-  const config = statusConfig[status] || statusConfig.scheduled;
-  
-  return (
-    <span className={`${config.bg} ${config.text} px-2 py-1 rounded text-xs font-bold`}>
-      {config.label}
-    </span>
-  );
-};
+import praneethLogo from '../assets/Praneeth.png';
 
 export default function StreamingVenueOverlay() {
    const { venueId: venueName, tournamentId } = useParams();
@@ -50,6 +33,9 @@ export default function StreamingVenueOverlay() {
    const [playerCardTimer, setPlayerCardTimer] = useState(null);
    const [pointTicker, setPointTicker] = useState(null);
    const [previousScores, setPreviousScores] = useState({ player1: 0, player2: 0 });
+   const [hasCompletedMatches, setHasCompletedMatches] = useState(false);
+   const [showPraneethLogo, setShowPraneethLogo] = useState(false);
+   const [logoFlip, setLogoFlip] = useState(false);
    
    // Use refs to track previous scores without recreating listener
    const previousScoresRef = useRef({ player1: 0, player2: 0 });
@@ -69,6 +55,19 @@ export default function StreamingVenueOverlay() {
     'Teramor Titans': teramorLogo,
     'Raptors': raptorsLogo
   };
+
+  // Logo rotation effect - toggle every 30 seconds with flip animation
+  useEffect(() => {
+    const logoInterval = setInterval(() => {
+      setLogoFlip(true);
+      setTimeout(() => {
+        setShowPraneethLogo(prev => !prev);
+        setLogoFlip(false);
+      }, 300); // Half of the flip animation duration
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(logoInterval);
+  }, []);
 
   // Fetch all matches for this venue (initial load only)
   useEffect(() => {
@@ -369,32 +368,73 @@ export default function StreamingVenueOverlay() {
     return () => {
       unsubscribers.forEach(unsubscribe => unsubscribe());
     };
-  }, [currentMatchIndex, matches.length]);
+  }, [matches.length]);
 
   // Find and set the active match whenever matches change
   useEffect(() => {
     if (matches.length === 0) return;
 
-    // Find the first match that is in-progress (not scheduled and not completed)
-    const activeMatchIndex = matches.findIndex(match =>
-      match.status && match.status !== 'scheduled' && match.status !== 'completed'
+    // Get today's date for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if there are any completed matches for TODAY ONLY
+    const completedTodayCount = matches.filter(match => {
+      if (match.status !== 'completed') return false;
+      
+      // Check if match date is today
+      const matchDate = match.date?.toDate ? match.date.toDate() : new Date(match.date);
+      matchDate.setHours(0, 0, 0, 0);
+      
+      return matchDate.getTime() === today.getTime();
+    }).length;
+    
+    const hasCompletedToday = completedTodayCount > 0;
+    setHasCompletedMatches(hasCompletedToday);
+
+    let newIndex = 0;
+
+    // Priority 1: Find the first in-progress/live match (regardless of completed status)
+    const liveMatchIndex = matches.findIndex(match =>
+      match.status === 'in-progress' || match.status === 'live'
     );
+
+    if (liveMatchIndex !== -1) {
+      // Found a live match - display it
+      newIndex = liveMatchIndex;
+    } else if (hasCompletedToday) {
+      // No live match, but there are completed matches TODAY
+      // Find first match that is not scheduled and not completed
+      const activeMatchIndex = matches.findIndex(match =>
+        match.status && match.status !== 'scheduled' && match.status !== 'completed'
+      );
+      
+      if (activeMatchIndex !== -1) {
+        newIndex = activeMatchIndex;
+      } else {
+        // Find first scheduled match
+        const scheduledIndex = matches.findIndex(match => match.status === 'scheduled');
+        newIndex = scheduledIndex !== -1 ? scheduledIndex : 0;
+      }
+    } else {
+      // No completed matches today and no live match - show the first scheduled match (about to start)
+      const scheduledIndex = matches.findIndex(match => match.status === 'scheduled');
+      newIndex = scheduledIndex !== -1 ? scheduledIndex : 0;
+    }
 
     console.log('Checking for active match:', {
       totalMatches: matches.length,
-      activeMatchIndex,
+      completedTodayCount,
+      hasCompletedToday,
+      liveMatchIndex,
+      newIndex,
       matchStatuses: matches.map((m, i) => ({ index: i, status: m.status }))
     });
-
-    // If no active match found, default to the first match
-    const newIndex = activeMatchIndex !== -1 ? activeMatchIndex : 0;
     
-    // Only update if the active match index changed
-    if (newIndex !== currentMatchIndex) {
-      console.log('Switching to match index:', newIndex);
-      setCurrentMatchIndex(newIndex);
-    }
-  }, [matches, currentMatchIndex]);
+    // Always update to the new index
+    console.log('Switching to match index:', newIndex);
+    setCurrentMatchIndex(newIndex);
+  }, [matches]);
 
   const getTeamLogo = (teamKey) => {
     if (teams[teamKey]) {
@@ -519,13 +559,21 @@ export default function StreamingVenueOverlay() {
 
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden">
-      {/* Club League Logo - Top Right */}
+      {/* Club League Logo - Top Right with rotation */}
       <div className="absolute top-4 right-4 z-40">
-        <img
-          src={clubLeagueLogo}
-          alt="Club League"
-          className="h-28 w-auto object-contain"
-        />
+        <div
+          className={`transition-transform duration-600 ${logoFlip ? 'scale-x-0' : 'scale-x-100'}`}
+          style={{
+            transformOrigin: 'center',
+            transformStyle: 'preserve-3d'
+          }}
+        >
+          <img
+            src={showPraneethLogo ? praneethLogo : clubLeagueLogo}
+            alt={showPraneethLogo ? 'Praneeth' : 'Club League'}
+            className="h-28 w-auto object-contain"
+          />
+        </div>
       </div>
 
       {/* Score Display and Venue - Top Left Corner */}
@@ -533,11 +581,22 @@ export default function StreamingVenueOverlay() {
         <div className="flex flex-col space-y-0 w-96">
           {/* Match Info Header */}
           <div className="flex items-center space-x-0 mb-0">
-            <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider bg-black px-2 py-1 border-2 border-orange-500 font-danson">
-              Match {currentMatch.matchNumber || 1}
-            </div>
-            <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-2 py-1 shadow-lg border-2 border-orange-400 text-xs sm:text-sm font-bold font-danson">
-              {(currentMatch.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : currentMatch.matchTypeLabel) || currentMatch.matchType || 'Match'}
+            {(currentMatch.status === 'in-progress' || currentMatch.status === 'live') && (
+              <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider bg-black px-2 py-1 border-2 border-orange-500 font-danson">
+                Match {currentMatch.matchNumber || 1}
+              </div>
+            )}
+            <div className={`text-white px-2 py-1 shadow-lg border-2 text-xs sm:text-sm font-bold font-danson ${
+              !hasCompletedMatches && currentMatch.status !== 'in-progress' && currentMatch.status !== 'live'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 border-blue-400'
+                : 'bg-gradient-to-r from-orange-600 to-orange-700 border-orange-400'
+            }`}>
+              {currentMatch.status === 'in-progress' || currentMatch.status === 'live'
+                ? (currentMatch.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : currentMatch.matchTypeLabel) || currentMatch.matchType || 'Match'
+                : hasCompletedMatches
+                ? 'Waiting on Next Match'
+                : 'About to Start'
+              }
             </div>
           </div>
 

@@ -532,8 +532,8 @@ export default function AddFixtures() {
       await updateDoc(doc(db, 'fixtures', editingFixture.id), updatedFixture);
       console.log('✅ DEBUG: Fixture saved successfully');
       
-      // Update all matches in this fixture group with the same court, time, and playingTime values
-      if ((editForm.court || editForm.time || editForm.playingTime) && editingFixture.fixtureGroupId) {
+      // Update all matches in this fixture group with the same court, time, playingTime, and venue values
+      if ((editForm.court || editForm.time || editForm.playingTime || editForm.venue) && editingFixture.fixtureGroupId) {
         try {
           // Query all matches in the same fixture group
           const fixtureGroupQuery = query(
@@ -544,8 +544,21 @@ export default function AddFixtures() {
           const fixtureGroupSnapshot = await getDocs(fixtureGroupQuery);
           const batch = writeBatch(db);
           
+          // Get venue details if venue was changed
+          let venueDetails = null;
+          if (editForm.venue) {
+            const selectedVenue = venues.find(v => v.id === editForm.venue);
+            if (selectedVenue) {
+              venueDetails = {
+                facilityId: selectedVenue.facilityId || '',
+                venueName: selectedVenue.name || '',
+                venueCourtId: selectedVenue.courtId || ''
+              };
+            }
+          }
+          
           fixtureGroupSnapshot.docs.forEach((docSnapshot) => {
-            // Update each match in the fixture group with the court value, time, and YouTube Live Link
+            // Update each match in the fixture group with the court value, time, playingTime, and venue details
             const updateData = {
               updatedAt: serverTimestamp()
             };
@@ -570,12 +583,21 @@ export default function AddFixtures() {
               updateData.youtubeLink = editForm.youtubeLiveLink;
             }
             
+            // Add venue details if venue was changed
+            if (editForm.venue && venueDetails) {
+              updateData.venue = editForm.venue;
+              updateData.facilityId = venueDetails.facilityId;
+              updateData.venueName = venueDetails.venueName;
+              updateData.venueCourtId = venueDetails.venueCourtId;
+            }
+            
             batch.update(docSnapshot.ref, updateData);
           });
           
           await batch.commit();
+          console.log('✅ DEBUG: All matches in fixture group updated successfully');
         } catch (batchError) {
-          console.error('Error updating fixture group matches with court and time:', batchError);
+          console.error('Error updating fixture group matches with court, time, and venue:', batchError);
           // Don't fail the main update if batch update fails
         }
       }

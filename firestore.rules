@@ -291,6 +291,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
+    // Clutch Analytics collection rules - for player matchmaking data from Clutch Sports
+    match /clutch-analytics/{fixtureId} {
+      // Allow public read access for clutch analytics data
+      allow read: if true;
+      
+      // Allow authenticated users to create and update clutch analytics data
+      allow create, update: if request.auth != null;
+      
+      // Allow deleting only by authenticated users
+      allow delete: if request.auth != null;
+    }
+    
     // Function to validate clubs player data structure
     function isValidClubsPlayerData(data) {
       return data.keys().hasAll(['fullName', 'mobileNumber', 'emailId', 'password', 'gender', 'dateOfBirth', 'singlesRating', 'doublesRating', 'singlesReliabilityScore', 'doublesReliabilityScore', 'whyPickYou', 'leagueCommitment', 'registrationFee']) &&
