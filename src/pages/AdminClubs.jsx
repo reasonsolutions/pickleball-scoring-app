@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { collection, getDocs, query, orderBy, doc, updateDoc, where, addDoc, serverTimestamp, writeBatch, increment } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, where, addDoc, serverTimestamp, writeBatch, increment, deleteDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import MainLayout from '../components/MainLayout';
 import googleSheetsService from '../services/googleSheetsService';
@@ -38,6 +38,8 @@ export default function AdminClubs() {
   const [allPlayerInterests, setAllPlayerInterests] = useState([]); // Store all interests for filtering
   const [recruitmentRequests, setRecruitmentRequests] = useState([]);
   const [interestActionLoading, setInterestActionLoading] = useState({});
+  const [showDeleteAllInterestsModal, setShowDeleteAllInterestsModal] = useState(false);
+  const [deleteAllLoading, setDeleteAllLoading] = useState(false);
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(30);
@@ -1017,6 +1019,45 @@ export default function AdminClubs() {
       alert('Failed to reject player interest');
     } finally {
       setInterestActionLoading(prev => ({ ...prev, [interestId]: null }));
+    }
+  };
+
+  // Handle delete all player interests
+  const handleDeleteAllPlayerInterests = async () => {
+    setDeleteAllLoading(true);
+    try {
+      // Get all player interests
+      const interestsQuery = query(
+        collection(db, 'player-interests')
+      );
+      const interestsSnapshot = await getDocs(interestsQuery);
+      
+      if (interestsSnapshot.empty) {
+        alert('No player interests to delete');
+        setShowDeleteAllInterestsModal(false);
+        setDeleteAllLoading(false);
+        return;
+      }
+
+      // Delete all interests using batch
+      const batch = writeBatch(db);
+      interestsSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+
+      // Update local state
+      setAllPlayerInterests([]);
+      setPlayerInterests([]);
+      setInterestsPage(1);
+
+      alert(`Successfully deleted ${interestsSnapshot.size} player interest(s)`);
+      setShowDeleteAllInterestsModal(false);
+    } catch (error) {
+      console.error('Error deleting all player interests:', error);
+      alert('Failed to delete player interests');
+    } finally {
+      setDeleteAllLoading(false);
     }
   };
 
@@ -2258,6 +2299,16 @@ export default function AdminClubs() {
                         Manage player interests and club recruitment requests
                       </p>
                     </div>
+                    <button
+                      onClick={() => setShowDeleteAllInterestsModal(true)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm flex items-center"
+                      title="Delete all player interests"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete all players interests
+                    </button>
                   </div>
                 </div>
                 
@@ -3633,6 +3684,58 @@ export default function AdminClubs() {
                     Removing...
                   </>
                 ) : 'Remove Player'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete All Player Interests Confirmation Modal */}
+      {showDeleteAllInterestsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Delete All Player Interests</h3>
+              <button
+                onClick={() => setShowDeleteAllInterestsModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-white mb-4">
+                Are you sure you want to delete all player interests? This action cannot be undone.
+              </p>
+              <p className="text-red-400 text-sm mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                This will permanently delete all {allPlayerInterests.length} player interest record(s).
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowDeleteAllInterestsModal(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllPlayerInterests}
+                disabled={deleteAllLoading}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleteAllLoading ? (
+                  <>
+                    <span className="inline-block mr-2 animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></span>
+                    Deleting...
+                  </>
+                ) : 'Delete All'}
               </button>
             </div>
           </div>

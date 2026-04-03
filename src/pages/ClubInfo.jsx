@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NewHomeNavbar from '../components/NewHomeNavbar';
@@ -15,6 +15,7 @@ import AvantiqueSemiboldFont from '../assets/fonts/Avantique/Avantique-Semibold.
 
 export default function ClubInfo() {
   const { clubId } = useParams();
+  const navigate = useNavigate();
   const [clubData, setClubData] = useState(null);
   const [clubPlayers, setClubPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -355,7 +356,11 @@ export default function ClubInfo() {
               const photoUrl = player.photoUrl || player.photo?.url;
               
               return (
-                <div key={player.id} className="bg-gray-800 rounded-xl overflow-hidden group">
+                <div
+                  key={player.id}
+                  className="bg-gray-800 rounded-xl overflow-hidden group cursor-pointer hover:shadow-2xl transition-shadow duration-300"
+                  onClick={() => navigate(`/club-info/${clubId}/player-stats/${player.id}`)}
+                >
                   {/* Player Image with Hover Effect */}
                   <div className="aspect-square bg-gray-700 relative overflow-hidden flex items-center justify-center">
                     {photoUrl ? (

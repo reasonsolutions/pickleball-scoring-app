@@ -21,7 +21,8 @@ export default function NewHomeNavbar() {
       '/hpl-player-registration',
       '/clubs',
       '/clubs-results',
-      '/clubs-table'
+      '/clubs-table',
+      '/download-team-logos'
     ];
     
     // Check exact paths and also club/player profile pages

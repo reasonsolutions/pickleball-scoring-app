@@ -25,6 +25,7 @@ export default function FixtureAnalytics() {
   const [playerSelections, setPlayerSelections] = useState({});
   const [savingData, setSavingData] = useState(false);
   const [playerImageIndices, setPlayerImageIndices] = useState({});
+  const [matchingDoneStatus, setMatchingDoneStatus] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +77,19 @@ export default function FixtureAnalytics() {
         // Sort by match number
         fixturesData.sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
         setMatches(fixturesData);
+
+        // Check matching status for all matches asynchronously
+        const checkAllMatchingStatus = async () => {
+          const matchingStatus = {};
+          for (const match of fixturesData) {
+            const isDone = await checkMatchingDone(match.id);
+            matchingStatus[match.id] = isDone;
+            console.log(`Match ${match.id}: Matching Done = ${isDone}`);
+          }
+          console.log('Final matching status:', matchingStatus);
+          setMatchingDoneStatus(matchingStatus);
+        };
+        checkAllMatchingStatus().catch(err => console.error('Error checking matching status:', err));
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -220,6 +234,16 @@ export default function FixtureAnalytics() {
     return { found: false, status: 'Data Not Found' };
   };
 
+  const checkMatchingDone = async (matchId) => {
+    try {
+      const clutchAnalyticsDoc = await getDoc(doc(db, 'clutch-analytics', matchId));
+      return clutchAnalyticsDoc.exists();
+    } catch (error) {
+      console.error('Error checking matching status:', error);
+      return false;
+    }
+  };
+
   const handleOpenPlayerMatchmaking = async (match) => {
     try {
       const video = clutchData.videos.find(v => v.recording_id === match.recording_id);
@@ -358,7 +382,9 @@ export default function FixtureAnalytics() {
       'Team B': getTeamName(match.team2),
       'Team B Player(s)': getPlayersList(match.player1Team2, match.player2Team2),
       'Score': formatScore(match),
-      'Recording ID': match.recording_id || '-'
+      'Recording ID': match.recording_id || '-',
+      'Data Found': match.recording_id ? (getDataFoundStatus(match.recording_id).found ? 'Yes' : 'No') : '-',
+      'Matching Done?': matchingDoneStatus[match.id] ? 'Yes' : 'No'
     }));
 
     // Create workbook and worksheet
@@ -376,7 +402,9 @@ export default function FixtureAnalytics() {
       { wch: 20 },
       { wch: 25 },
       { wch: 20 },
-      { wch: 36 }
+      { wch: 36 },
+      { wch: 12 },
+      { wch: 15 }
     ];
 
     // Generate filename with tournament name and date
@@ -515,13 +543,14 @@ export default function FixtureAnalytics() {
                   </th>
                   <th>Recording ID</th>
                   <th>Data Found</th>
+                  <th>Matching Done?</th>
                   <th>Player Matchmaking</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedMatches.length === 0 ? (
                   <tr>
-                    <td colSpan="11" className="text-center py-8 text-base-content/50">
+                    <td colSpan="12" className="text-center py-8 text-base-content/50">
                       {searchTerm ? 'No matches found matching your search' : 'No matches available'}
                     </td>
                   </tr>
@@ -556,6 +585,13 @@ export default function FixtureAnalytics() {
                           ) : (
                             <span className="badge badge-outline">Data Not Found</span>
                           )
+                        ) : (
+                          <span className="text-base-content/30">-</span>
+                        )}
+                      </td>
+                      <td>
+                        {matchingDoneStatus[match.id] ? (
+                          <span className="text-2xl text-success">✓</span>
                         ) : (
                           <span className="text-base-content/30">-</span>
                         )}

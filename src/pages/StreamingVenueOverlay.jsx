@@ -417,9 +417,27 @@ export default function StreamingVenueOverlay() {
         newIndex = scheduledIndex !== -1 ? scheduledIndex : 0;
       }
     } else {
-      // No completed matches today and no live match - show the first scheduled match (about to start)
-      const scheduledIndex = matches.findIndex(match => match.status === 'scheduled');
-      newIndex = scheduledIndex !== -1 ? scheduledIndex : 0;
+      // No completed matches today and no live match
+      // Find the match closest to current date and time
+      const now = new Date();
+      let closestMatchIndex = 0;
+      let closestTimeDifference = Infinity;
+
+      matches.forEach((match, index) => {
+        const matchDate = match.date?.toDate ? match.date.toDate() : new Date(match.date);
+        const matchTime = match.time || '00:00';
+        const [hours, minutes] = matchTime.split(':').map(Number);
+        matchDate.setHours(hours, minutes, 0, 0);
+
+        const timeDifference = Math.abs(matchDate.getTime() - now.getTime());
+
+        if (timeDifference < closestTimeDifference) {
+          closestTimeDifference = timeDifference;
+          closestMatchIndex = index;
+        }
+      });
+
+      newIndex = closestMatchIndex;
     }
 
     console.log('Checking for active match:', {

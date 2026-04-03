@@ -3,33 +3,12 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
-import { getOptimizedUrlByType } from '../utils/imageOptimizationHelper';
 
 // Import background image
 import mainDisplayBg from '../assets/maindisplay.png';
 
-// Import team logos (keep these for team logos, not sponsor logos)
+// Import default paddle logo as fallback
 import paddleLogo from '../assets/paddle.png';
-import allstarsLogo from '../assets/allstars.png';
-import challengerLogo from '../assets/challenger.png';
-import dasosLogo from '../assets/dasos.png';
-import mavericksLogo from '../assets/mavericks.png';
-import nandiLogo from '../assets/nandi.png';
-import raptorsLogo from '../assets/raptors.png';
-import starrysmashersLogo from '../assets/starrysmashers.png';
-import keerthiLogo from '../assets/keerthi.png';
-import teramorLogo from '../assets/teramor.png';
-
-// Import bottom logos (keep these for now)
-import dasosWhiteBottom from '../assets/bottomlogos/dasos_white.png';
-import hisenseWhiteBottom from '../assets/bottomlogos/hisense_white.png';
-import keerthiWhiteBottom from '../assets/bottomlogos/keerthi_white.png';
-import musterWhiteBottom from '../assets/bottomlogos/muster_white.png';
-import priyaCementBottom from '../assets/bottomlogos/Priya_Cement.png';
-import sindhuWhiteBottom from '../assets/bottomlogos/sindhu_white.png';
-import sitharaWhiteBottom from '../assets/bottomlogos/Sithara_white.png';
-import skillTyroWhiteBottom from '../assets/bottomlogos/SkillTyro_white.png';
-import teramorWhiteBottom from '../assets/bottomlogos/teramor_white.png';
 
 export default function MainDisplay() {
   const { tournamentId, dateString } = useParams();
@@ -52,6 +31,9 @@ export default function MainDisplay() {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [imageTimer, setImageTimer] = useState(null);
   
+  // Team logos cache state
+  const [teamLogosCache, setTeamLogosCache] = useState({});
+  
   // Timeout timer state
   const [timeoutTimer, setTimeoutTimer] = useState(null);
   const [isTimeoutActive, setIsTimeoutActive] = useState(false);
@@ -69,6 +51,10 @@ export default function MainDisplay() {
   // Team logos state for DRS
   const [team1Logo, setTeam1Logo] = useState(null);
   const [team2Logo, setTeam2Logo] = useState(null);
+  
+  // Team logos state for main display
+  const [mainTeam1Logo, setMainTeam1Logo] = useState(null);
+  const [mainTeam2Logo, setMainTeam2Logo] = useState(null);
   
   // Use refs to avoid recreating callbacks and triggering re-subscriptions
   const centerCourtMatchesRef = useRef([]);
@@ -151,45 +137,44 @@ export default function MainDisplay() {
     return mediaItems[currentMediaIndex];
   }, [showAdsMedia, mediaItems, currentMediaIndex]);
 
-  // Function to get team logo based on team name
+  // Function to get team logo from cache
   const getTeamLogo = useCallback((teamName) => {
     if (!teamName) return paddleLogo;
     
-    const teamNameLower = teamName.toLowerCase();
-    const teamLogoMap = {
-      'allstars': allstarsLogo,
-      'all stars': allstarsLogo,
-      'challenger': challengerLogo,
-      'challengers': challengerLogo,
-      'dasos': dasosLogo,
-      'mavericks': mavericksLogo,
-      'maverick': mavericksLogo,
-      'nandi': nandiLogo,
-      'nandi chargers': nandiLogo,
-      'chargers': nandiLogo,
-      'raptors': raptorsLogo,
-      'raptor': raptorsLogo,
-      'starrysmashers': starrysmashersLogo,
-      'starry smashers': starrysmashersLogo,
-      'smashers': starrysmashersLogo,
-      'keerthi': keerthiLogo,
-      'teramor titans': teramorLogo,
-      'teramor': teramorLogo,
-      'titans': teramorLogo
-    };
-    
-    if (teamLogoMap[teamNameLower]) {
-      return teamLogoMap[teamNameLower];
+    // Return from cache if available
+    if (teamLogosCache[teamName]) {
+      return teamLogosCache[teamName];
     }
     
-    for (const [key, logo] of Object.entries(teamLogoMap)) {
-      if (teamNameLower.includes(key) || key.includes(teamNameLower)) {
-        return logo;
-      }
-    }
-    
+    // Return default if not in cache yet
     return paddleLogo;
-  }, []);
+  }, [teamLogosCache]);
+  
+  // Function to fetch team logo from Firestore
+  const fetchTeamLogo = useCallback(async (teamName) => {
+    if (!teamName || teamLogosCache[teamName]) return;
+    
+    try {
+      const teamsQuery = query(
+        collection(db, 'teams'),
+        where('name', '==', teamName)
+      );
+      const snapshot = await getDocs(teamsQuery);
+      
+      if (snapshot.docs.length > 0) {
+        const teamData = snapshot.docs[0].data();
+        const logoUrl = teamData.logo?.url || teamData.logoUrl || paddleLogo;
+        
+        // Cache the logo
+        setTeamLogosCache(prev => ({
+          ...prev,
+          [teamName]: logoUrl
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching team logo:', error);
+    }
+  }, [teamLogosCache]);
 
   // Helper function to determine if a match is singles or doubles
   const isDoublesMatch = useCallback((match) => {
@@ -543,37 +528,61 @@ export default function MainDisplay() {
     }
   }, [tournamentId, loadMediaItems]);
 
-  // Load display logos when component mounts
-  useEffect(() => {
-    const loadDisplayLogos = async () => {
-      if (!tournamentId) return;
-      
-      try {
-        const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
-        if (logosDoc.exists()) {
-          const data = logosDoc.data();
-          const topLogos = data.displayLogos || [];
-          const bottomLogosData = data.bottomLogos || [];
-          // Sort by rank to maintain order
-          const sortedTopLogos = topLogos.sort((a, b) => a.rank - b.rank);
-          const sortedBottomLogos = bottomLogosData.sort((a, b) => a.rank - b.rank);
-          setDisplayLogos(sortedTopLogos);
-          setBottomLogos(sortedBottomLogos);
-        } else {
-          setDisplayLogos([]);
-          setBottomLogos([]);
-        }
-      } catch (error) {
-        console.error('Error loading display logos:', error);
-        setDisplayLogos([]);
-        setBottomLogos([]);
-      }
-    };
+ // Load display logos when component mounts
+ useEffect(() => {
+   const loadDisplayLogos = async () => {
+     if (!tournamentId) return;
+     
+     try {
+       const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
+       if (logosDoc.exists()) {
+         const data = logosDoc.data();
+         const topLogos = data.displayLogos || [];
+         const bottomLogosData = data.bottomLogos || [];
+         // Sort by rank to maintain order
+         const sortedTopLogos = topLogos.sort((a, b) => a.rank - b.rank);
+         const sortedBottomLogos = bottomLogosData.sort((a, b) => a.rank - b.rank);
+         setDisplayLogos(sortedTopLogos);
+         setBottomLogos(sortedBottomLogos);
+       } else {
+         setDisplayLogos([]);
+         setBottomLogos([]);
+       }
+     } catch (error) {
+       console.error('Error loading display logos:', error);
+       setDisplayLogos([]);
+       setBottomLogos([]);
+     }
+   };
 
-    if (tournamentId) {
-      loadDisplayLogos();
-    }
-  }, [tournamentId]);
+   if (tournamentId) {
+     loadDisplayLogos();
+   }
+ }, [tournamentId]);
+
+ // Fetch team logos when live match changes
+ useEffect(() => {
+   if (!liveMatch) return;
+   
+   const fetchLogos = async () => {
+     if (liveMatch.team1Name) {
+       await fetchTeamLogo(liveMatch.team1Name);
+     }
+     if (liveMatch.team2Name) {
+       await fetchTeamLogo(liveMatch.team2Name);
+     }
+   };
+   
+   fetchLogos();
+ }, [liveMatch?.team1Name, liveMatch?.team2Name, fetchTeamLogo]);
+
+ // Update main team logos when cache changes
+ useEffect(() => {
+   if (liveMatch) {
+     setMainTeam1Logo(getTeamLogo(liveMatch.team1Name));
+     setMainTeam2Logo(getTeamLogo(liveMatch.team2Name));
+   }
+ }, [liveMatch, teamLogosCache, getTeamLogo]);
 
   // DRS video state listener - monitors live match for DRS video changes
   useEffect(() => {
@@ -996,19 +1005,19 @@ export default function MainDisplay() {
                   }).length}
                 </div>
                 <img
-                  src={getTeamLogo(currentFixture.team1Name)}
-                  alt={`${currentFixture.team1Name} Logo`}
-                  className="w-40 h-40 object-contain"
-                />
+                   src={mainTeam1Logo || paddleLogo}
+                   alt={`${currentFixture.team1Name} Logo`}
+                   className="w-40 h-40 object-contain"
+                 />
               </div>
               <div className="text-left">
-                <h3 className="text-2xl font-bold text-white mb-2">{currentFixture.team1Name}</h3>
-                <div className="text-lg text-orange-200 space-y-1">
+                <h3 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team1Name}</h3>
+                <div className="text-orange-200 space-y-1">
                   {liveMatch.player1Team1 && (
-                    <div className="font-medium">{liveMatch.player1Team1}</div>
+                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player1Team1}</div>
                   )}
                   {liveMatch.player2Team1 && (
-                    <div className="font-medium">{liveMatch.player2Team1}</div>
+                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player2Team1}</div>
                   )}
                 </div>
               </div>
@@ -1046,13 +1055,13 @@ export default function MainDisplay() {
             {/* Team 2 */}
             <div className="flex items-center space-x-8 flex-1 justify-end">
               <div className="text-right">
-                <h3 className="text-2xl font-bold text-white mb-2">{currentFixture.team2Name}</h3>
-                <div className="text-lg text-orange-200 space-y-1">
+                <h3 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team2Name}</h3>
+                <div className="text-orange-200 space-y-1">
                   {liveMatch.player1Team2 && (
-                    <div className="font-medium">{liveMatch.player1Team2}</div>
+                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player1Team2}</div>
                   )}
                   {liveMatch.player2Team2 && (
-                    <div className="font-medium">{liveMatch.player2Team2}</div>
+                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player2Team2}</div>
                   )}
                 </div>
               </div>
@@ -1066,10 +1075,10 @@ export default function MainDisplay() {
                   }).length}
                 </div>
                 <img
-                  src={getTeamLogo(currentFixture.team2Name)}
-                  alt={`${currentFixture.team2Name} Logo`}
-                  className="w-40 h-40 object-contain"
-                />
+                   src={mainTeam2Logo || paddleLogo}
+                   alt={`${currentFixture.team2Name} Logo`}
+                   className="w-40 h-40 object-contain"
+                 />
               </div>
             </div>
           </div>
@@ -1109,7 +1118,7 @@ export default function MainDisplay() {
                   
                   {/* Team 1 Section */}
                   <div className="mb-4">
-                    <div className="text-left text-orange-300 text-sm mb-2">{currentFixture.team1Name}</div>
+                    <div className="text-left text-orange-300 text-sm mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team1Name}</div>
                     <div className="flex justify-between items-center">
                       <div className="text-left">
                         <div className="text-white text-lg font-medium">
@@ -1141,7 +1150,7 @@ export default function MainDisplay() {
 
                   {/* Team 2 Section */}
                   <div>
-                    <div className="text-left text-orange-300 text-sm mb-2">{currentFixture.team2Name}</div>
+                    <div className="text-left text-orange-300 text-sm mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team2Name}</div>
                     <div className="flex justify-between items-center">
                       <div className="text-left">
                         <div className="text-white text-lg font-medium">
@@ -1179,10 +1188,7 @@ export default function MainDisplay() {
           {bottomLogos.map((logo, index) => (
             <img
               key={`${logo.id}-${index}`}
-              src={logo.url.includes('cloudinary.com')
-                ? getOptimizedUrlByType(logo.url, 'logo')
-                : logo.url
-              }
+              src={logo.url}
               alt={logo.name || `Logo ${index + 1}`}
               className="h-20 w-auto"
               onError={(e) => {

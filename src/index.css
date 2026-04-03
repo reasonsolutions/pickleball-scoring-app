@@ -21,6 +21,15 @@
   font-display: swap;
 }
 
+/* Load SATriumph Font */
+@font-face {
+  font-family: 'SATriumph';
+  src: url('./fonts/SATriumph.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Load Danson Font */
 @font-face {
   font-family: 'Danson';

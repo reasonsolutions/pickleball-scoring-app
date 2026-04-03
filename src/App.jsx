@@ -20,6 +20,7 @@ import ClubsResults from './pages/ClubsResults';
 import HplClubRegistration from './pages/HplClubRegistration';
 import HplPlayerRegistration from './pages/HplPlayerRegistration';
 import PlayerProfile from './pages/PlayerProfile';
+import PlayerStats from './pages/PlayerStats';
 import ClubProfile from './pages/ClubProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import MyTournaments from './pages/MyTournaments';
@@ -68,6 +69,7 @@ import FirebaseDebug from './pages/FirebaseDebug';
 import LogosManager from './pages/LogosManager';
 import CloudinaryTest from './pages/CloudinaryTest';
 import Players from './pages/Players';
+import DownloadTeamLogos from './pages/DownloadTeamLogos';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import RefundPolicy from './pages/RefundPolicy';
@@ -107,6 +109,8 @@ function App() {
                 <PlayerProfile />
               </UserProtectedRoute>
             } />
+            <Route path="/player-stats/:playerId" element={<PlayerStats />} />
+            <Route path="/club-info/:clubId/player-stats/:playerId" element={<PlayerStats />} />
             <Route path="/club-profile/:clubId" element={
               <UserProtectedRoute>
                 <ClubProfile />
@@ -114,6 +118,7 @@ function App() {
             } />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/clubs-table" element={<ClubsTable />} />
+            <Route path="/download-team-logos" element={<DownloadTeamLogos />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/:id" element={<NewsArticle />} />
