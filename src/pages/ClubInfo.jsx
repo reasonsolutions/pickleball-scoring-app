@@ -18,6 +18,7 @@ export default function ClubInfo() {
   const navigate = useNavigate();
   const [clubData, setClubData] = useState(null);
   const [clubPlayers, setClubPlayers] = useState([]);
+  const [formerPlayers, setFormerPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -51,6 +52,20 @@ export default function ClubInfo() {
         }));
         
         setClubPlayers(playersData);
+        
+        // Fetch former players for this club (players with former-club field matching clubId)
+        const formerPlayersQuery = query(
+          collection(db, 'clubs-players'),
+          where('former-club', '==', clubId)
+        );
+        
+        const formerPlayersSnapshot = await getDocs(formerPlayersQuery);
+        const formerPlayersData = formerPlayersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setFormerPlayers(formerPlayersData);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching club data:', error);
@@ -365,33 +380,33 @@ export default function ClubInfo() {
                   <div className="aspect-square bg-gray-700 relative overflow-hidden flex items-center justify-center">
                     {photoUrl ? (
                        <>
-                         <OptimizedImage
-                           src={photoUrl}
-                           alt={player.fullName}
-                          type="playerPhoto"
-                          responsive={true}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                        
-                        {/* DUPR Ratings Overlay (slides up on hover) */}
-                        <div className="absolute inset-0 bg-black/75 flex flex-col justify-center items-center text-white p-4 transition-transform duration-300 transform translate-y-full group-hover:translate-y-0">
-                          <div className="text-center">
-                            <h4 className="font-bold mb-2 text-lg" style={{ fontFamily: 'Avantique, sans-serif' }}>DUPR RATINGS</h4>
-                            <div className="flex justify-center space-x-4">
-                              <div>
-                                <p className="text-xs uppercase text-gray-400">Singles</p>
-                                <p className="text-2xl font-bold">{player.singlesRating || "N/A"}</p>
-                              </div>
-                              <div className="w-px h-12 bg-gray-600"></div>
-                              <div>
-                                <p className="text-xs uppercase text-gray-400">Doubles</p>
-                                <p className="text-2xl font-bold">{player.doublesRating || "N/A"}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
+                          <OptimizedImage
+                            src={photoUrl}
+                            alt={player.fullName}
+                           type="playerPhoto"
+                           responsive={true}
+                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                           loading="lazy"
+                         />
+                         
+                         {/* DUPR Ratings Overlay (slides up on hover) */}
+                         <div className="absolute inset-0 bg-black/75 flex flex-col justify-center items-center text-white p-4 transition-transform duration-300 transform translate-y-full group-hover:translate-y-0">
+                           <div className="text-center">
+                             <h4 className="font-bold mb-2 text-lg" style={{ fontFamily: 'Avantique, sans-serif' }}>DUPR RATINGS</h4>
+                             <div className="flex justify-center space-x-4">
+                               <div>
+                                 <p className="text-xs uppercase text-gray-400">Singles</p>
+                                 <p className="text-2xl font-bold">{player.singlesRating || "N/A"}</p>
+                               </div>
+                               <div className="w-px h-12 bg-gray-600"></div>
+                               <div>
+                                 <p className="text-xs uppercase text-gray-400">Doubles</p>
+                                 <p className="text-2xl font-bold">{player.doublesRating || "N/A"}</p>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <span className="text-6xl text-gray-500">👤</span>
@@ -419,6 +434,90 @@ export default function ClubInfo() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Former Players Section */}
+        {formerPlayers.length > 0 && (
+          <div className="mt-16">
+            {/* Former Players Section Heading */}
+            <div className="text-center mb-12">
+              <h2 className="text-5xl font-bold text-white mb-4" style={{ fontFamily: 'Avantique, sans-serif' }}>
+                FORMER PLAYERS
+              </h2>
+            </div>
+
+            {/* Former Players Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {formerPlayers.map((player) => {
+                // Get player photo URL
+                const photoUrl = player.photoUrl || player.photo?.url;
+                
+                return (
+                  <div
+                    key={player.id}
+                    className="bg-gray-800 rounded-xl overflow-hidden group cursor-pointer hover:shadow-2xl transition-shadow duration-300 opacity-75"
+                    onClick={() => navigate(`/club-info/${clubId}/player-stats/${player.id}`)}
+                  >
+                    {/* Player Image with Hover Effect */}
+                    <div className="aspect-square bg-gray-700 relative overflow-hidden flex items-center justify-center">
+                      {photoUrl ? (
+                         <>
+                          <OptimizedImage
+                            src={photoUrl}
+                            alt={player.fullName}
+                           type="playerPhoto"
+                           responsive={true}
+                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                           loading="lazy"
+                         />
+                         
+                         {/* DUPR Ratings Overlay (slides up on hover) */}
+                         <div className="absolute inset-0 bg-black/75 flex flex-col justify-center items-center text-white p-4 transition-transform duration-300 transform translate-y-full group-hover:translate-y-0">
+                           <div className="text-center">
+                             <h4 className="font-bold mb-2 text-lg" style={{ fontFamily: 'Avantique, sans-serif' }}>DUPR RATINGS</h4>
+                             <div className="flex justify-center space-x-4">
+                               <div>
+                                 <p className="text-xs uppercase text-gray-400">Singles</p>
+                                 <p className="text-2xl font-bold">{player.singlesRating || "N/A"}</p>
+                               </div>
+                               <div className="w-px h-12 bg-gray-600"></div>
+                               <div>
+                                 <p className="text-xs uppercase text-gray-400">Doubles</p>
+                                 <p className="text-2xl font-bold">{player.doublesRating || "N/A"}</p>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-6xl text-gray-500">👤</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Player Name & Team Logo */}
+                    <div className="p-4 flex items-center">
+                      {clubData.teamLogo && clubData.teamLogo.url && (
+                        <div className="w-8 h-8 mr-2">
+                          <OptimizedImage
+                            src={clubData.teamLogo.url}
+                            alt={clubData.proposedClubName}
+                            type="logoSmall"
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                      <h3 className="text-xl font-bold text-white uppercase" style={{ fontFamily: 'Avantique, sans-serif' }}>
+                        {player.fullName}
+                      </h3>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

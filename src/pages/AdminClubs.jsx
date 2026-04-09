@@ -24,6 +24,8 @@ export default function AdminClubs() {
   const [showRemoveConfirmModal, setShowRemoveConfirmModal] = useState(false);
   const [recruitedPlayers, setRecruitedPlayers] = useState([]);
   const [showAssignClubModal, setShowAssignClubModal] = useState(false);
+  const [showDropPlayerConfirmModal, setShowDropPlayerConfirmModal] = useState(false);
+  const [playerToDropFromClub, setPlayerToDropFromClub] = useState(null);
   const [playerClubs, setPlayerClubs] = useState({}); // Store player's club info
   const [sheetsActive, setSheetsActive] = useState(false);
   const [sheetsLoading, setSheetsLoading] = useState(false);
@@ -1508,6 +1510,71 @@ export default function AdminClubs() {
     }
   };
 
+  // Handle dropping a player from a club (from recruited players modal or players table)
+  const handleDropPlayer = async () => {
+    if (!playerToDropFromClub) return;
+
+    try {
+      setActionLoading(prev => ({ ...prev, [playerToDropFromClub.id]: 'dropping' }));
+      
+      // Get the club ID from the player's current club association
+      const clubId = playerClubs[playerToDropFromClub.id]?.clubId || selectedClub?.id;
+      
+      if (!clubId) {
+        alert('Unable to determine the club to drop from');
+        return;
+      }
+      
+      // Update the player document to remove club association and add former-club field
+      const playerRef = doc(db, 'clubs-players', playerToDropFromClub.id);
+      await updateDoc(playerRef, {
+        clubId: null,
+        recruitedBy: null,
+        club: null,
+        'former-club': clubId, // Add the club ID to former-club field
+        updatedAt: serverTimestamp()
+      });
+      
+      // Update the club document with decremented player count
+      if (clubId) {
+        try {
+          const clubRef = doc(db, 'hpl-clubs', clubId);
+          await updateDoc(clubRef, {
+            playerCount: increment(-1),
+            updatedAt: serverTimestamp()
+          });
+          console.log(`Updated club ${clubId} player count (decremented)`);
+        } catch (clubError) {
+          console.error('Error updating club player count:', clubError);
+          // Don't fail the player drop if club update fails
+        }
+      }
+      
+      // Update local state to remove player from recruited players list
+      setRecruitedPlayers(prev => prev.filter(p => p.id !== playerToDropFromClub.id));
+      
+      // Update local state to remove club association
+      setPlayerClubs(prev => {
+        const newPlayerClubs = { ...prev };
+        delete newPlayerClubs[playerToDropFromClub.id];
+        return newPlayerClubs;
+      });
+      
+      // Close the confirmation modal
+      setShowDropPlayerConfirmModal(false);
+      setPlayerToDropFromClub(null);
+      
+      // Show success message
+      const clubName = playerClubs[playerToDropFromClub.id]?.clubName || selectedClub?.proposedClubName || 'the club';
+      alert(`Successfully dropped ${playerToDropFromClub.fullName} from ${clubName}.`);
+    } catch (error) {
+      console.error('Error dropping player from club:', error);
+      alert('Failed to drop player from club');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [playerToDropFromClub.id]: null }));
+    }
+  };
+
   const calculateAge = (dateOfBirth) => {
     if (!dateOfBirth) return 'N/A';
     
@@ -2055,6 +2122,25 @@ export default function AdminClubs() {
                                     ) : (
                                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                )}
+                                {playerClubs[player.id]?.clubName && (
+                                  <button
+                                    onClick={() => {
+                                      setPlayerToDropFromClub(player);
+                                      setShowDropPlayerConfirmModal(true);
+                                    }}
+                                    disabled={actionLoading[player.id] === 'dropping'}
+                                    className="text-orange-400 hover:text-orange-300 transition-colors flex items-center"
+                                    title="Drop Player"
+                                  >
+                                    {actionLoading[player.id] === 'dropping' ? (
+                                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-orange-500"></span>
+                                    ) : (
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                                       </svg>
                                     )}
                                   </button>
@@ -3538,16 +3624,39 @@ export default function AdminClubs() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                setSelectedPlayer(player);
-                                setShowRecruitedPlayersModal(false);
-                                setShowPlayerDetailsModal(true);
-                              }}
-                              className="text-blue-400 hover:text-blue-300 transition-colors"
-                            >
-                              View Details
-                            </button>
+                            <div className="flex space-x-3">
+                              <button
+                                onClick={() => {
+                                  setSelectedPlayer(player);
+                                  setShowRecruitedPlayersModal(false);
+                                  setShowPlayerDetailsModal(true);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 transition-colors flex items-center"
+                                title="View Details"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setPlayerToDropFromClub(player);
+                                  setShowDropPlayerConfirmModal(true);
+                                }}
+                                disabled={actionLoading[player.id] === 'dropping'}
+                                className="text-red-400 hover:text-red-300 transition-colors flex items-center"
+                                title="Drop Player"
+                              >
+                                {actionLoading[player.id] === 'dropping' ? (
+                                  <span className="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-500"></span>
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -3684,6 +3793,64 @@ export default function AdminClubs() {
                     Removing...
                   </>
                 ) : 'Remove Player'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Drop Player Confirmation Modal */}
+      {showDropPlayerConfirmModal && playerToDropFromClub && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Drop Player</h3>
+              <button
+                onClick={() => {
+                  setShowDropPlayerConfirmModal(false);
+                  setPlayerToDropFromClub(null);
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-white mb-4">
+                Are you sure you want to drop <span className="font-bold">{playerToDropFromClub.fullName}</span> from <span className="font-bold">{playerClubs[playerToDropFromClub.id]?.clubName || selectedClub?.proposedClubName || 'the club'}</span>?
+              </p>
+              <p className="text-yellow-400 text-sm mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                This action will remove the player from the club and record the club ID in the player's former-club field.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setShowDropPlayerConfirmModal(false);
+                  setPlayerToDropFromClub(null);
+                }}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDropPlayer}
+                disabled={actionLoading[playerToDropFromClub.id] === 'dropping'}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {actionLoading[playerToDropFromClub.id] === 'dropping' ? (
+                  <>
+                    <span className="inline-block mr-2 animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></span>
+                    Dropping...
+                  </>
+                ) : 'Drop Player'}
               </button>
             </div>
           </div>

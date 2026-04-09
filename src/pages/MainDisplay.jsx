@@ -406,6 +406,23 @@ export default function MainDisplay() {
     return { team1Wins, team2Wins };
   }, []);
 
+  // Helper function to calculate total points for each team in all matches
+  const calculateTotalPoints = useCallback((matches) => {
+    let team1Points = 0;
+    let team2Points = 0;
+    
+    matches.forEach(match => {
+      if (match.status === 'completed') {
+        const team1Score = match.scores?.player1?.game1 || match.scores?.player1?.total || 0;
+        const team2Score = match.scores?.player2?.game1 || match.scores?.player2?.total || 0;
+        team1Points += team1Score;
+        team2Points += team2Score;
+      }
+    });
+    
+    return { team1Points, team2Points };
+  }, []);
+
   // Stable update function that doesn't depend on state
   const updateMatchesForFixture = useCallback((selectedFixture, matches) => {
     console.log('=== UPDATING MATCHES FOR FIXTURE ===');

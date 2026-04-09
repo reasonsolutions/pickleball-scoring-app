@@ -284,18 +284,24 @@ export default function ClubProfile() {
       let available = true;
       let reason = '';
       
+      // Rule 0: Check if player has been dropped from this club (has former-club field matching current club ID)
+      if (player['former-club'] === clubId) {
+        available = false;
+        reason = 'Player dropped from this club';
+      }
+      
       // Rule 5: Rating check - FIRST CHECK - Singles matches require rating below 4.2, Doubles matches require rating below 4.2
       const isSinglesMatch = matchTypeLabel.toLowerCase().includes('singles');
       const isMixedDoubles = matchTypeLabel.toLowerCase().includes('mixed');
       const isDoublesMatch = !isSinglesMatch && !isMixedDoubles && !matchTypeLabel.toLowerCase().includes('game breaker') && !matchTypeLabel.toLowerCase().includes('dream breaker');
       
-      if (isSinglesMatch) {
+      if (available && isSinglesMatch) {
         const singlesRating = parseFloat(player.singlesRating || '0');
         if (singlesRating >= 4.2) {
           available = false;
           reason = `Rating too high (${singlesRating})`;
         }
-      } else if (isDoublesMatch) {
+      } else if (available && isDoublesMatch) {
         const doublesRating = parseFloat(player.doublesRating || '0');
         if (doublesRating >= 4.2) {
           available = false;

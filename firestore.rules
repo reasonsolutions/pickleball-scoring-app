@@ -303,6 +303,114 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
     
+    // Draft Settings collection rules - for draft configuration
+    match /draftSettings/{settingId} {
+      // Allow public read access for draft settings (needed for draft displays)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete draft settings
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Draft Teams collection rules - for draft team management
+    match /draftTeams/{teamId} {
+      // Allow public read access for draft teams (needed for draft displays)
+      allow read: if true;
+      
+      // Allow authenticated users to create draft teams
+      allow create: if request.auth != null;
+      
+      // Allow updating by team creator or super admin
+      allow update: if request.auth != null &&
+                   (request.auth.uid == resource.data.createdBy ||
+                    isSuperAdminSimple());
+      
+      // Allow deleting by team creator or super admin
+      allow delete: if request.auth != null &&
+                   (request.auth.uid == resource.data.createdBy ||
+                    isSuperAdminSimple());
+    }
+    
+    // Draft Players collection rules - for draft player management
+    match /draftPlayers/{playerId} {
+      // Allow public read access for draft players (needed for draft displays)
+      allow read: if true;
+      
+      // Allow authenticated users to create draft players
+      allow create: if request.auth != null;
+      
+      // Allow updating by player creator or super admin
+      allow update: if request.auth != null &&
+                   (request.auth.uid == resource.data.createdBy ||
+                    isSuperAdminSimple());
+      
+      // Allow deleting by player creator or super admin
+      allow delete: if request.auth != null &&
+                   (request.auth.uid == resource.data.createdBy ||
+                    isSuperAdminSimple());
+    }
+    
+    // Draft State collection rules - for live draft state management
+    match /draftState/{stateId} {
+      // Allow public read access for draft state (needed for live displays)
+      allow read: if true;
+      
+      // Allow authenticated users to update draft state
+      allow update: if request.auth != null;
+      
+      // Only super admins can create or delete draft state
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Team Sessions collection rules - for team login sessions during draft
+    match /teamSessions/{sessionId} {
+      // Allow public read and write access for team sessions (needed for team draft room login)
+      allow read, write: if true;
+    }
+    
+    // Captain Settings collection rules - for captain assignment configuration
+    match /captainSettings/{settingId} {
+      // Allow public read access for captain settings (needed for draft displays)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete captain settings
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Owner Player Settings collection rules - for owner player assignment configuration
+    match /ownerPlayerSettings/{settingId} {
+      // Allow public read access for owner player settings (needed for draft displays)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete owner player settings
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
     // Function to validate clubs player data structure
     function isValidClubsPlayerData(data) {
       return data.keys().hasAll(['fullName', 'mobileNumber', 'emailId', 'password', 'gender', 'dateOfBirth', 'singlesRating', 'doublesRating', 'singlesReliabilityScore', 'doublesReliabilityScore', 'whyPickYou', 'leagueCommitment', 'registrationFee']) &&

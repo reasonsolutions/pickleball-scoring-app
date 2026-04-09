@@ -374,7 +374,7 @@ export default function PlayerProfile() {
     setPaymentError('');
 
     try {
-      const baseAmount = 5000; // Rs. 5,000
+      const baseAmount = 3000; // Rs. 3,000
       const gstAmount = Math.round(baseAmount * 0.18); // 18% GST = Rs. 900
       const totalAmount = baseAmount + gstAmount; // Rs. 5,900
       const totalAmountInPaise = totalAmount * 100; // Convert to paise = 5,90,000 paise
@@ -1617,7 +1617,7 @@ export default function PlayerProfile() {
                 Join {pendingApprovalData.request.clubDetails.proposedClubName}
               </p>
               <p className="text-gray-300 mb-6" style={{fontFamily: 'Avantique, sans-serif'}}>
-                To complete your club registration, please pay the one-time registration fee of Rs. 5,000 + 18% GST.
+                To complete your club registration, please pay the one-time registration fee of Rs. 3,000 + 18% GST.
               </p>
             </div>
 
@@ -1628,16 +1628,16 @@ export default function PlayerProfile() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-300">
                   <span style={{fontFamily: 'Avantique, sans-serif'}}>Player Registration Fee:</span>
-                  <span style={{fontFamily: 'Avantique, sans-serif'}}>Rs. 5,000</span>
+                  <span style={{fontFamily: 'Avantique, sans-serif'}}>Rs. 3,000</span>
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span style={{fontFamily: 'Avantique, sans-serif'}}>GST (18%):</span>
-                  <span style={{fontFamily: 'Avantique, sans-serif'}}>Rs. 900</span>
+                  <span style={{fontFamily: 'Avantique, sans-serif'}}>Rs. 540</span>
                 </div>
                 <div className="border-t border-gray-600 pt-2 mt-2">
                   <div className="flex justify-between text-white font-semibold">
                     <span style={{fontFamily: 'Avantique, sans-serif'}}>Total Amount:</span>
-                    <span style={{fontFamily: 'Avantique, sans-serif'}}>Rs. 5,900</span>
+                    <span style={{fontFamily: 'Avantique, sans-serif'}}>Rs. 3,540</span>
                   </div>
                 </div>
               </div>
@@ -1685,7 +1685,7 @@ export default function PlayerProfile() {
                 }`}
                 style={{fontFamily: 'Avantique, sans-serif'}}
               >
-                {paymentProcessing ? 'Processing...' : 'Pay Rs. 5,900'}
+                {paymentProcessing ? 'Processing...' : 'Pay Rs. 3,540'}
               </button>
             </div>
 

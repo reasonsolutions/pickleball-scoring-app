@@ -695,105 +695,109 @@ export default function NewHome() {
             <h2 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold italic" style={{fontFamily: 'Avantique, sans-serif'}}>TEAM RANKINGS</h2>
           </div>
           
-          <div className="bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
-            {/* Table Header */}
-            <div className="flex items-center pb-3 sm:pb-4 mb-4 sm:mb-6 border-b border-gray-600">
-              <div className="w-12 sm:w-16 text-gray-400 font-semibold text-xs sm:text-sm uppercase tracking-wide" style={{fontFamily: 'Avantique, sans-serif'}}>
-                Rank
-              </div>
-              <div className="flex-1 text-gray-400 font-semibold text-xs sm:text-sm uppercase tracking-wide" style={{fontFamily: 'Avantique, sans-serif'}}>
-                Team
-              </div>
-              <div className="w-16 sm:w-20 lg:w-24 text-gray-400 font-semibold text-xs sm:text-sm uppercase tracking-wide text-center" style={{fontFamily: 'Avantique, sans-serif'}}>
-                <span className="hidden sm:inline">Won</span>
-                <span className="sm:hidden">W</span>
-              </div>
-              <div className="w-16 sm:w-20 lg:w-24 text-gray-400 font-semibold text-xs sm:text-sm uppercase tracking-wide text-center" style={{fontFamily: 'Avantique, sans-serif'}}>
-                <span className="hidden sm:inline">Lost</span>
-                <span className="sm:hidden">L</span>
-              </div>
-              <div className="w-16 sm:w-20 text-gray-400 font-semibold text-xs sm:text-sm uppercase tracking-wide text-center" style={{fontFamily: 'Avantique, sans-serif'}}>
-                <span className="hidden sm:inline">Points</span>
-                <span className="sm:hidden">Pts</span>
-              </div>
-            </div>
-            
-            {/* Table Rows */}
-            <div className="space-y-0">
-              {teamsWithStats.slice(0, 8).map((team, index) => (
-                <div key={team.id} className="flex items-center py-3 sm:py-4 hover:bg-gray-700 transition-colors px-2 sm:px-4 border-b border-orange-500 border-opacity-20 last:border-b-0">
-                  {/* Rank */}
-                  <div className="w-12 sm:w-16">
-                    <span className="text-orange-400 font-bold text-base sm:text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      {index + 1}
-                    </span>
-                  </div>
-                  
-                  {/* Team */}
-                  <div className="flex-1 flex items-center space-x-2 sm:space-x-4">
-                    <div className="flex-shrink-0">
-                      {team.logo?.url ? (
-                        <img
-                          src={team.logo.url}
-                          alt={team.name}
-                          className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full bg-orange-500 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm sm:text-base lg:text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-                            {team.name?.charAt(0) || 'T'}
-                          </span>
+          <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-900">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Team Rank
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Battle Wins
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Battle Losses
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-orange-500 bg-opacity-20" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Points ↓
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Game Wins
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Game Losses
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Points Won
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Points Lost
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Games Diff
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
+                      Points Diff
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                  {teamsWithStats.slice(0, 8).map((team, index) => (
+                    <tr key={team.id} className="hover:bg-gray-700 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {team.logo?.url && (
+                            <img
+                              src={team.logo.url}
+                              alt={team.name}
+                              className="w-8 h-8 rounded-full mr-3"
+                            />
+                          )}
+                          <div>
+                            <div className="text-sm font-medium text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
+                              {team.name}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-white font-semibold text-sm sm:text-base lg:text-lg truncate" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        {team.name}
-                      </h3>
-                    </div>
-                  </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-semibold" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.battleWins || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-400" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.battleLosses || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-400 font-bold bg-orange-500 bg-opacity-10" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.points || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.gameWins || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.gameLosses || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.pointsWon || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        {team.pointsLost || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        <span className={team.gamesDifference >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {team.gamesDifference > 0 ? '+' : ''}{team.gamesDifference || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{fontFamily: 'Avantique, sans-serif'}}>
+                        <span className={team.pointsDifference >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {team.pointsDifference > 0 ? '+' : ''}{team.pointsDifference || 0}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                   
-                  {/* Battles Won */}
-                  <div className="w-16 sm:w-20 lg:w-24 text-center">
-                    <span className="text-green-400 font-medium text-sm sm:text-base lg:text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      {team.matchesWon || 0}
-                    </span>
-                  </div>
-                  
-                  {/* Battles Lost */}
-                  <div className="w-16 sm:w-20 lg:w-24 text-center">
-                    <span className="text-red-400 font-medium text-sm sm:text-base lg:text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      {team.matchesLost || 0}
-                    </span>
-                  </div>
-                  
-                  {/* Points */}
-                  <div className="w-16 sm:w-20 text-center">
-                    <span className="text-orange-400 font-bold text-base sm:text-lg lg:text-xl" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      {team.points || 0}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              
-              {teamsWithStats.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 text-lg">
-                    No team data available
-                  </div>
-                </div>
-              )}
+                  {teamsWithStats.length === 0 && (
+                    <tr>
+                      <td colSpan="10" className="px-6 py-12 text-center">
+                        <div className="text-gray-400 text-lg">
+                          No team data available
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
             
-            <div className="text-center mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-600">
-              <Link
-                to="/teams"
-                className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 sm:px-8 lg:px-12 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg transition-colors"
-                style={{fontFamily: 'Avantique, sans-serif'}}
-              >
-                VIEW ALL TEAMS
-              </Link>
-            </div>
           </div>
         </div>
       </div>

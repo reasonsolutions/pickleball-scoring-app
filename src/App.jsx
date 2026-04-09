@@ -75,6 +75,10 @@ import TermsOfService from './pages/TermsOfService';
 import RefundPolicy from './pages/RefundPolicy';
 import ShippingPolicy from './pages/ShippingPolicy';
 import DuprApi from './pages/DuprApi';
+import Draft from './pages/Draft';
+import AdminDraftView from './pages/AdminDraftView';
+import DraftMainScreenDisplay from './pages/DraftMainScreenDisplay';
+import TeamDraftRoom from './pages/TeamDraftRoom';
 
 function App() {
   // Debug logging for routing
@@ -240,6 +244,18 @@ function App() {
                 <DuprApi />
               </ProtectedRoute>
             } />
+            
+            <Route path="/admin/draft" element={
+              <ProtectedRoute>
+                <Draft />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin-draft-view" element={<AdminDraftView />} />
+            
+            <Route path="/draft-main-screen-display" element={<DraftMainScreenDisplay />} />
+            
+            <Route path="/team-draft-room" element={<TeamDraftRoom />} />
             
             {/* Umpire Scoring Route - Public access for umpires */}
             <Route path="/umpire/:matchId" element={<UmpireScoring />} />
