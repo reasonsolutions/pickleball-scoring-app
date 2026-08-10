@@ -397,7 +397,7 @@ export default function OutsideDisplay() {
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
       {/* Top Logos Row */}
       <div className="absolute top-8 left-0 right-0 flex justify-center items-center space-x-32">
-        <img src={hplLogoWhite} alt="HPL Logo" className="h-20 w-auto" />
+        <img src={hplLogoWhite} alt="CCPL Logo" className="h-20 w-auto" />
         <img src={centreCourtLogo} alt="Centre Court" className="h-16 w-auto" />
         <img src={anvitaWhite} alt="Anvita" className="h-16 w-auto" />
       </div>

@@ -739,10 +739,10 @@ export default function HplClubRegistration() {
 
     try {
       const options = {
-        key: 'rzp_live_SBc21pvQK1l6sZ',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_Sfh0BL4V2hv19K',
         amount: 500000,
         currency: 'INR',
-        name: 'HPL Club Registration',
+        name: 'CCPL Club Registration',
         description: 'Club Registration Fee - Refundable if application is rejected',
         handler: function (response) {
           console.log('Payment successful:', response);
@@ -823,8 +823,8 @@ export default function HplClubRegistration() {
             {/* Content */}
             <div className="space-y-6 lg:space-y-8 text-white max-w-6xl">
               <p className="text-base sm:text-lg lg:text-xl leading-relaxed" style={{fontFamily: 'Avantique, sans-serif'}}>
-                The HPL Community League is a curated, club-led league designed to build strong pickleball communities across the city.
-                HPL itself will continue to operate only its main league.
+                The CCPL Community League is a curated, club-led league designed to build strong pickleball communities across the city.
+                CCPL itself will continue to operate only its main league.
               </p>
               
               <p className="text-base sm:text-lg lg:text-xl leading-relaxed" style={{fontFamily: 'Avantique, sans-serif'}}>
@@ -861,7 +861,7 @@ export default function HplClubRegistration() {
                 </h2>
                 <div className="w-24 h-1 bg-orange-500 mx-auto mb-8"></div>
                 <p className="text-white text-xl max-w-3xl mx-auto mb-8" style={{fontFamily: 'Avantique, sans-serif'}}>
-                  Thank you for your interest in the HPL Community League. Registration for clubs is currently closed for this season.
+                  Thank you for your interest in the CCPL Community League. Registration for clubs is currently closed for this season.
                 </p>
                 <p className="text-gray-300 text-lg max-w-2xl mx-auto" style={{fontFamily: 'Avantique, sans-serif'}}>
                   Please check back later for updates on future registration opportunities or follow our social media channels for announcements.
@@ -1156,7 +1156,7 @@ export default function HplClubRegistration() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 <div className="space-y-3">
                   <label className="block text-white text-base sm:text-lg font-medium" style={{fontFamily: 'Avantique, sans-serif'}}>
-                    Why do you want to own a team in the HPL Community League? <span className="text-red-500">*</span>
+                    Why do you want to own a team in the CCPL Community League? <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     rows="4"
@@ -1666,7 +1666,7 @@ export default function HplClubRegistration() {
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
                   You are required to pay the club registration fee to submit your application.
-                  This payment confirms your commitment to the HPL Community League.
+                  This payment confirms your commitment to the CCPL Community League.
                 </p>
               </div>
             </div>
@@ -1723,8 +1723,8 @@ export default function HplClubRegistration() {
                 Application Submitted Successfully!
               </h3>
               <div className="text-gray-700 space-y-3" style={{fontFamily: 'Avantique, sans-serif'}}>
-                <p>You have applied to be a part of HPL Clubs as a Club.</p>
-                <p>HPL Admin will review your profile and send approval through the platform.</p>
+                <p>You have applied to be a part of CCPL Clubs as a Club.</p>
+                <p>CCPL Admin will review your profile and send approval through the platform.</p>
                 <p>Keep an eye on your dashboard.</p>
                 <p className="font-semibold text-orange-600">Welcome to club sport.</p>
                 <p className="font-semibold text-orange-600">The game grows up.</p>

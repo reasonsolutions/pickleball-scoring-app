@@ -55,7 +55,7 @@ export default function HplClubRules() {
           </h1>
           <div className="text-gray-300 text-lg md:text-xl leading-relaxed max-w-4xl mx-auto" style={{fontFamily: 'Avantique, sans-serif'}}>
             <p className="mb-4">
-              The HPL Club League is a <span className="text-orange-400 font-semibold">grassroots, club-based pickleball competition</span> designed to build long-term community, identity, and structure within the sport.
+              The CCPL Club League is a <span className="text-orange-400 font-semibold">grassroots, club-based pickleball competition</span> designed to build long-term community, identity, and structure within the sport.
             </p>
             <p className="mb-4">
               This is <span className="text-orange-400 font-semibold">not</span> a tournament. This is <span className="text-orange-400 font-semibold">not</span> a franchise model.
@@ -74,14 +74,14 @@ export default function HplClubRules() {
               <span className="text-white font-bold text-lg">01</span>
             </div>
             <h2 className="text-orange-400 text-2xl md:text-3xl font-bold mb-6" style={{fontFamily: 'Avantique, sans-serif'}}>
-              1. WHAT THE HPL CLUB LEAGUE IS
+              1. WHAT THE CCPL CLUB LEAGUE IS
             </h2>
             <ul className="text-gray-300 space-y-3 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
               <li>• A 20-club league, split into two conferences</li>
               <li>• Each club fields a squad of 10 players per matchday</li>
               <li>• The league runs as a full season, not a one-off event</li>
-              <li>• Matches follow the HPL format (6 matches + Gamebreaker)</li>
-              <li>• The season culminates in playoffs and the HPL State of the League (Grand Final)</li>
+              <li>• Matches follow the CCPL format (6 matches + Gamebreaker)</li>
+              <li>• The season culminates in playoffs and the CCPL State of the League (Grand Final)</li>
             </ul>
             <p className="text-gray-300 mt-6 text-lg italic" style={{fontFamily: 'Avantique, sans-serif'}}>
               This is a grassroots competition — focused on development, community, and structured competition rather than elite-only participation.
@@ -100,7 +100,7 @@ export default function HplClubRules() {
               2. LEAGUE FORMAT & COMPETITION STRUCTURE
             </h2>
             <p className="text-gray-300 mb-6 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-              The HPL Club League follows a structured, season-long competition format designed to balance competitiveness, fairness, and consistency across all clubs.
+              The CCPL Club League follows a structured, season-long competition format designed to balance competitiveness, fairness, and consistency across all clubs.
             </p>
             
             <h3 className="text-orange-300 text-xl font-bold mb-4" style={{fontFamily: 'Avantique, sans-serif'}}>
@@ -132,7 +132,7 @@ export default function HplClubRules() {
               <li>• Playoff structure:</li>
               <li className="ml-6">○ The top-ranked club in each conference qualifies directly for the Conference Final</li>
               <li className="ml-6">○ The next four clubs play knockout ties to determine who faces the top seed</li>
-              <li>• The Two Conference Champions advance to the Grand Final: HPL State of the League</li>
+              <li>• The Two Conference Champions advance to the Grand Final: CCPL State of the League</li>
             </ul>
 
             <h3 className="text-orange-300 text-xl font-bold mb-4" style={{fontFamily: 'Avantique, sans-serif'}}>
@@ -152,7 +152,7 @@ export default function HplClubRules() {
             </h2>
             
             <h3 className="text-orange-300 text-xl font-bold mb-4" style={{fontFamily: 'Avantique, sans-serif'}}>
-              Tie Structure (HPL Format)
+              Tie Structure (CCPL Format)
             </h3>
             <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
               Each tie between two clubs consists of:
@@ -198,7 +198,7 @@ export default function HplClubRules() {
                 <li>• Aligns with international best practices while remaining grassroots-friendly</li>
               </ul>
               <p className="text-orange-400 font-semibold mt-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-                A 20-club, conference-based league with a full season, structured playoffs, and a standardised HPL match format designed for competitive, grassroots club sport.
+                A 20-club, conference-based league with a full season, structured playoffs, and a standardised CCPL match format designed for competitive, grassroots club sport.
               </p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function HplClubRules() {
               3. WHEN WILL THE LEAGUE START?
             </h2>
             <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-              The HPL Club League is scheduled to run for 9-12 weeks during the months of March, April, and May.
+              The CCPL Club League is scheduled to run for 9-12 weeks during the months of March, April, and May.
             </p>
             <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
               The exact start and end dates for the league will be confirmed and communicated to all participating clubs by the end of February 2026.
@@ -258,7 +258,7 @@ export default function HplClubRules() {
               5. WHAT IT MEANS TO BE A CLUB
             </h2>
             <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-              Being a club in the HPL Club League means taking responsibility, not just participating.
+              Being a club in the CCPL Club League means taking responsibility, not just participating.
             </p>
             <p className="text-gray-300 mb-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
               A club is expected to:
@@ -327,7 +327,7 @@ export default function HplClubRules() {
               Please note:
             </p>
             <ul className="text-gray-300 space-y-2 mb-6 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-              <li>• If any duplicate DUPR profiles are identified—or brought to the League's notice—the player will be immediately disqualified from the league and all subsequent HPL events for a period of 2 years from the date of disqualification.</li>
+              <li>• If any duplicate DUPR profiles are identified—or brought to the League's notice—the player will be immediately disqualified from the league and all subsequent CCPL events for a period of 2 years from the date of disqualification.</li>
               <li>• This rule is non-negotiable and will be enforced strictly.</li>
               <li>• All 200 players included in the finalised squads will be verified for eligibility prior to Matchday 1.</li>
               <li>• If any player is found to be ineligible, they will be removed from the squad, and a replacement will be randomly assigned by the League.</li>
@@ -529,7 +529,7 @@ export default function HplClubRules() {
               <li>• Technology and platform development (thehpl.in)</li>
               <li>• Scheduling, governance, and compliance</li>
               <li>• Media, recording, and documentation</li>
-              <li>• Hosting and producing the HPL State of the League (Grand Final)</li>
+              <li>• Hosting and producing the CCPL State of the League (Grand Final)</li>
             </ul>
             <p className="text-orange-400 font-semibold mt-4 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
               This transparency ensures clubs know exactly what they are buying into.

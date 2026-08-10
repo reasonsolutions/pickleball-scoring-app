@@ -60,7 +60,7 @@ export default function Login() {
         <div className="text-center mb-8">
           <img 
             src={hplLogoWhite} 
-            alt="HPL Logo" 
+            alt="CCPL Logo" 
             className="mx-auto mb-6"
             style={{ height: '60px' }}
           />

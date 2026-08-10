@@ -32,6 +32,7 @@ import FixtureList from './pages/FixtureList';
 import FixtureAnalytics from './pages/FixtureAnalytics';
 import AdminCleanup from './pages/AdminCleanup';
 import UmpireScoring from './pages/UmpireScoring';
+import UmpireScoringModern from './pages/UmpireScoringModern';
 import UmpireMatchList from './pages/UmpireMatchList';
 import UmpireFixtureMatches from './pages/UmpireFixtureMatches';
 import ApiMatchList from './pages/ApiMatchList';
@@ -39,6 +40,9 @@ import ApiFixtureMatches from './pages/ApiFixtureMatches';
 import StreamingMatchList from './pages/StreamingMatchList';
 import StreamingFixtureMatches from './pages/StreamingFixtureMatches';
 import StreamingVenues from './pages/StreamingVenues';
+import VenueScreen from './pages/VenueScreen';
+import VenueScreenDisplay from './pages/VenueScreenDisplay';
+import StreamingAds from './pages/StreamingAds';
 import TVDisplay from './pages/TVDisplay';
 import BasicScore from './pages/BasicScore';
 import MatchDetails from './pages/MatchDetails';
@@ -47,8 +51,10 @@ import StreamingOverlay from './pages/StreamingOverlay';
 import StreamingOverlayController from './pages/StreamingOverlayController';
 import StreamingVenueOverlay from './pages/StreamingVenueOverlay';
 import Rankings from './pages/Rankings';
+import HplPlayerRankings from './pages/HplPlayerRankings';
 import ClubsTable from './pages/ClubsTable';
 import Settings from './pages/Settings';
+import AppSettings from './pages/AppSettings';
 import ContentManagement from './pages/ContentManagement';
 import Videos from './pages/Videos';
 import News from './pages/News';
@@ -60,6 +66,7 @@ import SuperAdminManagement from './pages/SuperAdminManagement';
 import AdminClubs from './pages/AdminClubs';
 import ScreenDisplay from './pages/ScreenDisplay';
 import MainDisplay from './pages/MainDisplay';
+import MainDisplay1 from './pages/MainDisplay1';
 import SideDisplay from './pages/SideDisplay';
 import OutsideDisplay from './pages/OutsideDisplay';
 import ExcitementDisplay from './pages/ExcitementDisplay';
@@ -75,10 +82,22 @@ import TermsOfService from './pages/TermsOfService';
 import RefundPolicy from './pages/RefundPolicy';
 import ShippingPolicy from './pages/ShippingPolicy';
 import DuprApi from './pages/DuprApi';
+import Shop from './pages/Shop';
+import Ticketing from './pages/Ticketing';
+import CreateMatchDay from './pages/CreateMatchDay';
+import MatchDayOrders from './pages/MatchDayOrders';
 import Draft from './pages/Draft';
+import Fantasy from './pages/Fantasy';
+import FantasyPlayerDetail from './pages/FantasyPlayerDetail';
+import AppUsers from './pages/AppUsers';
+
 import AdminDraftView from './pages/AdminDraftView';
 import DraftMainScreenDisplay from './pages/DraftMainScreenDisplay';
 import TeamDraftRoom from './pages/TeamDraftRoom';
+import Vendors from './pages/Vendors';
+import VendorSetupPassword from './pages/VendorSetupPassword';
+import VendorLogin from './pages/VendorLogin';
+import VendorHome from './pages/VendorHome';
 
 function App() {
   // Debug logging for routing
@@ -121,6 +140,7 @@ function App() {
               </UserProtectedRoute>
             } />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/hpl-player-rankings" element={<HplPlayerRankings />} />
             <Route path="/clubs-table" element={<ClubsTable />} />
             <Route path="/download-team-logos" element={<DownloadTeamLogos />} />
             <Route path="/videos" element={<Videos />} />
@@ -197,9 +217,21 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/admin/app-settings" element={
+              <ProtectedRoute>
+                <AppSettings />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/admin/content" element={
               <ProtectedRoute>
                 <ContentManagement />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/app-users" element={
+              <ProtectedRoute>
+                <AppUsers />
               </ProtectedRoute>
             } />
             
@@ -251,6 +283,64 @@ function App() {
               </ProtectedRoute>
             } />
             
+            <Route path="/admin/fantasy" element={
+              <ProtectedRoute>
+                <Fantasy />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/fantasy/player/:playerId" element={
+              <ProtectedRoute>
+                <FantasyPlayerDetail />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/shop" element={
+              <ProtectedRoute>
+                <Shop />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/ticketing" element={
+              <ProtectedRoute>
+                <Ticketing />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/ticketing/create" element={
+              <ProtectedRoute>
+                <CreateMatchDay />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/ticketing/edit/:id" element={
+              <ProtectedRoute>
+                <CreateMatchDay />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/ticketing/orders/:id" element={
+              <ProtectedRoute>
+                <MatchDayOrders />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/vendors" element={
+              <ProtectedRoute>
+                <Vendors />
+              </ProtectedRoute>
+            } />
+
+            {/* Vendor Setup Password Route - Public access for vendors */}
+            <Route path="/vendor/setup-password" element={<VendorSetupPassword />} />
+
+            {/* Vendor Login Route - Public access for vendors */}
+            <Route path="/vendor/login" element={<VendorLogin />} />
+
+            {/* Vendor Home Route - POS System for logged-in vendors */}
+            <Route path="/vendor/home" element={<VendorHome />} />
+
+            
             <Route path="/admin-draft-view" element={<AdminDraftView />} />
             
             <Route path="/draft-main-screen-display" element={<DraftMainScreenDisplay />} />
@@ -258,7 +348,10 @@ function App() {
             <Route path="/team-draft-room" element={<TeamDraftRoom />} />
             
             {/* Umpire Scoring Route - Public access for umpires */}
-            <Route path="/umpire/:matchId" element={<UmpireScoring />} />
+            <Route path="/umpire/:matchId" element={<UmpireScoringModern />} />
+            
+            {/* Old Umpire Scoring Route - Backup if needed */}
+            <Route path="/umpire-old/:matchId" element={<UmpireScoring />} />
             
             {/* Umpire Match List Route - Public access for umpires to see all matches */}
             <Route path="/umpire-matches/:tournamentId" element={<UmpireMatchList />} />
@@ -283,6 +376,25 @@ function App() {
               </>
             } />
             
+            {/* Venue Screen Route - Public access for venue screen display */}
+            <Route path="/venue-screen/:tournamentId" element={
+              <>
+                {console.log('✅ Matched /venue-screen route')}
+                <VenueScreen />
+              </>
+            } />
+            
+            {/* Venue Screen Display Route - Public access for venue-specific display */}
+            <Route path="/venue-screen-display/:tournamentId/:venueName/:dateString" element={
+              <>
+                {console.log('✅ Matched /venue-screen-display route')}
+                <VenueScreenDisplay />
+              </>
+            } />
+            
+            {/* Streaming Ads Route - Public access for streaming ads overlay */}
+            <Route path="/streaming-ads/:tournamentId" element={<StreamingAds />} />
+            
             {/* Streaming Fixture Matches Route - Public access for streaming overlays in a fixture */}
             <Route path="/streaming-matches/:tournamentId/fixture/:fixtureGroupId" element={<StreamingFixtureMatches />} />
             
@@ -297,6 +409,9 @@ function App() {
             
             {/* Main Display Route - Public access for main display */}
             <Route path="/main-display/:tournamentId/:dateString" element={<MainDisplay />} />
+            
+            {/* Main Display 1 Route - Public access for main display with new UI */}
+            <Route path="/main-display1/:tournamentId/:dateString" element={<MainDisplay1 />} />
             
             {/* Side Display Route - Public access for side display */}
             <Route path="/side-display/:tournamentId/:dateString" element={<SideDisplay />} />

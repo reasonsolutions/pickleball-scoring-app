@@ -1393,7 +1393,7 @@ export default function MainDisplay() {
             />
             <img
               src="/src/assets/hpllogo_white.png"
-              alt="HPL Logo"
+              alt="CCPL Logo"
               className="h-16 w-auto object-contain"
             />
           </div>

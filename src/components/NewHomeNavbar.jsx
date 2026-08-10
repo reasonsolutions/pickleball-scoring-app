@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import hplLogo from '../assets/hpllogo_white.png';
+import clubsLogo from '../assets/clubslogo.png';
 import bannerBackground from '../assets/banner_background.png';
 
 export default function NewHomeNavbar() {
@@ -12,7 +13,7 @@ export default function NewHomeNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if current page is an HPL Clubs related page
+  // Check if current page is an CCPL Clubs related page
   const isHplClubsPage = () => {
     const hplClubsPaths = [
       '/hpl-clubs',
@@ -22,6 +23,7 @@ export default function NewHomeNavbar() {
       '/clubs',
       '/clubs-results',
       '/clubs-table',
+      '/hpl-player-rankings',
       '/download-team-logos'
     ];
     
@@ -73,14 +75,14 @@ export default function NewHomeNavbar() {
               className={`nav-button ${!isHplClubsPage() ? 'active bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-800 hover:bg-gray-100'} px-3 sm:px-6 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl transition-colors border-t-4 border-b-4 border-l-4 border-r-2 border-black`}
               style={{fontFamily: 'Avantique, sans-serif'}}
             >
-              HPL
+              CCPL
             </Link>
             <Link
               to="/hpl-clubs"
               className={`nav-button ${isHplClubsPage() ? 'active bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-800 hover:bg-gray-100'} px-2 sm:px-4 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl transition-colors border-t-4 border-b-4 border-l-2 border-r-4 border-black`}
               style={{fontFamily: 'Avantique, sans-serif'}}
             >
-              <span className="hidden sm:inline" style={{fontFamily: 'Avantique, sans-serif'}}>HPL Clubs</span>
+              <span className="hidden sm:inline" style={{fontFamily: 'Avantique, sans-serif'}}>CCPL Clubs</span>
               <span className="sm:hidden" style={{fontFamily: 'Avantique, sans-serif'}}>Clubs</span>
             </Link>
           </div>
@@ -119,8 +121,8 @@ export default function NewHomeNavbar() {
           <div className="flex items-center mr-8">
             <Link to="/" className="flex items-center space-x-3">
               <img
-                src={hplLogo}
-                alt="Hyderabad Pickleball League"
+                src={isHplClubsPage() ? clubsLogo : hplLogo}
+                alt={isHplClubsPage() ? "CCPL Clubs" : "Hyderabad Pickleball League"}
                 className="h-20 w-auto"
               />
             </Link>
@@ -129,7 +131,7 @@ export default function NewHomeNavbar() {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8 flex-1">
             {isHplClubsPage() ? (
-              // HPL Clubs Navigation
+              // CCPL Clubs Navigation
               <>
                 <Link
                   to="/hpl-clubs"
@@ -150,6 +152,12 @@ export default function NewHomeNavbar() {
                   Table
                 </Link>
                 <Link
+                  to="/hpl-player-rankings"
+                  className={`new-nav-link ${location.pathname === '/hpl-player-rankings' ? 'hpl-clubs-active' : ''}`}
+                >
+                  Player Rankings
+                </Link>
+                <Link
                   to="/clubs"
                   className={`new-nav-link ${location.pathname === '/clubs' ? 'hpl-clubs-active' : ''}`}
                 >
@@ -163,7 +171,7 @@ export default function NewHomeNavbar() {
                 </Link>
               </>
             ) : (
-              // Regular HPL Navigation
+              // Regular CCPL Navigation
               <>
                 <Link to="/news" className="new-nav-link">
                   News
@@ -178,7 +186,7 @@ export default function NewHomeNavbar() {
                   to="/hpl-clubs"
                   className="new-nav-link"
                 >
-                  HPL Clubs
+                  CCPL Clubs
                 </Link>
               </>
             )}
@@ -220,7 +228,7 @@ export default function NewHomeNavbar() {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-gray-800 bg-opacity-95">
               {isHplClubsPage() ? (
-                // HPL Clubs Mobile Navigation
+                // CCPL Clubs Mobile Navigation
                 <>
                   <Link
                     to="/hpl-clubs"
@@ -244,6 +252,13 @@ export default function NewHomeNavbar() {
                     Table
                   </Link>
                   <Link
+                    to="/hpl-player-rankings"
+                    className={`block px-3 py-2 text-white hover:text-orange-300 transition-colors font-figtree ${location.pathname === '/hpl-player-rankings' ? 'hpl-clubs-active-mobile' : ''}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Player Rankings
+                  </Link>
+                  <Link
                     to="/clubs"
                     className={`block px-3 py-2 text-white hover:text-orange-300 transition-colors font-figtree ${location.pathname === '/clubs' ? 'hpl-clubs-active-mobile' : ''}`}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -259,7 +274,7 @@ export default function NewHomeNavbar() {
                   </Link>
                 </>
               ) : (
-                // Regular HPL Mobile Navigation
+                // Regular CCPL Mobile Navigation
                 <>
                   <Link
                     to="/news"
@@ -287,7 +302,7 @@ export default function NewHomeNavbar() {
                     className="block px-3 py-2 text-white hover:text-orange-300 transition-colors font-figtree"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    HPL Clubs
+                    CCPL Clubs
                   </Link>
                 </>
               )}

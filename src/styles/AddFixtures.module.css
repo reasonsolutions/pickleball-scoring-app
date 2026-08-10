@@ -1,0 +1,638 @@
+/* Modern Award-Winning AddFixtures Page Styles */
+
+/* ============================================
+   HEADER SECTION - Gradient Background
+   ============================================ */
+.headerGradient {
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 50%, #FFA500 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.headerGradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.headerContent {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 2rem;
+  color: white;
+}
+
+.headerTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.headerSubtitle {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* ============================================
+   TAB NAVIGATION - Modern Design
+   ============================================ */
+.tabNavigation {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: none;
+  background: white;
+  padding: 0 2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #6b7280;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  border-radius: 8px 8px 0 0;
+}
+
+.tabButton:hover {
+  background: #f3f4f6;
+}
+
+.tabButton.active {
+  color: white;
+  font-weight: 700;
+}
+
+/* Create Fixture - Primary Green */
+.tabButton:nth-child(1).active {
+  background: #9AFF00;
+  color: #2D3748;
+}
+
+/* Umpire Match List - Light Blue */
+.tabButton:nth-child(2).active {
+  background: #4FC3F7;
+  color: white;
+}
+
+/* Streaming Overlay List - Yellow */
+.tabButton:nth-child(3).active {
+  background: #FFD93D;
+  color: #2D3748;
+}
+
+/* Screen Display - Light Blue */
+.tabButton:nth-child(4).active {
+  background: #4FC3F7;
+  color: white;
+}
+
+/* API - Light Blue */
+.tabButton:nth-child(5).active {
+  background: #4FC3F7;
+  color: white;
+}
+
+.tabButton.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 0px;
+  background: transparent;
+  border-radius: 3px 3px 0 0;
+  animation: none;
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+    left: 50%;
+  }
+  to {
+    width: 100%;
+    left: 0;
+  }
+}
+
+/* ============================================
+   FIXTURE CARDS - Award-Winning Design
+   ============================================ */
+.fixtureCard {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #f0f0f0;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.fixtureCard:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fixtureCardHeader {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.fixtureCardTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.fixtureCardBody {
+  padding: 2rem;
+}
+
+.teamVsTeam {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin: 1.5rem 0;
+}
+
+.teamName {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #FF6B35;
+  flex: 1;
+  text-align: center;
+  word-break: break-word;
+}
+
+.teamName.team2 {
+  color: #0066cc;
+  text-align: center;
+}
+
+.vsText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #9ca3af;
+  flex-shrink: 0;
+  padding: 0 1rem;
+}
+
+.fixtureInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.infoBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.infoBadge:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.infoBadge.primary {
+  background: #FFF3E0;
+  color: #FF6B35;
+  border-color: #FFB399;
+}
+
+.infoBadge.secondary {
+  background: #E3F2FD;
+  color: #0066cc;
+  border-color: #90CAF9;
+}
+
+/* ============================================
+   STATUS BADGES - Professional Indicators
+   ============================================ */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.statusBadge.scheduled {
+  background: #DBEAFE;
+  color: #0369a1;
+  border: 1px solid #7DD3FC;
+}
+
+.statusBadge.live {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+  animation: pulse 2s infinite;
+}
+
+.statusBadge.completed {
+  background: #F3E8FF;
+  color: #6B21A8;
+  border: 1px solid #D8B4FE;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ============================================
+   MODALS - Modern Design
+   ============================================ */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(4px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  background: linear-gradient(135deg, #FF6B35 0%, #FFA500 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px 16px 0 0;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modalBody {
+  padding: 2rem;
+}
+
+.modalFooter {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* ============================================
+   FORM INPUTS - Modern Styling
+   ============================================ */
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formLabel {
+  display: block;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.formInput,
+.formSelect,
+.formTextarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.formInput::placeholder {
+  color: #9ca3af;
+}
+
+/* ============================================
+   BUTTONS - Modern Design
+   ============================================ */
+.buttonPrimary {
+  background: linear-gradient(135deg, #FF6B35 0%, #FFA500 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.buttonPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+}
+
+.buttonPrimary:active {
+  transform: translateY(0);
+}
+
+.buttonSecondary {
+  background: white;
+  color: #FF6B35;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #FF6B35;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.buttonSecondary:hover {
+  background: #FFF3E0;
+}
+
+.buttonGhost {
+  background: transparent;
+  color: #6b7280;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.buttonGhost:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+/* ============================================
+   EMPTY STATES - Professional Design
+   ============================================ */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 2px dashed #e5e7eb;
+}
+
+.emptyStateIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.emptyStateDescription {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* ============================================
+   LOADING STATES - Animations
+   ============================================ */
+.loadingSpinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top-color: #FF6B35;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingPulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   RESPONSIVE GRID LAYOUT
+   ============================================ */
+.fixtureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .fixtureGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .headerTitle {
+    font-size: 1.75rem;
+  }
+
+  .tabNavigation {
+    padding: 0 1rem;
+  }
+
+  .tabButton {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .teamVsTeam {
+    gap: 1rem;
+  }
+
+  .teamName {
+    font-size: 1.25rem;
+  }
+}
+
+/* ============================================
+   SMOOTH TRANSITIONS & ANIMATIONS
+   ============================================ */
+.fadeInScale {
+  animation: fadeInScale 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.slideInLeft {
+  animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slideInRight {
+  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+  margin: 2rem 0;
+}

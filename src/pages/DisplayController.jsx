@@ -28,6 +28,10 @@ export default function DisplayController() {
   // Logos state
   const [displayLogos, setDisplayLogos] = useState([]);
   const [bottomLogos, setBottomLogos] = useState([]);
+  const [slidingImages, setSlidingImages] = useState([]);
+  const [slidingImagesStartAfter, setSlidingImagesStartAfter] = useState(0);
+  const [slidingImagesDuration, setSlidingImagesDuration] = useState(5);
+  const [slidingImagesGradientColor, setSlidingImagesGradientColor] = useState('#FF5722');
   const [loadingLogos, setLoadingLogos] = useState(false);
   const [availableLogos, setAvailableLogos] = useState([]);
   const [loadingAvailableLogos, setLoadingAvailableLogos] = useState(false);
@@ -380,16 +384,34 @@ export default function DisplayController() {
       const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
       if (logosDoc.exists()) {
         const data = logosDoc.data();
-        setDisplayLogos(data.displayLogos || []);
-        setBottomLogos(data.bottomLogos || []);
+        const topLogos = data.displayLogos || [];
+        const bottomLogosData = data.bottomLogos || [];
+        const slidingImagesData = data.slidingImages || [];
+        // Sort by rank to maintain order
+        const sortedTopLogos = topLogos.sort((a, b) => a.rank - b.rank);
+        const sortedBottomLogos = bottomLogosData.sort((a, b) => a.rank - b.rank);
+        const sortedSlidingImages = slidingImagesData.sort((a, b) => a.rank - b.rank);
+        setDisplayLogos(sortedTopLogos);
+        setBottomLogos(sortedBottomLogos);
+        setSlidingImages(sortedSlidingImages);
+        setSlidingImagesStartAfter(data.slidingImagesStartAfter || 0);
+        setSlidingImagesDuration(data.slidingImagesDuration || 5);
+        setSlidingImagesGradientColor(data.slidingImagesGradientColor || '#FF5722');
       } else {
         setDisplayLogos([]);
         setBottomLogos([]);
+        setSlidingImages([]);
+        setSlidingImagesStartAfter(0);
+        setSlidingImagesDuration(5);
+        setSlidingImagesGradientColor('#FF5722');
       }
     } catch (error) {
       console.error('Error loading logos:', error);
       setDisplayLogos([]);
       setBottomLogos([]);
+      setSlidingImages([]);
+      setSlidingImagesStartAfter(0);
+      setSlidingImagesDuration(5);
     } finally {
       setLoadingLogos(false);
     }
@@ -408,17 +430,37 @@ export default function DisplayController() {
     }
   };
 
-  const saveLogos = async (topLogos, bottomLogosParam) => {
+  const saveLogos = async (topLogos, bottomLogosParam, slidingImagesParam = null) => {
     try {
-      await setDoc(doc(db, 'tournament_logos', tournamentId), {
+      const updateData = {
         tournamentId,
         displayLogos: topLogos,
         bottomLogos: bottomLogosParam,
         updatedAt: serverTimestamp()
-      });
+      };
+      
+      if (slidingImagesParam !== null) {
+        updateData.slidingImages = slidingImagesParam;
+      }
+      
+      await setDoc(doc(db, 'tournament_logos', tournamentId), updateData, { merge: true });
     } catch (error) {
       console.error('Error saving logos:', error);
       alert('Error saving logos: ' + error.message);
+    }
+  };
+
+  const saveSlidingImagesTiming = async () => {
+    try {
+      await setDoc(doc(db, 'tournament_logos', tournamentId), {
+        slidingImagesStartAfter: slidingImagesStartAfter,
+        slidingImagesDuration: slidingImagesDuration,
+        slidingImagesGradientColor: slidingImagesGradientColor,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving sliding images timing:', error);
+      alert('Error saving timing: ' + error.message);
     }
   };
 
@@ -495,6 +537,55 @@ export default function DisplayController() {
       setBottomLogos(updatedLogos);
       saveLogos(displayLogos, updatedLogos);
     }
+  };
+
+  // Sliding Images Management Functions
+  const addSlidingImage = async (imageData) => {
+    const newImage = {
+      id: Date.now().toString(),
+      url: imageData.url,
+      publicId: imageData.publicId,
+      name: imageData.title || imageData.publicId?.split('/').pop() || 'Image',
+      rank: slidingImages.length + 1
+    };
+
+    const updatedImages = [...slidingImages, newImage];
+    setSlidingImages(updatedImages);
+    saveLogos(displayLogos, bottomLogos, updatedImages);
+  };
+
+  const removeSlidingImage = (imageId) => {
+    const updatedImages = slidingImages.filter(image => image.id !== imageId)
+      .map((image, index) => ({ ...image, rank: index + 1 }));
+    setSlidingImages(updatedImages);
+    saveLogos(displayLogos, bottomLogos, updatedImages);
+  };
+
+  const updateSlidingImage = (imageId, field, value) => {
+    const updatedImages = slidingImages.map(image =>
+      image.id === imageId ? { ...image, [field]: value } : image
+    );
+    setSlidingImages(updatedImages);
+    saveLogos(displayLogos, bottomLogos, updatedImages);
+  };
+
+  const moveSlidingImage = (imageId, direction) => {
+    const currentIndex = slidingImages.findIndex(image => image.id === imageId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= slidingImages.length) return;
+
+    const updatedImages = [...slidingImages];
+    [updatedImages[currentIndex], updatedImages[newIndex]] = [updatedImages[newIndex], updatedImages[currentIndex]];
+    
+    // Update ranks
+    updatedImages.forEach((image, index) => {
+      image.rank = index + 1;
+    });
+
+    setSlidingImages(updatedImages);
+    saveLogos(displayLogos, bottomLogos, updatedImages);
   };
 
   const uploadLogoToCloudinary = async (file) => {
@@ -1287,6 +1378,174 @@ export default function DisplayController() {
               </div>
             )}
 
+            {/* Sliding Images Section */}
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <div className="flex justify-between items-center mb-6">
+                  <h4 className="card-title text-xl">Sliding Images</h4>
+                  <div className="flex gap-2">
+                    <label className="btn btn-accent btn-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      Upload
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            try {
+                              const imageData = await uploadLogoToCloudinary(file);
+                              addSlidingImage(imageData);
+                              e.target.value = ''; // Reset input
+                            } catch (error) {
+                              alert('Error uploading image: ' + error.message);
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Global Timing Settings */}
+                <div className="bg-base-300 rounded-lg p-4 mb-6">
+                  <h5 className="font-semibold text-sm mb-4">Timing Settings (Applied to All Images)</h5>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="form-control">
+                      <label className="label py-1">
+                        <span className="label-text">Start after (seconds)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="input input-bordered input-sm"
+                        value={slidingImagesStartAfter}
+                        onChange={(e) => setSlidingImagesStartAfter(parseInt(e.target.value) || 0)}
+                        onBlur={saveSlidingImagesTiming}
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1">
+                        <span className="label-text">Duration (seconds)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="input input-bordered input-sm"
+                        value={slidingImagesDuration}
+                        onChange={(e) => setSlidingImagesDuration(parseInt(e.target.value) || 5)}
+                        onBlur={saveSlidingImagesTiming}
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label py-1">
+                        <span className="label-text">Gradient Color</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          className="input input-bordered input-sm flex-1 h-10 p-1 cursor-pointer"
+                          value={slidingImagesGradientColor}
+                          onChange={(e) => setSlidingImagesGradientColor(e.target.value)}
+                          onBlur={saveSlidingImagesTiming}
+                        />
+                        <div
+                          className="w-10 h-10 rounded border border-base-content/20"
+                          style={{ backgroundColor: slidingImagesGradientColor }}
+                          title="Color preview"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {slidingImages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-2">🖼️</div>
+                    <p className="text-base-content/70">No sliding images added</p>
+                    <p className="text-sm text-base-content/50 mt-2">Upload images to create a sliding carousel</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {slidingImages
+                      .sort((a, b) => a.rank - b.rank)
+                      .map((image, index) => (
+                        <div key={image.id} className="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                          <div className="badge badge-accent">#{image.rank}</div>
+                          
+                          <div className="avatar">
+                            <div className="w-12 h-12 rounded">
+                              <img
+                                src={getOptimizedLogoUrl(image.publicId, { width: 48, height: 48 }) || image.url}
+                                alt={image.name}
+                                className="object-contain"
+                                onError={(e) => {
+                                  e.target.src = image.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMEMyMi4yMDkxIDIwIDI0IDIxLjc5MDkgMjQgMjRDMjQgMjYuMjA5MSAyMi4yMDkxIDI4IDIwIDI4QzE3Ljc5MDkgMjggMTYgMjYuMjA5MSAxNiAyNEMxNiAyMS43OTA5IDE3Ljc5MDkgMjAgMjAgMjBaIiBmaWxsPSIjOUI5QkEwIi8+Cjwvc3ZnPgo=';
+                                }}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              placeholder="Image name"
+                              className="input input-bordered input-sm w-full"
+                              value={image.name}
+                              onChange={(e) => updateSlidingImage(image.id, 'name', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              className="input input-bordered input-sm h-9 w-12 p-1 cursor-pointer"
+                              value={image.gradientColor || '#FF5722'}
+                              onChange={(e) => updateSlidingImage(image.id, 'gradientColor', e.target.value)}
+                              title="Background gradient color for this image"
+                            />
+                            <div
+                              className="w-8 h-8 rounded border border-base-content/20"
+                              style={{ backgroundColor: image.gradientColor || '#FF5722' }}
+                              title="Color preview"
+                            />
+                          </div>
+                          
+                          <div className="flex gap-1">
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => moveSlidingImage(image.id, 'up')}
+                              disabled={index === 0}
+                              title="Move up"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => moveSlidingImage(image.id, 'down')}
+                              disabled={index === slidingImages.length - 1}
+                              title="Move down"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              className="btn btn-error btn-sm"
+                              onClick={() => removeSlidingImage(image.id)}
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Instructions */}
             <div className="bg-info/10 border border-info/20 rounded-lg p-6">
               <h4 className="font-semibold text-info mb-3">How to use Logo Management:</h4>
@@ -1297,6 +1556,7 @@ export default function DisplayController() {
                 <li>• <strong>Edit Title:</strong> Click on the title field to edit the logo name</li>
                 <li>• <strong>Remove:</strong> Click the × button to remove a logo from display</li>
                 <li>• <strong>Display Order:</strong> Logos will appear from left to right in the order shown on both main and side displays</li>
+                <li>• <strong>Sliding Images:</strong> Upload images to create a carousel that cycles through them on the side display</li>
               </ul>
             </div>
           </div>

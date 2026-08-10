@@ -1,0 +1,23 @@
+# Robots.txt for Pickleball App
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private routes
+Disallow: /admin/
+Disallow: /admin-draft-view
+Disallow: /draft-main-screen-display
+Disallow: /team-draft-room
+Disallow: /firebase-debug
+Disallow: /display-controller/
+Disallow: /streaming-overlay-controller/
+
+# Allow public display routes for SEO
+Allow: /tv/
+Allow: /match/
+Allow: /streaming-overlay/
+Allow: /streaming-venue-overlay/
+
+# Sitemap location
+Sitemap: https://thehpl.in/sitemap.xml

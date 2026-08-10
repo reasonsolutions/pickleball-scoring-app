@@ -46,13 +46,13 @@ export default function ClubsTable() {
   const [conferenceATeams, setConferenceATeams] = useState([]);
   const [conferenceBTeams, setConferenceBTeams] = useState([]);
 
-  // Fetch teams from HPL Clubs tournament
+  // Fetch teams from CCPL Clubs tournament
   useEffect(() => {
     const fetchTeams = async () => {
       try {
         setLoading(true);
         
-        // First, find the HPL Clubs tournament
+        // First, find the CCPL Clubs tournament
         const tournamentsRef = collection(db, 'tournaments');
         const tournamentsSnapshot = await getDocs(tournamentsRef);
         
@@ -62,9 +62,9 @@ export default function ClubsTable() {
         tournamentsSnapshot.docs.forEach(doc => {
           const data = doc.data();
           allTournaments.push({ id: doc.id, ...data });
-          // Check for HPL Clubs tournament with various possible field names
-          if (data.name === 'HPL Clubs' ||
-              data.tournamentName === 'HPL Clubs' ||
+          // Check for CCPL Clubs tournament with various possible field names
+          if (data.name === 'CCPL Clubs' ||
+              data.tournamentName === 'CCPL Clubs' ||
               data.name?.toLowerCase().includes('hpl clubs') ||
               data.tournamentName?.toLowerCase().includes('hpl clubs')) {
             hplClubsTournamentId = doc.id;
@@ -73,11 +73,11 @@ export default function ClubsTable() {
         });
 
         console.log('All tournaments:', allTournaments);
-        console.log('HPL Clubs Tournament ID:', hplClubsTournamentId);
+        console.log('CCPL Clubs Tournament ID:', hplClubsTournamentId);
         console.log('Tournament Data:', tournamentData);
 
         if (!hplClubsTournamentId) {
-          console.warn('HPL Clubs tournament not found. Available tournaments:', allTournaments.map(t => ({ id: t.id, name: t.name, tournamentName: t.tournamentName })));
+          console.warn('CCPL Clubs tournament not found. Available tournaments:', allTournaments.map(t => ({ id: t.id, name: t.name, tournamentName: t.tournamentName })));
           setTeams([]);
           setConferenceATeams([]);
           setConferenceBTeams([]);
@@ -93,7 +93,7 @@ export default function ClubsTable() {
           clubsData[doc.id] = doc.data();
         });
 
-        // Fetch teams for HPL Clubs tournament
+        // Fetch teams for CCPL Clubs tournament
         const teamsQuery = query(
           collection(db, 'teams'),
           where('tournamentId', '==', hplClubsTournamentId)
@@ -248,9 +248,11 @@ export default function ClubsTable() {
         const teamStats = teamsData.map(team => {
           const teamFixtures = Object.values(fixtureGroups).filter(fixture => {
             const isTeamInvolved = fixture.team1 === team.id || fixture.team2 === team.id;
-            const playoffTypes = ['playoff', 'Qualifier', 'Qualifier 1', 'Qualifier 2', 'Eliminator', 'Final'];
-            const isNotPlayoff = !fixture.fixtureType || !playoffTypes.includes(fixture.fixtureType);
-            return isTeamInvolved && isNotPlayoff;
+            // Exclude fixtures with these types from points calculation (case-insensitive)
+            const excludedFixtureTypes = ['playoff', 'qualifier', 'qualifier 1', 'qualifier 2', 'eliminator', 'final'];
+            const fixtureTypeNormalized = fixture.fixtureType ? fixture.fixtureType.toLowerCase().trim() : '';
+            const isExcludedType = fixture.fixtureType && excludedFixtureTypes.includes(fixtureTypeNormalized);
+            return isTeamInvolved && !isExcludedType;
           });
 
           let battleWins = 0;
@@ -622,7 +624,7 @@ export default function ClubsTable() {
           {/* Page Title */}
           <div className="flex justify-between items-center mb-8 sm:mb-12">
             <h2 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold italic" style={{fontFamily: 'Avantique, sans-serif'}}>
-              HPL CLUBS TABLE
+              CCPL CLUBS TABLE
             </h2>
           </div>
 

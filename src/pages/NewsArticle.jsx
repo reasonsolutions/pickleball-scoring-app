@@ -44,9 +44,9 @@ export default function NewsArticle() {
           id: doc.id,
           ...doc.data()
         }));
-        // Filter out "HPL Clubs" tournament
+        // Filter out "CCPL Clubs" tournament
         const tournamentsList = allTournaments.filter(
-          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+          tournament => tournament.name !== 'CCPL Clubs' && tournament.tournamentName !== 'CCPL Clubs'
         );
         setTournaments(tournamentsList);
         

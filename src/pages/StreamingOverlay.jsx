@@ -33,7 +33,7 @@ export default function StreamingOverlay() {
 
   // Team logo mapping
   const teamLogos = {
-    'HPL': hplLogoWhite,
+    'CCPL': hplLogoWhite,
     'Challenger': challengerLogo,
     'Centre Court': centrecourtLogo,
     'Mavericks': mavericksLogo,

@@ -91,7 +91,7 @@ export default function Clubs() {
           {/* Header Section */}
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-orange-400 mb-4" style={{ fontFamily: 'Avantique, sans-serif' }}>
-              HPL Clubs
+              CCPL Clubs
             </h1>
             <div className="w-24 h-1 bg-orange-500 mx-auto"></div>
           </div>

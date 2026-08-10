@@ -26,6 +26,9 @@ export default function UmpireScoring() {
   const [currentGame, setCurrentGame] = useState(0);
   const [matchEnded, setMatchEnded] = useState(false);
   
+  // Image error states
+  const [imageErrors, setImageErrors] = useState({ player1: false, player2: false });
+  
   // Serve states
   const [servingPlayer, setServingPlayer] = useState('player1'); // 'player1' or 'player2'
   const [serveSequence, setServeSequence] = useState(0); // 0 = first serve, 1 = second serve (for doubles)
@@ -198,89 +201,9 @@ export default function UmpireScoring() {
       });
       console.log('✅ MATCH STATUS UPDATED TO LIVE');
       
-      // Start recording APIs
-      await startRecording();
+      // Clutch API recording removed
     } catch (error) {
       console.error('Error setting match to live:', error);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      console.log('🎥 Starting recording process...');
-      
-      // Step 1: Generate bearer token
-      console.log('🔐 Generating bearer token...');
-      const authResponse = await fetch('https://admin-api.theclutchsports.com/api/recording/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          username: 'hpl',
-          password: 'hpl'
-        })
-      });
-
-      if (!authResponse.ok) {
-        throw new Error(`Auth API failed with status ${authResponse.status}`);
-      }
-
-      const authData = await authResponse.json();
-      console.log('🔐 Auth API Response:', authData);
-      const bearerToken = authData.token || authData.access_token;
-      
-      if (!bearerToken) {
-        throw new Error('No bearer token received from auth API');
-      }
-
-      console.log('✅ Bearer token generated successfully');
-      console.log('🔑 Bearer Token:', bearerToken);
-
-      // Step 2: Start recording using facilityId and venueCourtId
-      if (!match?.facilityId || !match?.venueCourtId) {
-        console.warn('⚠️ Missing facilityId or venueCourtId, skipping recording start');
-        return;
-      }
-
-      console.log('🎬 Starting recording with facilityId:', match.facilityId, 'venueCourtId:', match.venueCourtId);
-      
-      const recordingResponse = await fetch(
-        `https://admin-api.theclutchsports.com/api/recording/${match.facilityId}/${match.venueCourtId}/start-recording`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${bearerToken}`
-          },
-          body: JSON.stringify({})
-        }
-      );
-
-      if (!recordingResponse.ok) {
-        throw new Error(`Recording API failed with status ${recordingResponse.status}`);
-      }
-
-      const recordingData = await recordingResponse.json();
-      console.log('✅ Recording started successfully:', recordingData);
-
-      // Save recording session info to match document
-      await updateDoc(doc(db, 'fixtures', matchId), {
-        recordingStarted: true,
-        recordingStartedAt: serverTimestamp(),
-        recordingSessionData: recordingData,
-        recording_id: recordingData.recording_id,
-        session_id: recordingData.session_id
-      });
-
-      console.log('✅ Recording session saved to match document');
-      console.log('📹 Recording ID:', recordingData.recording_id);
-      console.log('📹 Session ID:', recordingData.session_id);
-    } catch (error) {
-      console.error('❌ Error starting recording:', error);
-      setError(`Recording error: ${error.message}`);
     }
   };
 
@@ -342,8 +265,18 @@ export default function UmpireScoring() {
   };
 
   const getPlayerImage = (playerKey) => {
-    // Return placeholder for now - can be enhanced to fetch actual player images
-    return null;
+    if (!match) return null;
+    
+    // Get player name based on key
+    const playerName = playerKey === 'player1'
+      ? (match.player1Team1 || match.team1Name)
+      : (match.player1Team2 || match.team2Name);
+    
+    // Find player in players array by name
+    const player = players.find(p => p.name === playerName);
+    
+    // Return photo URL if available
+    return player?.photo || null;
   };
 
   const handleServeChange = async () => {
@@ -502,88 +435,12 @@ export default function UmpireScoring() {
       
       console.log('✅ MATCH STATUS UPDATED TO COMPLETED');
       
-      // Stop recording
-      await stopRecording();
+      // Clutch API recording removed
       
       setMatchEnded(true);
     } catch (error) {
       console.error('Error ending match:', error);
       setError('Failed to end match');
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      console.log('🎥 Stopping recording process...');
-      
-      // Check if we have the necessary recording information
-      if (!match?.facilityId || !match?.venueCourtId) {
-        console.warn('⚠️ Missing facilityId or venueCourtId, skipping recording stop');
-        return;
-      }
-
-      // Step 1: Generate bearer token
-      console.log('🔐 Generating bearer token for stop recording...');
-      const authResponse = await fetch('https://admin-api.theclutchsports.com/api/recording/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          username: 'hpl',
-          password: 'hpl'
-        })
-      });
-
-      if (!authResponse.ok) {
-        throw new Error(`Auth API failed with status ${authResponse.status}`);
-      }
-
-      const authData = await authResponse.json();
-      console.log('🔐 Auth API Response (Stop Recording):', authData);
-      const bearerToken = authData.token || authData.access_token;
-      
-      if (!bearerToken) {
-        throw new Error('No bearer token received from auth API');
-      }
-
-      console.log('✅ Bearer token generated successfully');
-      console.log('🔑 Bearer Token (Stop Recording):', bearerToken);
-
-      // Step 2: Stop recording using facilityId and venueCourtId
-      console.log('🛑 Stopping recording with facilityId:', match.facilityId, 'venueCourtId:', match.venueCourtId);
-      
-      const stopResponse = await fetch(
-        `https://admin-api.theclutchsports.com/api/recording/${match.facilityId}/${match.venueCourtId}/stop-recording`,
-        {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${bearerToken}`
-          }
-        }
-      );
-
-      if (!stopResponse.ok) {
-        throw new Error(`Stop recording API failed with status ${stopResponse.status}`);
-      }
-
-      const stopData = await stopResponse.json();
-      console.log('✅ Recording stopped successfully');
-      console.log('🎬 Stop Recording API Response:', stopData);
-
-      // Save recording stop info to match document
-      await updateDoc(doc(db, 'fixtures', matchId), {
-        recordingStopped: true,
-        recordingStoppedAt: serverTimestamp(),
-        recordingStopData: stopData
-      });
-
-      console.log('✅ Recording stop information saved to match document');
-    } catch (error) {
-      console.error('❌ Error stopping recording:', error);
-      setError(`Recording stop error: ${error.message}`);
     }
   };
 
@@ -1331,11 +1188,12 @@ export default function UmpireScoring() {
             <div className={`w-16 h-16 rounded-full flex items-center justify-center relative ${
               servingPlayer === 'player1' ? 'bg-green-500' : 'bg-red-500'
             }`}>
-              {getPlayerImage('player1') ? (
+              {getPlayerImage('player1') && !imageErrors.player1 ? (
                 <img
                   src={getPlayerImage('player1')}
                   alt="Player 1"
                   className="w-full h-full rounded-full object-cover"
+                  onError={() => setImageErrors(prev => ({ ...prev, player1: true }))}
                 />
               ) : (
                 <span className="text-white font-bold text-xl">P1</span>
@@ -1407,11 +1265,12 @@ export default function UmpireScoring() {
             <div className={`w-16 h-16 rounded-full flex items-center justify-center relative ${
               servingPlayer === 'player2' ? 'bg-green-500' : 'bg-red-500'
             }`}>
-              {getPlayerImage('player2') ? (
+              {getPlayerImage('player2') && !imageErrors.player2 ? (
                 <img
                   src={getPlayerImage('player2')}
                   alt="Player 2"
                   className="w-full h-full rounded-full object-cover"
+                  onError={() => setImageErrors(prev => ({ ...prev, player2: true }))}
                 />
               ) : (
                 <span className="text-white font-bold text-xl">P2</span>

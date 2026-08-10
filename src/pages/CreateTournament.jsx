@@ -221,8 +221,8 @@ export default function CreateTournament() {
                     required
                   >
                     <option value="">Select a format</option>
-                    <option value="HPL Main">HPL Main</option>
-                    <option value="HPL Clubs">HPL Clubs</option>
+                    <option value="CCPL Main">CCPL Main</option>
+                    <option value="CCPL Clubs">CCPL Clubs</option>
                   </select>
                 </div>
               </div>

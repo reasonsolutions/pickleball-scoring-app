@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body { margin: 0; font-family: 'Manrope', sans-serif; }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(128,128,140,0.35); border-radius: 8px; }
+  @keyframes posfood-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes posfood-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  input:focus, select:focus, textarea:focus { outline: none; }
+</style>
+</helmet>
+
+<sc-if value="{{show_login}}" hint-placeholder-val="{{false}}">
+  <div style="{{s.loginRoot}}">
+    <div style="{{s.loginOrbA}}"></div>
+    <div style="{{s.loginOrbB}}"></div>
+    <div style="{{s.loginCard}}">
+      <div style="{{s.loginLogoRow}}">
+        <div style="{{s.logoBadge}}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 3v6M7 3c-1.4 0-2.3 1.6-2.3 3.5S5.6 10 7 10M7 10v11M17 3c-2 0-3.5 2.4-3.5 5.5S15 14 17 14v10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span style="{{s.loginLogoText}}">POSFood</span>
+      </div>
+      <div style="{{s.loginTitle}}">Welcome back</div>
+      <div style="{{s.loginSubtitle}}">Sign in to run {{profile.name}}'s counter.</div>
+
+      <label style="{{s.label}}">Email</label>
+      <input style="{{s.input}}" type="email" value="{{login.email}}" onChange="{{login.onEmail}}" placeholder="you@restaurant.com"/>
+      <label style="{{s.label}}">Password</label>
+      <input style="{{s.input}}" type="password" value="{{login.password}}" onChange="{{login.onPassword}}" placeholder="••••••••"/>
+
+      <sc-if value="{{login.error}}" hint-placeholder-val="{{false}}">
+        <div style="{{s.loginError}}">{{login.error}}</div>
+      </sc-if>
+
+      <button style="{{s.loginSubmitBtn}}" style-hover="{{s.primaryBtnHover}}" onClick="{{login.submit}}">Sign In</button>
+      <div style="{{s.loginHint}}">Prototype access — enter any email and password.</div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{not_show_login}}" hint-placeholder-val="{{true}}">
+<div style="{{s.root}}">
+
+  <!-- ===== Top nav bar (tablet/laptop) ===== -->
+  <sc-if value="{{not_mobile}}" hint-placeholder-val="{{true}}">
+    <div style="{{s.appBar}}">
+      <div style="{{s.appBarLeft}}">
+        <div style="{{s.logoBadge}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 3v6M7 3c-1.4 0-2.3 1.6-2.3 3.5S5.6 10 7 10M7 10v11M17 3c-2 0-3.5 2.4-3.5 5.5S15 14 17 14v10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span style="{{s.logoText}}">POSFood</span>
+      </div>
+
+      <nav style="{{s.navPillGroup}}">
+        <button style="{{navOrder}}" style-hover="{{navOrderHover}}" onClick="{{go_order}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span>Order</span>
+        </button>
+        <button style="{{navItems}}" style-hover="{{navItemsHover}}" onClick="{{go_items}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
+          <span>Items</span>
+        </button>
+        <button style="{{navHistory}}" style-hover="{{navHistoryHover}}" onClick="{{go_history}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>History</span>
+        </button>
+        <button style="{{navAnalytics}}" style-hover="{{navAnalyticsHover}}" onClick="{{go_analytics}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Analytics</span>
+        </button>
+        <button style="{{navSettings}}" style-hover="{{navSettingsHover}}" onClick="{{go_settings}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H4.5a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10.6a1.7 1.7 0 0 0 1.04-1.56V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V10.6a1.7 1.7 0 0 0 1.56 1.04H19.5a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div style="{{s.appBarRight}}">
+        <button style="{{s.themeMini}}" style-hover="{{s.navHover}}" onClick="{{toggle_theme}}">
+          <sc-if value="{{is_dark}}" hint-placeholder-val="{{true}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M21 12.5A9 9 0 1 1 11.5 3a7 7 0 0 0 9.5 9.5Z" stroke="currentColor" stroke-width="1.8"/></svg>
+          </sc-if>
+          <sc-if value="{{not_dark}}" hint-placeholder-val="{{false}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </sc-if>
+        </button>
+        <div style="{{s.profileMini}}" onClick="{{go_settings}}">
+          <div style="{{s.profileAvatar}}">{{profile_initial}}</div>
+          <div style="{{s.profileTextWrap}}">
+            <div style="{{s.profileName}}">{{profile.name}}</div>
+            <div style="{{s.profileRole}}">Owner</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== Main content ===== -->
+  <div style="{{s.mainCol}}">
+
+    <!-- ORDER SCREEN -->
+    <sc-if value="{{is_order}}" hint-placeholder-val="{{true}}">
+      <div style="{{s.orderWrap}}">
+        <div style="{{s.orderMain}}">
+          <div style="{{s.topBar}}">
+            <div>
+              <div style="{{s.h1}}">{{profile.name}}</div>
+              <div style="{{s.subtle}}">{{today_label}}</div>
+            </div>
+            <div style="{{s.searchBox}}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <input placeholder="Search menu here..." value="{{search}}" onChange="{{on_search}}" style="{{s.searchInput}}"/>
+            </div>
+          </div>
+
+          <div style="{{s.catRow}}">
+            <button style="{{cat_burger.style}}" onClick="{{cat_burger.onClick}}">
+              <span style="{{cat_burger.iconWrap}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 10.5c0-3.6 3.6-6.5 8-6.5s8 2.9 8 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="3.5" y="11" width="17" height="3.4" rx="1.7" fill="currentColor"/><path d="M4.5 16h15a1 1 0 0 1 1 1.1c-.4 2.3-2.6 3.9-5 3.9H8.5c-2.4 0-4.6-1.6-5-3.9a1 1 0 0 1 1-1.1Z" fill="currentColor"/></svg></span>
+              Burger
+            </button>
+            <button style="{{cat_noodles.style}}" onClick="{{cat_noodles.onClick}}">
+              <span style="{{cat_noodles.iconWrap}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 10h16M4 10c0 6 3 9 8 9s8-3 8-9M7 10V6m5 4V5m5 5V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              Noodles
+            </button>
+            <button style="{{cat_drinks.style}}" onClick="{{cat_drinks.onClick}}">
+              <span style="{{cat_drinks.iconWrap}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 4h12l-1.4 15.2a2 2 0 0 1-2 1.8H9.4a2 2 0 0 1-2-1.8L6 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M6.6 9h10.8" stroke="currentColor" stroke-width="1.8"/></svg></span>
+              Drinks
+            </button>
+          </div>
+
+          <div style="{{s.itemGrid}}">
+            <sc-for list="{{filtered_items}}" as="it" hint-placeholder-count="8">
+              <div style="{{it.cardStyle}}" style-hover="{{it.cardHoverStyle}}" onClick="{{it.onClick}}">
+                <sc-if value="{{it.inCart}}"><div style="{{s.qtyBadge}}">{{it.qtyLabel}}</div></sc-if>
+                <div style="{{s.itemPhoto}}"><image-slot id="{{it.photoId}}" shape="rounded" radius="14" placeholder="Photo"></image-slot></div>
+                <div style="{{s.itemName}}">{{it.name}}</div>
+                <div style="{{s.itemRow}}">
+                  <span style="{{s.itemPrice}}">${{it.priceLabel}}</span>
+                  <span style="{{s.itemStock}}">{{it.stock}} items</span>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{no_results}}" hint-placeholder-val="{{false}}">
+              <div style="{{s.emptyState}}">No menu items match "{{search}}"</div>
+            </sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{not_mobile}}" hint-placeholder-val="{{true}}">
+          <div style="{{s.cartPanel}}">
+            <div style="{{s.cartHeader}}">
+              <div>
+                <div style="{{s.h2}}">Order</div>
+                <div style="{{s.subtle}}">Table {{table_no}}</div>
+              </div>
+            </div>
+            <div style="{{s.cartList}}">
+              <sc-for list="{{cart}}" as="line" hint-placeholder-count="0">
+                <div style="{{s.cartLine}}">
+                  <div style="{{s.cartThumb}}"><image-slot id="{{line.photoId}}" shape="rounded" radius="10" placeholder=""></image-slot></div>
+                  <div style="{{s.cartInfo}}">
+                    <div style="{{s.cartName}}">{{line.name}} ({{line.qty}}x)</div>
+                    <div style="{{s.cartQtyRow}}">
+                      <button style="{{s.qtyBtn}}" onClick="{{line.dec}}">−</button>
+                      <span style="{{s.qtyNum}}">{{line.qty}}</span>
+                      <button style="{{s.qtyBtn}}" onClick="{{line.inc}}">+</button>
+                      <button style="{{s.removeBtn}}" onClick="{{line.remove}}">Remove</button>
+                    </div>
+                  </div>
+                  <div style="{{s.cartLinePrice}}">${{line.totalLabel}}</div>
+                </div>
+              </sc-for>
+              <sc-if value="{{cart_empty}}" hint-placeholder-val="{{true}}">
+                <div style="{{s.cartEmpty}}">Tap a menu item to add it to this order.</div>
+              </sc-if>
+            </div>
+            <div style="{{s.cartSummary}}">
+              <div style="{{s.sumRow}}"><span>Sub Total</span><span>${{subtotal_label}}</span></div>
+              <div style="{{s.sumRow}}"><span>Tax (10%)</span><span>${{tax_label}}</span></div>
+              <div style="{{s.sumDivider}}"></div>
+              <div style="{{s.totalRow}}"><span>Total</span><span>${{total_label}}</span></div>
+              <button style="{{s.placeOrderBtn}}" onClick="{{place_order}}" disabled="{{cart_empty}}">Place Order</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{is_mobile}}" hint-placeholder-val="{{false}}">
+          <div style="{{s.mobileCartBar}}" onClick="{{open_cart_sheet}}">
+            <span>{{cart_count}} item(s) · ${{total_label}}</span>
+            <span style="{{s.mobileCartCta}}">View Order</span>
+          </div>
+          <sc-if value="{{cart_sheet_open}}" hint-placeholder-val="{{false}}">
+            <div style="{{s.sheetOverlay}}" onClick="{{close_cart_sheet}}">
+              <div style="{{s.sheet}}" onClick="{{stop_prop}}">
+                <div style="{{s.cartHeader}}">
+                  <div>
+                    <div style="{{s.h2}}">Order</div>
+                    <div style="{{s.subtle}}">Table {{table_no}}</div>
+                  </div>
+                  <button style="{{s.closeSheetBtn}}" onClick="{{close_cart_sheet}}">Close</button>
+                </div>
+                <div style="{{s.cartList}}">
+                  <sc-for list="{{cart}}" as="line" hint-placeholder-count="0">
+                    <div style="{{s.cartLine}}">
+                      <div style="{{s.cartThumb}}"><image-slot id="{{line.photoId}}" shape="rounded" radius="10" placeholder=""></image-slot></div>
+                      <div style="{{s.cartInfo}}">
+                        <div style="{{s.cartName}}">{{line.name}} ({{line.qty}}x)</div>
+                        <div style="{{s.cartQtyRow}}">
+                          <button style="{{s.qtyBtn}}" onClick="{{line.dec}}">−</button>
+                          <span style="{{s.qtyNum}}">{{line.qty}}</span>
+                          <button style="{{s.qtyBtn}}" onClick="{{line.inc}}">+</button>
+                          <button style="{{s.removeBtn}}" onClick="{{line.remove}}">Remove</button>
+                        </div>
+                      </div>
+                      <div style="{{s.cartLinePrice}}">${{line.totalLabel}}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="{{s.cartSummary}}">
+                  <div style="{{s.sumRow}}"><span>Sub Total</span><span>${{subtotal_label}}</span></div>
+                  <div style="{{s.sumRow}}"><span>Tax (10%)</span><span>${{tax_label}}</span></div>
+                  <div style="{{s.sumDivider}}"></div>
+                  <div style="{{s.totalRow}}"><span>Total</span><span>${{total_label}}</span></div>
+                  <button style="{{s.placeOrderBtn}}" onClick="{{place_order}}" disabled="{{cart_empty}}">Place Order</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ITEMS SCREEN -->
+    <sc-if value="{{is_items}}" hint-placeholder-val="{{false}}">
+      <div style="{{s.screenPad}}">
+        <div style="{{s.screenHeader}}">
+          <div>
+            <div style="{{s.h1}}">Menu Items</div>
+            <div style="{{s.subtle}}">Manage dishes, prices and inventory</div>
+          </div>
+          <button style="{{s.primaryBtn}}" style-hover="{{s.primaryBtnHover}}" onClick="{{open_add_item}}">+ Add Item</button>
+        </div>
+
+        <div style="{{s.itemsMgmtGrid}}">
+          <sc-for list="{{mgmt_items}}" as="mi" hint-placeholder-count="8">
+            <div style="{{s.mgmtCard}}" style-hover="{{s.mgmtCardHover}}">
+              <div style="{{s.mgmtDelete}}" onClick="{{mi.remove}}">✕</div>
+              <div style="{{s.mgmtPhoto}}"><image-slot id="{{mi.photoId}}" shape="rounded" radius="14" placeholder="Photo"></image-slot></div>
+              <div style="{{s.mgmtName}}">{{mi.name}}</div>
+              <div style="{{s.mgmtCat}}">{{mi.category}}</div>
+              <div style="{{s.mgmtPriceRow}}">
+                <span style="{{s.itemPrice}}">${{mi.priceLabel}}</span>
+                <span style="{{mi.stockStyle}}">{{mi.stockLabel}}</span>
+              </div>
+              <div style="{{s.stockRow}}">
+                <span style="{{s.subtle}}">Inventory</span>
+                <div style="{{s.stockStepper}}">
+                  <button style="{{s.qtyBtn}}" onClick="{{mi.stockDec}}">−</button>
+                  <span style="{{s.qtyNum}}">{{mi.stock}}</span>
+                  <button style="{{s.qtyBtn}}" onClick="{{mi.stockInc}}">+</button>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{add_item_open}}" hint-placeholder-val="{{false}}">
+        <div style="{{s.modalOverlay}}" onClick="{{close_add_item}}">
+          <div style="{{s.modal}}" onClick="{{stop_prop}}">
+            <div style="{{s.h2}}">Add New Item</div>
+            <div style="{{s.formPhoto}}"><image-slot id="new-item-photo" shape="rounded" radius="14" placeholder="Drop item photo"></image-slot></div>
+            <label style="{{s.label}}">Name</label>
+            <input style="{{s.input}}" value="{{new_item.name}}" onChange="{{on_new_name}}" placeholder="e.g. Classic Burger"/>
+            <label style="{{s.label}}">Category</label>
+            <input style="{{s.input}}" value="{{new_item.category}}" onChange="{{on_new_category}}" placeholder="e.g. Burger, Noodles, Drinks"/>
+            <div style="{{s.formRow2}}">
+              <div style="{{s.formCol}}">
+                <label style="{{s.label}}">Price ($)</label>
+                <input style="{{s.input}}" type="number" value="{{new_item.price}}" onChange="{{on_new_price}}" placeholder="0.00"/>
+              </div>
+              <div style="{{s.formCol}}">
+                <label style="{{s.label}}">Inventory</label>
+                <input style="{{s.input}}" type="number" value="{{new_item.stock}}" onChange="{{on_new_stock}}" placeholder="0"/>
+              </div>
+            </div>
+            <div style="{{s.modalActions}}">
+              <button style="{{s.secondaryBtn}}" onClick="{{close_add_item}}">Cancel</button>
+              <button style="{{s.primaryBtn}}" onClick="{{save_new_item}}">Save Item</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- HISTORY SCREEN -->
+    <sc-if value="{{is_history}}" hint-placeholder-val="{{false}}">
+      <div style="{{s.screenPad}}">
+        <div style="{{s.screenHeader}}">
+          <div>
+            <div style="{{s.h1}}">Order History</div>
+            <div style="{{s.subtle}}">{{history_count}} past orders</div>
+          </div>
+        </div>
+        <div style="{{s.historyList}}">
+          <sc-for list="{{history_rows}}" as="h" hint-placeholder-count="6">
+            <div style="{{s.historyCard}}">
+              <div style="{{s.historyRow}}" onClick="{{h.toggle}}">
+                <div style="{{s.historyId}}">#{{h.id}}</div>
+                <div style="{{s.historyTable}}">Table {{h.table}}</div>
+                <div style="{{s.historyCount}}">{{h.itemCount}} items</div>
+                <div style="{{s.historyTime}}">{{h.timeLabel}}</div>
+                <div style="{{s.statusPill}}">{{h.status}}</div>
+                <div style="{{s.historyTotal}}">${{h.totalLabel}}</div>
+                <div style="{{s.chevron}}">{{h.chevron}}</div>
+              </div>
+              <sc-if value="{{h.expanded}}" hint-placeholder-val="{{false}}">
+                <div style="{{s.receiptDetail}}">
+                  <sc-for list="{{h.lines}}" as="rl" hint-placeholder-count="2">
+                    <div style="{{s.receiptLine}}">
+                      <span>{{rl.name}} × {{rl.qty}}</span>
+                      <span>${{rl.totalLabel}}</span>
+                    </div>
+                  </sc-for>
+                  <div style="{{s.sumDivider}}"></div>
+                  <div style="{{s.receiptLine}}"><span>Sub Total</span><span>${{h.subtotalLabel}}</span></div>
+                  <div style="{{s.receiptLine}}"><span>Tax</span><span>${{h.taxLabel}}</span></div>
+                  <div style="{{s.receiptTotalLine}}"><span>Total</span><span>${{h.totalLabel}}</span></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ANALYTICS SCREEN -->
+    <sc-if value="{{is_analytics}}" hint-placeholder-val="{{false}}">
+      <div style="{{s.screenPad}}">
+        <div style="{{s.screenHeader}}">
+          <div>
+            <div style="{{s.h1}}">Analytics</div>
+            <div style="{{s.subtle}}">Performance overview for {{profile.name}}</div>
+          </div>
+        </div>
+
+        <div style="{{s.statGrid}}">
+          <div style="{{s.statCard}}">
+            <div style="{{s.subtle}}">Revenue Today</div>
+            <div style="{{s.statValue}}">${{analytics.todayLabel}}</div>
+            <div style="{{s.statSub}}">{{analytics.todayOrders}} orders</div>
+          </div>
+          <div style="{{s.statCard}}">
+            <div style="{{s.subtle}}">Revenue This Week</div>
+            <div style="{{s.statValue}}">${{analytics.weekLabel}}</div>
+            <div style="{{s.statSub}}">{{analytics.weekOrders}} orders</div>
+          </div>
+          <div style="{{s.statCard}}">
+            <div style="{{s.subtle}}">Revenue This Month</div>
+            <div style="{{s.statValue}}">${{analytics.monthLabel}}</div>
+            <div style="{{s.statSub}}">{{analytics.monthOrders}} orders</div>
+          </div>
+          <div style="{{s.statCard}}">
+            <div style="{{s.subtle}}">Average Order Value</div>
+            <div style="{{s.statValue}}">${{analytics.avgLabel}}</div>
+            <div style="{{s.statSub}}">across {{analytics.totalOrders}} orders</div>
+          </div>
+        </div>
+
+        <div style="{{s.analyticsRow}}">
+          <div style="{{s.chartCard}}">
+            <div style="{{s.h2}}">Revenue Trend — Last 7 Days</div>
+            <div style="{{s.trendChart}}">
+              <sc-for list="{{analytics.trend}}" as="d" hint-placeholder-count="7">
+                <div style="{{s.trendBarWrap}}">
+                  <div style="{{s.trendValueLabel}}">${{d.shortLabel}}</div>
+                  <div style="{{d.barStyle}}"></div>
+                  <div style="{{s.trendDayLabel}}">{{d.day}}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="{{s.bestSellerCard}}">
+            <div style="{{s.h2}}">Best Sellers</div>
+            <sc-for list="{{analytics.bestSellers}}" as="b" hint-placeholder-count="5">
+              <div style="{{s.bestSellerRow}}">
+                <div style="{{s.bestSellerRank}}">{{b.rank}}</div>
+                <div style="{{s.bestSellerInfo}}">
+                  <div style="{{s.bestSellerName}}">{{b.name}}</div>
+                  <div style="{{b.barBg}}"><div style="{{b.barFill}}"></div></div>
+                </div>
+                <div style="{{s.bestSellerQty}}">{{b.qty}} sold</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SETTINGS SCREEN -->
+    <sc-if value="{{is_settings}}" hint-placeholder-val="{{false}}">
+      <div style="{{s.screenPad}}">
+        <div style="{{s.screenHeader}}">
+          <div>
+            <div style="{{s.h1}}">Settings</div>
+            <div style="{{s.subtle}}">Preferences, profile and account</div>
+          </div>
+        </div>
+
+        <div style="{{s.settingsGrid}}">
+          <div style="{{s.settingsCard}}">
+            <div style="{{s.h2}}">Appearance</div>
+            <div style="{{s.subtle}}">Choose how POSFood looks on this device.</div>
+            <div style="{{s.themeSwitchRow}}">
+              <button style="{{s.themeOptDark}}" onClick="{{set_dark}}">Dark Mode</button>
+              <button style="{{s.themeOptLight}}" onClick="{{set_light}}">Bright Mode</button>
+            </div>
+          </div>
+
+          <div style="{{s.settingsCard}}">
+            <div style="{{s.h2}}">Restaurant Profile</div>
+            <div style="{{s.formRow2}}">
+              <div style="{{s.formCol}}">
+                <label style="{{s.label}}">Name</label>
+                <input style="{{s.input}}" value="{{profile.name}}" onChange="{{on_profile_name}}"/>
+              </div>
+              <div style="{{s.formCol}}">
+                <label style="{{s.label}}">Address</label>
+                <input style="{{s.input}}" value="{{profile.address}}" onChange="{{on_profile_address}}"/>
+              </div>
+            </div>
+            <label style="{{s.label}}">Logo</label>
+            <div style="{{s.logoSlot}}"><image-slot id="restaurant-logo" shape="rounded" radius="14" placeholder="Drop logo"></image-slot></div>
+          </div>
+
+          <div style="{{s.settingsCard}}">
+            <div style="{{s.h2}}">Change Password</div>
+            <label style="{{s.label}}">Current Password</label>
+            <input style="{{s.input}}" type="password" value="{{pw.current}}" onChange="{{on_pw_current}}"/>
+            <div style="{{s.formRow2}}">
+              <div style="{{s.formCol}}">
+                <label style="{{s.label}}">New Password</label>
+                <input style="{{s.input}}" type="password" value="{{pw.next}}" onChange="{{on_pw_next}}"/>
+              </div>
+              <div style="{{s.formCol}}">
+                <label style="{{s.label}}">Confirm Password</label>
+                <input style="{{s.input}}" type="password" value="{{pw.confirm}}" onChange="{{on_pw_confirm}}"/>
+              </div>
+            </div>
+            <sc-if value="{{pw.message}}" hint-placeholder-val="{{false}}">
+              <div style="{{pw.messageStyle}}">{{pw.message}}</div>
+            </sc-if>
+            <button style="{{s.primaryBtn}}" onClick="{{update_password}}">Update Password</button>
+          </div>
+
+          <div style="{{s.settingsCard}}">
+            <div style="{{s.h2}}">Session</div>
+            <div style="{{s.subtle}}">Signed in as {{login.email_display}}</div>
+            <button style="{{s.logoutBtn}}" style-hover="{{s.navHover}}" onClick="{{logout}}">Log Out</button>
+          </div>
+
+          <div style="{{s.settingsCard}}">
+            <div style="{{s.settingsCardHeader}}">
+              <div style="{{s.h2}}">Staff Accounts</div>
+              <button style="{{s.secondaryBtn}}" onClick="{{toggle_add_staff}}">+ Add Staff</button>
+            </div>
+            <sc-if value="{{add_staff_open}}" hint-placeholder-val="{{false}}">
+              <div style="{{s.formRow2}}">
+                <div style="{{s.formCol}}">
+                  <label style="{{s.label}}">Name</label>
+                  <input style="{{s.input}}" value="{{new_staff.name}}" onChange="{{on_staff_name}}"/>
+                </div>
+                <div style="{{s.formCol}}">
+                  <label style="{{s.label}}">Role</label>
+                  <input style="{{s.input}}" value="{{new_staff.role}}" onChange="{{on_staff_role}}" placeholder="Cashier, Manager..."/>
+                </div>
+              </div>
+              <label style="{{s.label}}">Email</label>
+              <input style="{{s.input}}" value="{{new_staff.email}}" onChange="{{on_staff_email}}"/>
+              <div style="{{s.modalActions}}">
+                <button style="{{s.secondaryBtn}}" onClick="{{toggle_add_staff}}">Cancel</button>
+                <button style="{{s.primaryBtn}}" onClick="{{save_staff}}">Add</button>
+              </div>
+            </sc-if>
+            <div style="{{s.staffList}}">
+              <sc-for list="{{staff}}" as="st" hint-placeholder-count="3">
+                <div style="{{s.staffRow}}">
+                  <div style="{{s.staffAvatar}}">{{st.initial}}</div>
+                  <div style="{{s.staffInfo}}">
+                    <div style="{{s.staffName}}">{{st.name}}</div>
+                    <div style="{{s.subtle}}">{{st.role}} · {{st.email}}</div>
+                  </div>
+                  <button style="{{s.mgmtDeleteInline}}" onClick="{{st.remove}}">✕</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Bottom tab bar (mobile) -->
+  <sc-if value="{{is_mobile}}" hint-placeholder-val="{{false}}">
+    <div style="{{s.bottomBar}}">
+      <button style="{{s.bottomBtnOrder}}" onClick="{{go_order}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Order</span>
+      </button>
+      <button style="{{s.bottomBtnItems}}" onClick="{{go_items}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Items</span>
+      </button>
+      <button style="{{s.bottomBtnHistory}}" onClick="{{go_history}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>History</span>
+      </button>
+      <button style="{{s.bottomBtnAnalytics}}" onClick="{{go_analytics}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Stats</span>
+      </button>
+      <button style="{{s.bottomBtnSettings}}" onClick="{{go_settings}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H4.5a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10.6a1.7 1.7 0 0 0 1.04-1.56V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V10.6a1.7 1.7 0 0 0 1.56 1.04H19.5a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+  </sc-if>
+
+</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const now = Date.now();
+    const day = 86400000;
+    this.state = {
+      loggedIn: false,
+      loginForm: { email: '', password: '', error: '' },
+      screen: 'order',
+      theme: 'dark',
+      width: (typeof window !== 'undefined' ? window.innerWidth : 1440),
+      activeCategory: 'Burger',
+      search: '',
+      tableNo: 31,
+      cart: [],
+      cartSheetOpen: false,
+      addItemOpen: false,
+      addStaffOpen: false,
+      expandedHistoryId: null,
+      newItem: { name: '', category: '', price: '', stock: '' },
+      newStaff: { name: '', role: '', email: '' },
+      pwForm: { current: '', next: '', confirm: '', message: '', ok: false },
+      profile: { name: 'Pakecho Restaurant', address: '221 Harbor Ave, Austin, TX' },
+      staff: [
+        { id: 's1', name: 'Maria Chen', role: 'Manager', email: 'maria@pakecho.com' },
+        { id: 's2', name: 'Diego Ruiz', role: 'Cashier', email: 'diego@pakecho.com' }
+      ],
+      items: [
+        { id: 'i1', name: 'Original Burger', category: 'Burger', price: 5.99, stock: 20 },
+        { id: 'i2', name: 'Double Burger', category: 'Burger', price: 10.99, stock: 15 },
+        { id: 'i3', name: 'Cheese Burger', category: 'Burger', price: 6.99, stock: 18 },
+        { id: 'i4', name: 'Double Cheese Burger', category: 'Burger', price: 12.99, stock: 12 },
+        { id: 'i5', name: 'Spicy Burger', category: 'Burger', price: 5.99, stock: 14 },
+        { id: 'i6', name: 'Special Black Burger', category: 'Burger', price: 7.39, stock: 10 },
+        { id: 'i7', name: 'Spicy Cheese Burger', category: 'Burger', price: 8.00, stock: 9 },
+        { id: 'i8', name: 'Jumbo Cheese Burger', category: 'Burger', price: 15.99, stock: 7 },
+        { id: 'i9', name: 'Chicken Noodles', category: 'Noodles', price: 7.49, stock: 20 },
+        { id: 'i10', name: 'Veggie Noodles', category: 'Noodles', price: 6.49, stock: 16 },
+        { id: 'i11', name: 'Spicy Ramen', category: 'Noodles', price: 8.99, stock: 11 },
+        { id: 'i12', name: 'Iced Tea', category: 'Drinks', price: 2.99, stock: 30 },
+        { id: 'i13', name: 'Cola', category: 'Drinks', price: 2.49, stock: 40 },
+        { id: 'i14', name: 'Lemonade', category: 'Drinks', price: 3.49, stock: 25 }
+      ]
+    };
+    const mk = (dayOffset, hour, tableNo, lines) => {
+      const subtotal = lines.reduce((a, l) => a + l.qty * l.price, 0);
+      const tax = subtotal * 0.1;
+      return { id: null, table: tableNo, ts: now - dayOffset * day - (24 - hour) * 3600000, lines, subtotal, tax, total: subtotal + tax };
+    };
+    this.state.history = [
+      mk(0, 9, 12, [{ name: 'Original Burger', qty: 2, price: 5.99 }, { name: 'Cola', qty: 2, price: 2.49 }]),
+      mk(0, 13, 8, [{ name: 'Double Cheese Burger', qty: 1, price: 12.99 }, { name: 'Iced Tea', qty: 1, price: 2.99 }]),
+      mk(1, 12, 5, [{ name: 'Spicy Burger', qty: 3, price: 5.99 }, { name: 'Lemonade', qty: 2, price: 3.49 }]),
+      mk(1, 19, 14, [{ name: 'Chicken Noodles', qty: 2, price: 7.49 }]),
+      mk(2, 11, 3, [{ name: 'Jumbo Cheese Burger', qty: 1, price: 15.99 }, { name: 'Cola', qty: 1, price: 2.49 }]),
+      mk(2, 18, 9, [{ name: 'Cheese Burger', qty: 4, price: 6.99 }, { name: 'Iced Tea', qty: 4, price: 2.99 }]),
+      mk(3, 12, 6, [{ name: 'Spicy Cheese Burger', qty: 2, price: 8.00 }]),
+      mk(3, 20, 11, [{ name: 'Veggie Noodles', qty: 2, price: 6.49 }, { name: 'Lemonade', qty: 1, price: 3.49 }]),
+      mk(4, 10, 2, [{ name: 'Original Burger', qty: 1, price: 5.99 }, { name: 'Double Burger', qty: 1, price: 10.99 }]),
+      mk(5, 14, 7, [{ name: 'Special Black Burger', qty: 3, price: 7.39 }, { name: 'Cola', qty: 3, price: 2.49 }]),
+      mk(6, 9, 15, [{ name: 'Spicy Ramen', qty: 2, price: 8.99 }]),
+      mk(6, 19, 4, [{ name: 'Double Burger', qty: 2, price: 10.99 }, { name: 'Iced Tea', qty: 2, price: 2.99 }])
+    ].map((o, i) => Object.assign(o, { id: 1000 + i }));
+    this._resize = () => this.setState({ width: window.innerWidth });
+  }
+
+  componentDidMount() { window.addEventListener('resize', this._resize); }
+  componentWillUnmount() { window.removeEventListener('resize', this._resize); }
+
+  colors() {
+    return this.state.theme === 'dark'
+      ? { bg: '#15151b', sidebar: '#1b1b23', card: '#212129', card2: '#26262f', border: '#33333f', text: '#f5f5f7', textSub: '#8d8d9c', accent: '#f2574f', accentSoft: 'rgba(242,87,79,0.16)', green: '#3ecf8e', input: '#1c1c25' }
+      : { bg: '#f0f0f4', sidebar: '#ffffff', card: '#ffffff', card2: '#f7f7fa', border: '#e6e6ec', text: '#1a1a22', textSub: '#77778a', accent: '#f2574f', accentSoft: 'rgba(242,87,79,0.10)', green: '#1c9d6c', input: '#f0f0f4' };
+  }
+
+  fmt(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+
+  navBtnStyle(c, active) {
+    return active ? {
+      display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px',
+      border: '1px solid rgba(255,255,255,0.28)', borderRadius: 999, cursor: 'pointer',
+      background: 'linear-gradient(160deg, ' + this.hexA(c.accent, 0.9) + ', ' + this.hexA(c.accent, 0.68) + ')',
+      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      boxShadow: '0 6px 16px -6px ' + c.accentSoft + ', inset 0 1px 0 rgba(255,255,255,0.35)',
+      color: '#ffffff', fontSize: 13.5, fontWeight: 700, fontFamily: 'Manrope, sans-serif', whiteSpace: 'nowrap', transition: 'transform 0.15s, box-shadow 0.15s'
+    } : {
+      display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px',
+      border: '1px solid transparent', borderRadius: 999, cursor: 'pointer',
+      background: 'transparent', color: c.textSub,
+      fontSize: 13.5, fontWeight: 600, fontFamily: 'Manrope, sans-serif', whiteSpace: 'nowrap', transition: 'background 0.15s, color 0.15s'
+    };
+  }
+
+  hexA(hex, alpha) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
+  cartLine(it, line) {
+    return {
+      id: line.id, name: it.name, qty: line.qty, photoId: 'item-photo-' + it.id, totalLabel: this.fmt(it.price * line.qty),
+      inc: () => this.setState(s => ({ cart: s.cart.map(l => l.id === line.id ? { ...l, qty: l.qty + 1 } : l) })),
+      dec: () => this.setState(s => ({ cart: s.cart.map(l => l.id === line.id && l.qty > 1 ? { ...l, qty: l.qty - 1 } : l).filter(l => l.qty > 0) })),
+      remove: () => this.setState(s => ({ cart: s.cart.filter(l => l.id !== line.id) }))
+    };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const c = this.colors();
+    const isMobile = st.width < 780;
+    const isTablet = st.width >= 780 && st.width < 1140;
+    const notMobile = !isMobile;
+    const showLabels = !isMobile;
+    const sidebarWidth = 108;
+
+    const s = {
+      root: { display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%', background: c.bg, color: c.text, fontFamily: 'Manrope, sans-serif' },
+      loginRoot: { position: 'relative', minHeight: '100vh', width: '100%', background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontFamily: 'Manrope, sans-serif', padding: 20 },
+      loginOrbA: { position: 'absolute', width: 420, height: 420, borderRadius: '50%', background: c.accent, opacity: 0.28, filter: 'blur(120px)', top: -140, left: -100 },
+      loginOrbB: { position: 'absolute', width: 360, height: 360, borderRadius: '50%', background: c.accent, opacity: 0.18, filter: 'blur(120px)', bottom: -120, right: -80 },
+      loginCard: { position: 'relative', width: 380, maxWidth: '100%', background: this.state.theme === 'dark' ? 'rgba(33,33,41,0.72)' : 'rgba(255,255,255,0.82)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 22, padding: '32px 28px', boxShadow: '0 30px 60px -20px rgba(0,0,0,0.5)', color: c.text },
+      loginLogoRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 },
+      loginLogoText: { fontSize: 15, fontWeight: 800, color: c.text },
+      loginTitle: { fontSize: 24, fontWeight: 800, marginBottom: 4, color: c.text },
+      loginSubtitle: { fontSize: 13, color: c.textSub, marginBottom: 20 },
+      loginError: { fontSize: 12.5, fontWeight: 700, color: c.accent, marginTop: 4, marginBottom: 4 },
+      loginHint: { fontSize: 11.5, color: c.textSub, textAlign: 'center', marginTop: 14 },
+      logoutBtn: { border: '1px solid ' + c.border, background: 'transparent', color: c.accent, fontWeight: 700, fontSize: 13, padding: '10px 16px', borderRadius: 10, cursor: 'pointer', marginTop: 12 },
+      loginSubmitBtn: { border: '1px solid rgba(255,255,255,0.3)', background: 'linear-gradient(160deg, ' + this.hexA(c.accent, 0.92) + ', ' + this.hexA(c.accent, 0.7) + ')', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', fontWeight: 800, fontSize: 15, padding: '13px', borderRadius: 12, cursor: 'pointer', width: '100%', marginTop: 18, boxShadow: '0 10px 24px -10px ' + c.accentSoft + ', inset 0 1px 0 rgba(255,255,255,0.3)' },
+      appBar: { display: 'flex', alignItems: 'center', gap: 20, padding: '12px 24px', background: c.sidebar, borderBottom: '1px solid ' + c.border, position: 'sticky', top: 0, zIndex: 15, height: 64 },
+      appBarLeft: { display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 },
+      logoBadge: { width: 32, height: 32, borderRadius: 10, background: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 14px -4px ' + c.accentSoft },
+      logoText: { fontSize: 15, fontWeight: 800, letterSpacing: 0.1 },
+      navPillGroup: { display: 'flex', alignItems: 'center', gap: 2, background: c.card2, borderRadius: 999, padding: 4, flex: 1, justifyContent: 'center', overflowX: 'auto' },
+      navHover: { background: c.border },
+      appBarRight: { display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 },
+      themeMini: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, color: c.textSub, cursor: 'pointer', border: 'none', background: c.card2, flexShrink: 0 },
+      profileMini: { display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' },
+      profileAvatar: { width: 32, height: 32, borderRadius: '50%', background: c.accentSoft, color: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, flexShrink: 0 },
+      profileTextWrap: { minWidth: 0, display: isMobile ? 'none' : 'block' },
+      profileName: { fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 },
+      profileRole: { fontSize: 10.5, color: c.textSub },
+      mainCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
+      orderWrap: { display: 'flex', flex: 1, minWidth: 0 },
+      orderMain: { flex: 1, minWidth: 0, padding: isMobile ? '16px' : '24px 28px', paddingBottom: isMobile ? 84 : 24 },
+      topBar: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 20 },
+      h1: { fontSize: isMobile ? 20 : 24, fontWeight: 800 },
+      h2: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
+      subtle: { fontSize: 13, color: c.textSub, marginTop: 2 },
+      searchBox: { display: 'flex', alignItems: 'center', gap: 10, background: c.input, border: '1px solid ' + c.border, borderRadius: 999, padding: '12px 20px', minWidth: 220, flex: '1 1 260px', maxWidth: 440, color: c.textSub },
+      searchInput: { border: 'none', outline: 'none', background: 'transparent', color: c.text, fontSize: 14, fontFamily: 'Manrope, sans-serif', width: '100%' },
+      catRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 },
+      itemGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 18 },
+      itemPhoto: { width: '100%', height: 150, marginBottom: 10 },
+      itemName: { fontSize: 14, fontWeight: 700, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+      itemRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' },
+      itemPrice: { color: c.accent, fontWeight: 800, fontSize: 15 },
+      itemStock: { fontSize: 11, color: c.textSub },
+      qtyBadge: { position: 'absolute', top: 10, right: 10, background: c.accent, color: '#fff', fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 999, zIndex: 1 },
+      emptyState: { gridColumn: '1 / -1', textAlign: 'center', color: c.textSub, padding: 40, fontSize: 14 },
+      cartPanel: { width: isTablet ? 280 : 328, flexShrink: 0, borderLeft: '1px solid ' + c.border, background: c.sidebar, display: 'flex', flexDirection: 'column', padding: '24px 20px', height: 'calc(100vh - 64px)', position: 'sticky', top: 64, boxShadow: '-8px 0 24px -18px rgba(0,0,0,0.35)' },
+      cartHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+      cartList: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 },
+      cartLine: { display: 'flex', gap: 10, alignItems: 'center' },
+      cartThumb: { width: 46, height: 46, borderRadius: 10, flexShrink: 0 },
+      cartInfo: { flex: 1, minWidth: 0 },
+      cartName: { fontSize: 13, fontWeight: 700, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+      cartQtyRow: { display: 'flex', alignItems: 'center', gap: 6 },
+      qtyBtn: { width: 20, height: 20, borderRadius: 6, border: '1px solid ' + c.border, background: c.card2, color: c.text, cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+      qtyNum: { fontSize: 12, fontWeight: 700, minWidth: 14, textAlign: 'center' },
+      removeBtn: { marginLeft: 4, border: 'none', background: 'transparent', color: c.textSub, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' },
+      cartLinePrice: { fontSize: 13, fontWeight: 800, flexShrink: 0 },
+      cartEmpty: { color: c.textSub, fontSize: 13, textAlign: 'center', padding: '30px 10px' },
+      cartSummary: { paddingTop: 16, borderTop: '1px solid ' + c.border, marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 },
+      sumRow: { display: 'flex', justifyContent: 'space-between', fontSize: 13, color: c.textSub },
+      sumDivider: { borderTop: '1px dashed ' + c.border, margin: '4px 0' },
+      totalRow: { display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, marginBottom: 8 },
+      placeOrderBtn: { border: '1px solid rgba(255,255,255,0.3)', background: 'linear-gradient(160deg, ' + this.hexA(c.accent, 0.92) + ', ' + this.hexA(c.accent, 0.7) + ')', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', fontWeight: 800, fontSize: 15, padding: '14px', borderRadius: 12, cursor: 'pointer', boxShadow: '0 10px 24px -10px ' + c.accentSoft + ', inset 0 1px 0 rgba(255,255,255,0.3)', transition: 'transform 0.12s ease' },
+      mobileCartBar: { position: 'fixed', left: 0, right: 0, bottom: 56, background: c.accent, color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', zIndex: 5 },
+      mobileCartCta: { textDecoration: 'underline' },
+      sheetOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20, display: 'flex', alignItems: 'flex-end' },
+      sheet: { width: '100%', maxHeight: '80vh', background: c.sidebar, borderRadius: '20px 20px 0 0', padding: 20, display: 'flex', flexDirection: 'column', animation: 'posfood-sheet-up 0.25s ease' },
+      closeSheetBtn: { border: 'none', background: c.card2, color: c.text, borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' },
+      screenPad: { padding: isMobile ? '16px' : '28px 32px', paddingBottom: isMobile ? 84 : 32 },
+      screenHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 22 },
+      primaryBtn: { border: '1px solid rgba(255,255,255,0.3)', background: 'linear-gradient(160deg, ' + this.hexA(c.accent, 0.9) + ', ' + this.hexA(c.accent, 0.68) + ')', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', color: '#fff', fontWeight: 700, fontSize: 13, padding: '11px 18px', borderRadius: 10, cursor: 'pointer', boxShadow: '0 8px 18px -8px ' + c.accentSoft + ', inset 0 1px 0 rgba(255,255,255,0.3)', transition: 'transform 0.12s ease' },
+      primaryBtnHover: { transform: 'translateY(-1px)' },
+      secondaryBtn: { border: '1px solid rgba(255,255,255,0.16)', background: c.card2 + 'cc', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', color: c.text, fontWeight: 700, fontSize: 13, padding: '10px 16px', borderRadius: 10, cursor: 'pointer' },
+      itemsMgmtGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 18 },
+      mgmtCard: { position: 'relative', background: c.card, border: '1px solid ' + c.border, borderRadius: 18, padding: 14, boxShadow: '0 2px 10px -6px rgba(0,0,0,0.22)', animation: 'posfood-fade-in 0.3s ease', transition: 'box-shadow 0.18s ease' },
+      mgmtCardHover: { boxShadow: '0 14px 24px -12px rgba(0,0,0,0.32)' },
+      mgmtDelete: { position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderRadius: 8, background: c.card2, color: c.textSub, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1 },
+      mgmtDeleteInline: { border: 'none', background: 'transparent', color: c.textSub, cursor: 'pointer', fontSize: 13, padding: 6 },
+      mgmtPhoto: { width: '100%', height: 160, marginBottom: 10 },
+      mgmtName: { fontSize: 14, fontWeight: 700 },
+      mgmtCat: { fontSize: 11, color: c.textSub, marginBottom: 8 },
+      mgmtPriceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+      stockRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid ' + c.border },
+      stockStepper: { display: 'flex', alignItems: 'center', gap: 8 },
+      modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+      modal: { width: 380, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', background: c.sidebar, borderRadius: 18, padding: 22, boxShadow: '0 30px 60px -20px rgba(0,0,0,0.5)', animation: 'posfood-fade-in 0.2s ease' },
+      formPhoto: { width: '100%', height: 140, marginBottom: 14 },
+      label: { display: 'block', fontSize: 11, fontWeight: 700, color: c.textSub, marginBottom: 6, marginTop: 12, textTransform: 'uppercase', letterSpacing: 0.4 },
+      input: { width: '100%', border: '1px solid ' + c.border, background: c.input, color: c.text, borderRadius: 10, padding: '10px 12px', fontSize: 13, fontFamily: 'Manrope, sans-serif' },
+      formRow2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+      formCol: {},
+      modalActions: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 },
+      historyList: { display: 'flex', flexDirection: 'column', gap: 12 },
+      historyCard: { background: c.card, border: '1px solid ' + c.border, borderRadius: 14, overflow: 'hidden', boxShadow: '0 2px 10px -6px rgba(0,0,0,0.2)' },
+      historyRow: { display: 'grid', gridTemplateColumns: '60px 90px 90px 1fr 90px 90px 24px', alignItems: 'center', gap: 10, padding: '14px 18px', cursor: 'pointer', fontSize: 13 },
+      historyId: { fontWeight: 700, color: c.textSub },
+      historyTable: { fontWeight: 600 },
+      historyCount: { color: c.textSub },
+      historyTime: { color: c.textSub },
+      historyTotal: { fontWeight: 800, textAlign: 'right' },
+      chevron: { textAlign: 'center', color: c.textSub },
+      statusPill: { background: c.accentSoft, color: c.accent, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, textAlign: 'center', width: 'fit-content' },
+      receiptDetail: { padding: '0 18px 16px', borderTop: '1px solid ' + c.border, marginTop: 2, paddingTop: 12 },
+      receiptLine: { display: 'flex', justifyContent: 'space-between', fontSize: 13, color: c.textSub, padding: '4px 0' },
+      receiptTotalLine: { display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, paddingTop: 6 },
+      statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 24 },
+      statCard: { background: c.card, border: '1px solid ' + c.border, borderRadius: 16, padding: 18, boxShadow: '0 2px 10px -6px rgba(0,0,0,0.2)' },
+      statValue: { fontSize: 26, fontWeight: 800, margin: '6px 0 2px' },
+      statSub: { fontSize: 12, color: c.textSub },
+      analyticsRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.4fr 1fr', gap: 18 },
+      chartCard: { background: c.card, border: '1px solid ' + c.border, borderRadius: 16, padding: 20, boxShadow: '0 2px 10px -6px rgba(0,0,0,0.2)' },
+      trendChart: { display: 'flex', alignItems: 'flex-end', gap: 12, height: 180, marginTop: 16 },
+      trendBarWrap: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' },
+      trendValueLabel: { fontSize: 10, color: c.textSub },
+      trendDayLabel: { fontSize: 11, color: c.textSub, fontWeight: 600 },
+      bestSellerCard: { background: c.card, border: '1px solid ' + c.border, borderRadius: 16, padding: 20, boxShadow: '0 2px 10px -6px rgba(0,0,0,0.2)' },
+      bestSellerRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid ' + c.border },
+      bestSellerRank: { width: 22, height: 22, borderRadius: 6, background: c.accentSoft, color: c.accent, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+      bestSellerInfo: { flex: 1, minWidth: 0 },
+      bestSellerName: { fontSize: 13, fontWeight: 700, marginBottom: 5 },
+      bestSellerQty: { fontSize: 12, color: c.textSub, flexShrink: 0 },
+      settingsGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 18 },
+      settingsCard: { background: c.card, border: '1px solid ' + c.border, borderRadius: 16, padding: 20, boxShadow: '0 2px 10px -6px rgba(0,0,0,0.2)' },
+      settingsCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+      themeSwitchRow: { display: 'flex', gap: 10, marginTop: 14 },
+      logoSlot: { width: 90, height: 90, marginTop: 6 },
+      staffList: { display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 },
+      staffRow: { display: 'flex', alignItems: 'center', gap: 12 },
+      staffAvatar: { width: 36, height: 36, borderRadius: '50%', background: c.accentSoft, color: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 },
+      staffInfo: { flex: 1, minWidth: 0 },
+      staffName: { fontSize: 13, fontWeight: 700 },
+      bottomBar: { position: 'fixed', left: 0, right: 0, bottom: 0, height: 56, background: c.sidebar, borderTop: '1px solid ' + c.border, display: 'flex', zIndex: 10 }
+    };
+
+    const navStyle = (id) => this.navBtnStyle(c, st.screen === id);
+    const navHoverStyle = (id) => st.screen === id
+      ? { transform: 'translateY(-2px)', boxShadow: '0 12px 26px -8px ' + c.accentSoft + ', inset 0 1px 0 rgba(255,255,255,0.4)' }
+      : { background: c.card2, color: c.text };
+    const bottomBtnStyle = (id) => ({ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, border: 'none', background: 'transparent', color: st.screen === id ? c.accent : c.textSub, fontSize: 10, fontWeight: 700, cursor: 'pointer' });
+
+    const catStyle = (name, active) => ({
+      display: 'flex', alignItems: 'center', gap: 10, border: active ? '1px solid rgba(255,255,255,0.25)' : '1px solid ' + c.border, borderRadius: 14,
+      padding: '9px 18px 9px 9px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+      background: active ? 'linear-gradient(160deg, ' + this.hexA(c.accent, 0.16) + ', ' + this.hexA(c.accent, 0.06) + ')' : c.card,
+      backdropFilter: active ? 'blur(8px)' : 'none', WebkitBackdropFilter: active ? 'blur(8px)' : 'none',
+      color: active ? c.text : c.textSub, boxShadow: active ? '0 6px 16px -6px ' + c.accentSoft + ', inset 0 1px 0 rgba(255,255,255,0.2)' : 'none', fontFamily: 'Manrope, sans-serif'
+    });
+    const catIconWrap = (active) => ({ width: 30, height: 30, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? c.accent : c.card2, color: active ? '#fff' : c.textSub, flexShrink: 0, boxShadow: active ? '0 4px 10px -3px ' + c.accentSoft : 'none' });
+    const cat_burger = { style: catStyle('Burger', st.activeCategory === 'Burger'), iconWrap: catIconWrap(st.activeCategory === 'Burger'), onClick: () => this.setState({ activeCategory: 'Burger' }) };
+    const cat_noodles = { style: catStyle('Noodles', st.activeCategory === 'Noodles'), iconWrap: catIconWrap(st.activeCategory === 'Noodles'), onClick: () => this.setState({ activeCategory: 'Noodles' }) };
+    const cat_drinks = { style: catStyle('Drinks', st.activeCategory === 'Drinks'), iconWrap: catIconWrap(st.activeCategory === 'Drinks'), onClick: () => this.setState({ activeCategory: 'Drinks' }) };
+
+    const q = st.search.trim().toLowerCase();
+    const filteredItems = st.items.filter(it => it.category === st.activeCategory && (!q || it.name.toLowerCase().includes(q)));
+    const cartMap = {};
+    st.cart.forEach(l => { cartMap[l.itemId] = (cartMap[l.itemId] || 0) + l.qty; });
+
+    const filtered_items = filteredItems.map(it => ({
+      name: it.name, priceLabel: this.fmt(it.price), stock: it.stock, photoId: 'item-photo-' + it.id,
+      inCart: !!cartMap[it.id], qtyLabel: cartMap[it.id] ? cartMap[it.id] + 'x' : '',
+      cardStyle: { position: 'relative', background: c.card, border: '1px solid ' + c.border, borderRadius: 18, padding: 12, cursor: 'pointer', boxShadow: '0 2px 10px -6px rgba(0,0,0,0.25)', transition: 'transform 0.18s ease, box-shadow 0.18s ease' },
+      cardHoverStyle: { transform: 'translateY(-4px)', boxShadow: '0 16px 28px -12px rgba(0,0,0,0.35)', borderColor: c.accent },
+      onClick: () => this.setState(s => {
+        const existing = s.cart.find(l => l.itemId === it.id);
+        if (existing) return { cart: s.cart.map(l => l.itemId === it.id ? { ...l, qty: l.qty + 1 } : l) };
+        return { cart: [...s.cart, { id: 'c' + Date.now() + Math.random(), itemId: it.id, qty: 1 }] };
+      })
+    }));
+
+    const cartLines = st.cart.map(line => {
+      const it = st.items.find(i => i.id === line.itemId) || { name: '?', price: 0, id: line.itemId };
+      return this.cartLine(it, line);
+    });
+    const subtotal = st.cart.reduce((sum, line) => { const it = st.items.find(i => i.id === line.itemId); return sum + (it ? it.price * line.qty : 0); }, 0);
+    const tax = subtotal * 0.1;
+
+    // Analytics
+    const now = Date.now();
+    const dayMs = 86400000;
+    const startOfDay = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+    const todayStart = startOfDay(now);
+    const weekStart = todayStart - 6 * dayMs;
+    const monthStart = todayStart - 29 * dayMs;
+    const todayOrders = st.history.filter(o => o.ts >= todayStart);
+    const weekOrders = st.history.filter(o => o.ts >= weekStart);
+    const monthOrders = st.history.filter(o => o.ts >= monthStart);
+    const sumTotal = (arr) => arr.reduce((a, o) => a + o.total, 0);
+    const trend = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = todayStart - i * dayMs;
+      const dayEnd = dayStart + dayMs;
+      const dayOrders = st.history.filter(o => o.ts >= dayStart && o.ts < dayEnd);
+      trend.push({ ts: dayStart, revenue: sumTotal(dayOrders) });
+    }
+    const maxRev = Math.max(1, ...trend.map(d => d.revenue));
+    const trendOut = trend.map(d => ({
+      day: new Date(d.ts).toLocaleDateString(undefined, { weekday: 'short' }),
+      shortLabel: Math.round(d.revenue),
+      barStyle: { width: '70%', minHeight: 4, height: Math.max(4, (d.revenue / maxRev) * 130) + 'px', background: c.accent, borderRadius: '6px 6px 0 0' }
+    }));
+    const salesByItem = {};
+    st.history.forEach(o => o.lines.forEach(l => { salesByItem[l.name] = (salesByItem[l.name] || 0) + l.qty; }));
+    const bestArr = Object.entries(salesByItem).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const maxQty = Math.max(1, ...bestArr.map(x => x[1]));
+    const bestSellers = bestArr.map(([name, qty], i) => ({
+      rank: i + 1, name, qty,
+      barBg: { width: '100%', height: 6, background: c.card2, borderRadius: 999 },
+      barFill: { width: (qty / maxQty * 100) + '%', height: 6, background: c.accent, borderRadius: 999 }
+    }));
+
+    const historyRows = [...st.history].sort((a, b) => b.ts - a.ts).map(o => ({
+      id: o.id, table: o.table, itemCount: o.lines.reduce((a, l) => a + l.qty, 0),
+      timeLabel: new Date(o.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+      status: 'Completed', totalLabel: this.fmt(o.total), subtotalLabel: this.fmt(o.subtotal), taxLabel: this.fmt(o.tax),
+      expanded: st.expandedHistoryId === o.id, chevron: st.expandedHistoryId === o.id ? '▲' : '▼',
+      toggle: () => this.setState(s => ({ expandedHistoryId: s.expandedHistoryId === o.id ? null : o.id })),
+      lines: o.lines.map(l => ({ name: l.name, qty: l.qty, totalLabel: this.fmt(l.qty * l.price) }))
+    }));
+
+    const mgmt_items = st.items.map(it => ({
+      name: it.name, category: it.category, priceLabel: this.fmt(it.price), photoId: 'item-photo-' + it.id, stock: it.stock,
+      stockLabel: it.stock <= 5 ? 'Low stock' : 'In stock',
+      stockStyle: { fontSize: 11, fontWeight: 700, color: it.stock <= 5 ? c.accent : c.green },
+      stockInc: () => this.setState(s => ({ items: s.items.map(i => i.id === it.id ? { ...i, stock: i.stock + 1 } : i) })),
+      stockDec: () => this.setState(s => ({ items: s.items.map(i => i.id === it.id && i.stock > 0 ? { ...i, stock: i.stock - 1 } : i) })),
+      remove: () => this.setState(s => ({ items: s.items.filter(i => i.id !== it.id) }))
+    }));
+
+    return {
+      s, c, cat_burger, cat_noodles, cat_drinks,
+      show_login: !st.loggedIn, not_show_login: st.loggedIn,
+      login: {
+        email: st.loginForm.email, password: st.loginForm.password, error: st.loginForm.error,
+        email_display: st.loginForm.email || 'staff@' + (st.profile.name || 'restaurant').toLowerCase().replace(/[^a-z0-9]/g, ''),
+        onEmail: (e) => this.setState(s2 => ({ loginForm: { ...s2.loginForm, email: e.target.value, error: '' } })),
+        onPassword: (e) => this.setState(s2 => ({ loginForm: { ...s2.loginForm, password: e.target.value, error: '' } })),
+        submit: () => {
+          const f = st.loginForm;
+          if (!f.email.trim() || !f.password) { this.setState({ loginForm: { ...f, error: 'Enter an email and password to continue.' } }); return; }
+          this.setState({ loggedIn: true });
+        }
+      },
+      logout: () => this.setState({ loggedIn: false, loginForm: { email: '', password: '', error: '' } }),
+      not_mobile: notMobile, is_mobile: isMobile, show_labels: showLabels,
+      is_dark: st.theme === 'dark', not_dark: st.theme !== 'dark', theme_label: st.theme === 'dark' ? 'Dark' : 'Bright',
+      toggle_theme: () => this.setState(s2 => ({ theme: s2.theme === 'dark' ? 'light' : 'dark' })),
+      is_order: st.screen === 'order', is_items: st.screen === 'items', is_history: st.screen === 'history', is_analytics: st.screen === 'analytics', is_settings: st.screen === 'settings',
+      go_order: () => this.setState({ screen: 'order' }), go_items: () => this.setState({ screen: 'items' }),
+      go_history: () => this.setState({ screen: 'history' }), go_analytics: () => this.setState({ screen: 'analytics' }), go_settings: () => this.setState({ screen: 'settings' }),
+      navOrder: navStyle('order'), navItems: navStyle('items'), navHistory: navStyle('history'), navAnalytics: navStyle('analytics'), navSettings: navStyle('settings'),
+      navOrderHover: navHoverStyle('order'), navItemsHover: navHoverStyle('items'), navHistoryHover: navHoverStyle('history'), navAnalyticsHover: navHoverStyle('analytics'), navSettingsHover: navHoverStyle('settings'),
+      profile_initial: (st.profile.name || 'P').charAt(0).toUpperCase(),
+      bottomBtnOrder: bottomBtnStyle('order'), bottomBtnItems: bottomBtnStyle('items'), bottomBtnHistory: bottomBtnStyle('history'), bottomBtnAnalytics: bottomBtnStyle('analytics'), bottomBtnSettings: bottomBtnStyle('settings'),
+      profile: st.profile, today_label: new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
+      search: st.search, on_search: (e) => this.setState({ search: e.target.value }),
+      filtered_items, no_results: filtered_items.length === 0,
+      table_no: st.tableNo, cart: cartLines, cart_empty: cartLines.length === 0, cart_count: st.cart.reduce((a, l) => a + l.qty, 0),
+      subtotal_label: this.fmt(subtotal), tax_label: this.fmt(tax), total_label: this.fmt(subtotal + tax),
+      cart_sheet_open: st.cartSheetOpen, open_cart_sheet: () => this.setState({ cartSheetOpen: true }), close_cart_sheet: () => this.setState({ cartSheetOpen: false }),
+      stop_prop: (e) => e.stopPropagation(),
+      place_order: () => {
+        if (st.cart.length === 0) return;
+        const items = st.items;
+        const lines = st.cart.map(l => { const it = items.find(i => i.id === l.itemId); return { name: it.name, qty: l.qty, price: it.price }; });
+        const newOrder = { id: 1000 + st.history.length + Math.floor(Math.random() * 900), table: st.tableNo, ts: Date.now(), lines, subtotal, tax, total: subtotal + tax };
+        const updatedItems = items.map(it => {
+          const l = st.cart.find(x => x.itemId === it.id);
+          return l ? { ...it, stock: Math.max(0, it.stock - l.qty) } : it;
+        });
+        this.setState({ history: [...st.history, newOrder], cart: [], cartSheetOpen: false, tableNo: st.tableNo + 1, items: updatedItems });
+      },
+      add_item_open: st.addItemOpen, open_add_item: () => this.setState({ addItemOpen: true }), close_add_item: () => this.setState({ addItemOpen: false, newItem: { name: '', category: '', price: '', stock: '' } }),
+      new_item: st.newItem,
+      on_new_name: (e) => this.setState(s2 => ({ newItem: { ...s2.newItem, name: e.target.value } })),
+      on_new_category: (e) => this.setState(s2 => ({ newItem: { ...s2.newItem, category: e.target.value } })),
+      on_new_price: (e) => this.setState(s2 => ({ newItem: { ...s2.newItem, price: e.target.value } })),
+      on_new_stock: (e) => this.setState(s2 => ({ newItem: { ...s2.newItem, stock: e.target.value } })),
+      save_new_item: () => {
+        const ni = st.newItem;
+        if (!ni.name.trim()) return;
+        const id = 'i' + Date.now();
+        const item = { id, name: ni.name.trim(), category: ni.category.trim() || 'Burger', price: parseFloat(ni.price) || 0, stock: parseInt(ni.stock, 10) || 0 };
+        this.setState({ items: [...st.items, item], addItemOpen: false, newItem: { name: '', category: '', price: '', stock: '' } });
+      },
+      mgmt_items,
+      history_count: st.history.length, history_rows: historyRows,
+      analytics: {
+        todayLabel: this.fmt(sumTotal(todayOrders)), todayOrders: todayOrders.length,
+        weekLabel: this.fmt(sumTotal(weekOrders)), weekOrders: weekOrders.length,
+        monthLabel: this.fmt(sumTotal(monthOrders)), monthOrders: monthOrders.length,
+        avgLabel: this.fmt(st.history.length ? sumTotal(st.history) / st.history.length : 0), totalOrders: st.history.length,
+        trend: trendOut, bestSellers
+      },
+      themeOptDark: { flex: 1, border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 13, cursor: 'pointer', background: st.theme === 'dark' ? c.accent : c.card2, color: st.theme === 'dark' ? '#fff' : c.textSub },
+      themeOptLight: { flex: 1, border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 13, cursor: 'pointer', background: st.theme === 'light' ? c.accent : c.card2, color: st.theme === 'light' ? '#fff' : c.textSub },
+      set_dark: () => this.setState({ theme: 'dark' }), set_light: () => this.setState({ theme: 'light' }),
+      on_profile_name: (e) => this.setState(s2 => ({ profile: { ...s2.profile, name: e.target.value } })),
+      on_profile_address: (e) => this.setState(s2 => ({ profile: { ...s2.profile, address: e.target.value } })),
+      pw: {
+        current: st.pwForm.current, next: st.pwForm.next, confirm: st.pwForm.confirm,
+        message: st.pwForm.message, messageStyle: { fontSize: 12, fontWeight: 700, color: st.pwForm.ok ? c.green : c.accent, marginTop: 10 }
+      },
+      on_pw_current: (e) => this.setState(s2 => ({ pwForm: { ...s2.pwForm, current: e.target.value, message: '' } })),
+      on_pw_next: (e) => this.setState(s2 => ({ pwForm: { ...s2.pwForm, next: e.target.value, message: '' } })),
+      on_pw_confirm: (e) => this.setState(s2 => ({ pwForm: { ...s2.pwForm, confirm: e.target.value, message: '' } })),
+      update_password: () => {
+        const f = st.pwForm;
+        if (!f.current || !f.next) { this.setState({ pwForm: { ...f, message: 'Please fill in all fields.', ok: false } }); return; }
+        if (f.next !== f.confirm) { this.setState({ pwForm: { ...f, message: 'New passwords do not match.', ok: false } }); return; }
+        this.setState({ pwForm: { current: '', next: '', confirm: '', message: 'Password updated successfully.', ok: true } });
+      },
+      add_staff_open: st.addStaffOpen, toggle_add_staff: () => this.setState(s2 => ({ addStaffOpen: !s2.addStaffOpen })),
+      new_staff: st.newStaff,
+      on_staff_name: (e) => this.setState(s2 => ({ newStaff: { ...s2.newStaff, name: e.target.value } })),
+      on_staff_role: (e) => this.setState(s2 => ({ newStaff: { ...s2.newStaff, role: e.target.value } })),
+      on_staff_email: (e) => this.setState(s2 => ({ newStaff: { ...s2.newStaff, email: e.target.value } })),
+      save_staff: () => {
+        const ns = st.newStaff;
+        if (!ns.name.trim()) return;
+        this.setState({ staff: [...st.staff, { id: 'st' + Date.now(), name: ns.name.trim(), role: ns.role.trim() || 'Staff', email: ns.email.trim() }], addStaffOpen: false, newStaff: { name: '', role: '', email: '' } });
+      },
+      staff: st.staff.map(p => ({ ...p, initial: p.name.charAt(0).toUpperCase(), remove: () => this.setState(s2 => ({ staff: s2.staff.filter(x => x.id !== p.id) })) }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

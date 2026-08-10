@@ -463,7 +463,7 @@ export default function ClubProfile() {
     }
   }, [clubId, activeTab]);
 
-  // Fetch fixtures for the club's HPL Clubs tournament
+  // Fetch fixtures for the club's CCPL Clubs tournament
   useEffect(() => {
     const fetchFixtures = async () => {
       if (!clubId || activeTab !== 'fixtures') return;
@@ -471,10 +471,10 @@ export default function ClubProfile() {
       try {
         setFixturesLoading(true);
         
-        // First, find the tournament that is HPL Clubs format
+        // First, find the tournament that is CCPL Clubs format
         const tournamentsQuery = query(
           collection(db, 'tournaments'),
-          where('format', '==', 'HPL Clubs')
+          where('format', '==', 'CCPL Clubs')
         );
         const tournamentsSnapshot = await getDocs(tournamentsQuery);
         
@@ -779,17 +779,63 @@ export default function ClubProfile() {
     try {
       if (!editingMatch) return;
       
+      // Helper function to find player ID by name
+      const findPlayerId = (playerName) => {
+        if (!playerName || typeof playerName !== 'string') return null;
+        const normalizedName = playerName.trim().toLowerCase();
+        const player = players.find(p => p.name?.trim().toLowerCase() === normalizedName);
+        return player?.id || null;
+      };
+      
+      // Build player ID fields
+      const playerIdFields = {};
+      if (editForm.player1Team1) {
+        const playerId = findPlayerId(editForm.player1Team1);
+        if (playerId) playerIdFields.player1Team1Id = playerId;
+      }
+      if (editForm.player2Team1) {
+        const playerId = findPlayerId(editForm.player2Team1);
+        if (playerId) playerIdFields.player2Team1Id = playerId;
+      }
+      if (editForm.player1Team2) {
+        const playerId = findPlayerId(editForm.player1Team2);
+        if (playerId) playerIdFields.player1Team2Id = playerId;
+      }
+      if (editForm.player2Team2) {
+        const playerId = findPlayerId(editForm.player2Team2);
+        if (playerId) playerIdFields.player2Team2Id = playerId;
+      }
+      
+      // Handle dream breaker player IDs
+      const dreamBreakerIdFields = {};
+      if (editingMatch.matchType === 'dreamBreaker') {
+        if (Array.isArray(editForm.gameBreakerPlayersTeam1)) {
+          dreamBreakerIdFields.gameBreakerPlayersTeam1Ids = editForm.gameBreakerPlayersTeam1.map(name => findPlayerId(name) || '');
+        }
+        if (Array.isArray(editForm.gameBreakerPlayersTeam2)) {
+          dreamBreakerIdFields.gameBreakerPlayersTeam2Ids = editForm.gameBreakerPlayersTeam2.map(name => findPlayerId(name) || '');
+        }
+      }
+      
       const updatedMatch = {
         ...editingMatch,
         player1Team1: editForm.player1Team1,
         player2Team1: editForm.player2Team1,
         player1Team2: editForm.player1Team2,
         player2Team2: editForm.player2Team2,
+        // Add player ID fields
+        ...playerIdFields,
         ...(editingMatch.matchType === 'dreamBreaker' && {
           gameBreakerPlayersTeam1: editForm.gameBreakerPlayersTeam1,
-          gameBreakerPlayersTeam2: editForm.gameBreakerPlayersTeam2
+          gameBreakerPlayersTeam2: editForm.gameBreakerPlayersTeam2,
+          ...dreamBreakerIdFields
         })
       };
+      
+      console.log('Updating match with player IDs:', playerIdFields);
+      if (Object.keys(dreamBreakerIdFields).length > 0) {
+        console.log('Dream breaker player IDs:', dreamBreakerIdFields);
+      }
       
       await updateDoc(doc(db, 'fixtures', editingMatch.id), updatedMatch);
       
@@ -947,7 +993,7 @@ export default function ClubProfile() {
       setPaymentProcessing(false);
       setPaymentError('');
       
-      alert('Payment successful! Your club is now officially active in the HPL Clubs league.');
+      alert('Payment successful! Your club is now officially active in the CCPL Clubs league.');
       
     } catch (error) {
       console.error('Error updating club status after payment:', error);
@@ -981,10 +1027,10 @@ export default function ClubProfile() {
       });
 
       const options = {
-        key: 'rzp_live_SBc21pvQK1l6sZ',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_Sfh0BL4V2hv19K',
         amount: totalAmountInPaise,
         currency: 'INR',
-        name: 'HPL Club Registration',
+        name: 'CCPL Club Registration',
         description: `Final Club Registration Fee - Rs. ${(baseAmount/100000).toFixed(2)} Lakh + 18% GST`,
         handler: function (response) {
           console.log('Final payment successful:', response);
@@ -1085,11 +1131,11 @@ export default function ClubProfile() {
   // Function to send recruitment email
   const sendRecruitmentEmail = async (playerEmail, playerName, clubName, clubOwner, clubOwnerContact, clubOwnerEmail) => {
     try {
-      const emailSubject = `HPL Club Recruitment - Invitation from ${clubName}`;
+      const emailSubject = `CCPL Club Recruitment - Invitation from ${clubName}`;
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #f97316; margin: 0;">HPL Club League</h1>
+            <h1 style="color: #f97316; margin: 0;">CCPL Club League</h1>
             <p style="color: #666; margin: 10px 0;">Club Recruitment Invitation</p>
           </div>
           
@@ -1097,7 +1143,7 @@ export default function ClubProfile() {
             <h2 style="color: #333; margin-bottom: 20px;">Hello ${playerName},</h2>
             <p style="color: #666; margin-bottom: 15px;">
               You have received a recruitment invitation from <strong style="color: #f97316;">${clubName}</strong>
-              to join their team in the HPL Club League!
+              to join their team in the CCPL Club League!
             </p>
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -1113,7 +1159,7 @@ export default function ClubProfile() {
             </div>
             
             <p style="color: #666; margin: 15px 0;">
-              To respond to this invitation, please log in to your HPL player account at
+              To respond to this invitation, please log in to your CCPL player account at
               <a href="https://thehpl.in" style="color: #f97316;">thehpl.in</a>
               and check your recruitment requests.
             </p>
@@ -2347,7 +2393,7 @@ export default function ClubProfile() {
                   
                   <div className="bg-gray-700 rounded-lg p-6 mb-6">
                     <p className="text-white mb-6" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      Upload your team's logo and jersey design. These will be used in official HPL communications, merchandise,
+                      Upload your team's logo and jersey design. These will be used in official CCPL communications, merchandise,
                       and match displays.
                     </p>
                     
@@ -2599,7 +2645,7 @@ export default function ClubProfile() {
                     <div className="bg-gray-700 rounded-lg p-8 text-center">
                       <div className="text-4xl mb-4">📋</div>
                       <p className="text-gray-300 text-lg" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        No fixtures found for this team in the HPL Clubs tournament.
+                        No fixtures found for this team in the CCPL Clubs tournament.
                       </p>
                     </div>
                   ) : (
@@ -3271,7 +3317,7 @@ export default function ClubProfile() {
                 Your club has been approved!
               </p>
               <p className="text-gray-300 mb-6" style={{fontFamily: 'Avantique, sans-serif'}}>
-                To officially become part of HPL Clubs, please complete the final payment of Rs. 2,00,000 + 18% GST.
+                To officially become part of CCPL Clubs, please complete the final payment of Rs. 2,00,000 + 18% GST.
               </p>
             </div>
 

@@ -590,8 +590,8 @@ export default function HplClubRegistration() {
             {/* Content */}
             <div className="space-y-6 lg:space-y-8 text-white max-w-6xl">
               <p className="text-base sm:text-lg lg:text-xl leading-relaxed" style={{fontFamily: 'Avantique, sans-serif'}}>
-                The HPL Community League is a curated, club-led league designed to build strong pickleball communities across the city.
-                HPL itself will continue to operate only its main league.
+                The CCPL Community League is a curated, club-led league designed to build strong pickleball communities across the city.
+                CCPL itself will continue to operate only its main league.
               </p>
               
               <p className="text-base sm:text-lg lg:text-xl leading-relaxed" style={{fontFamily: 'Avantique, sans-serif'}}>

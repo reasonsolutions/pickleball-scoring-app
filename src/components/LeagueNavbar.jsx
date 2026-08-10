@@ -34,7 +34,7 @@ export default function LeagueNavbar() {
               Teams
             </Link>
             <a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer" className="nav-link">
-              Fantasy HPL
+              Fantasy CCPL
             </a>
           </div>
 
@@ -101,7 +101,7 @@ export default function LeagueNavbar() {
                 className="block px-3 py-2 text-white hover:text-orange-300 transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Fantasy HPL
+                Fantasy CCPL
               </a>
               <Link
                 to="/login"

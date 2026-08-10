@@ -91,9 +91,9 @@ export default function Results() {
           id: doc.id,
           ...doc.data()
         }));
-        // Filter out "HPL Clubs" tournament
+        // Filter out "CCPL Clubs" tournament
         const tournamentsList = allTournaments.filter(
-          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+          tournament => tournament.name !== 'CCPL Clubs' && tournament.tournamentName !== 'CCPL Clubs'
         );
         setTournaments(tournamentsList);
         
@@ -440,16 +440,17 @@ export default function Results() {
                 // Filter fixtures based on active tab
                 const filteredFixtures = fixtures.filter(fixture => {
                   const fixtureType = fixture.fixtureType;
+                  const fixtureTypeNormalized = fixtureType ? fixtureType.toLowerCase() : '';
+                  const playoffTypes = ['qualifier', 'qualifier 1', 'qualifier 2', 'eliminator', 'final'];
+                  const isPlayoffType = fixtureType && playoffTypes.includes(fixtureTypeNormalized);
                   
                   if (activeTab === 'league') {
                     // League tab shows League fixtures and any fixtures without a specific playoff type
                     // This includes: undefined, "League", "dreambreaker", etc. (anything that's not playoffs)
-                    const playoffTypes = ['Qualifier', 'Qualifier 1', 'Qualifier 2', 'Eliminator', 'Final'];
-                    return !fixtureType || fixtureType === 'League' || !playoffTypes.includes(fixtureType);
+                    return !isPlayoffType;
                   } else {
                     // Playoffs tab shows only specific playoff fixture types
-                    const playoffTypes = ['Qualifier', 'Qualifier 1', 'Qualifier 2', 'Eliminator', 'Final'];
-                    return fixtureType && playoffTypes.includes(fixtureType);
+                    return isPlayoffType;
                   }
                 });
 

@@ -63,6 +63,7 @@ export default function ClubsResults() {
   const [activeTab, setActiveTab] = useState('Conference A');
   const [conferenceAFixtures, setConferenceAFixtures] = useState([]);
   const [conferenceBFixtures, setConferenceBFixtures] = useState([]);
+  const [allPlayoffFixtures, setAllPlayoffFixtures] = useState([]);
   const [selectedFixture, setSelectedFixture] = useState(null);
   const [hiddenFixtures, setHiddenFixtures] = useState(['2026-07-01']); // Hide July 1, 2026
 
@@ -94,13 +95,13 @@ export default function ClubsResults() {
     }
   `;
 
-  // Fetch HPL Clubs tournament fixtures
+  // Fetch CCPL Clubs tournament fixtures
   useEffect(() => {
     const fetchFixtures = async () => {
       try {
         setLoading(true);
 
-        // Find HPL Clubs tournament
+        // Find CCPL Clubs tournament
         const tournamentsRef = collection(db, 'tournaments');
         const tournamentsSnapshot = await getDocs(tournamentsRef);
         
@@ -226,16 +227,23 @@ export default function ClubsResults() {
           return dateB - dateA;
         });
 
-        // Separate by conference
+        // Separate by conference and fixture type
         const conference1TeamIds = tournamentData?.conferences?.conference1 || [];
         const conference2TeamIds = tournamentData?.conferences?.conference2 || [];
+        const playoffTypes = ['qualifier', 'qualifier 1', 'qualifier 2', 'eliminator', 'final'];
+
+        // Separate playoff fixtures
+        const playoffFixtures = fixturesArray.filter(fixture => {
+          const fixtureTypeNormalized = fixture.fixtureType ? fixture.fixtureType.toLowerCase().trim() : '';
+          return playoffTypes.includes(fixtureTypeNormalized);
+        });
 
         // If no conference data, show all fixtures in both tabs
         let confAFixtures = fixturesArray;
         let confBFixtures = fixturesArray;
 
-        // If conference data exists, filter by conference
-        if (conference1TeamIds.length > 0 || conference2TeamIds.length > 0) {
+        // If conference data exists, filter all fixtures by conference
+        if (conference1TeamIds.length > 0 && conference2TeamIds.length > 0) {
           confAFixtures = fixturesArray.filter(fixture =>
             conference1TeamIds.includes(fixture.team1) || conference1TeamIds.includes(fixture.team2)
           );
@@ -247,6 +255,7 @@ export default function ClubsResults() {
         setFixtures(fixturesArray);
         setConferenceAFixtures(confAFixtures);
         setConferenceBFixtures(confBFixtures);
+        setAllPlayoffFixtures(playoffFixtures);
       } catch (error) {
         console.error('Error fetching fixtures:', error);
         setFixtures([]);
@@ -712,10 +721,11 @@ export default function ClubsResults() {
             <div className="w-24 h-1 bg-orange-500"></div>
           </div>
 
-          {/* Conference Tabs */}
+          {/* Tabs */}
           <div className="mb-8">
-            <div className="flex space-x-4">
-              {['Conference A', 'Conference B'].map((tab) => (
+            <div className="flex space-x-4 flex-wrap">
+              {/* Conference Tabs */}
+              {['Conference A', 'Conference B', 'Playoffs'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -744,7 +754,26 @@ export default function ClubsResults() {
                   <p className="text-gray-400 text-lg">No fixtures found in database</p>
                 </div>
               ) : (
-                renderFixtures(activeTab === 'Conference A' ? conferenceAFixtures : conferenceBFixtures)
+                (() => {
+                  let displayFixtures = [];
+                  if (activeTab === 'Conference A') {
+                    displayFixtures = conferenceAFixtures;
+                  } else if (activeTab === 'Conference B') {
+                    displayFixtures = conferenceBFixtures;
+                  } else if (activeTab === 'Playoffs') {
+                    displayFixtures = allPlayoffFixtures;
+                  }
+                  
+                  if (displayFixtures.length === 0) {
+                    return (
+                      <div className="text-center py-12">
+                        <p className="text-gray-400 text-lg">No fixtures found for {activeTab}</p>
+                      </div>
+                    );
+                  }
+                  
+                  return renderFixtures(displayFixtures);
+                })()
               )}
             </>
           )}

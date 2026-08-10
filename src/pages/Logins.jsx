@@ -391,7 +391,7 @@ export default function Logins() {
               Join a community of pickleball enthusiasts competing at every level.
             </p>
             <p className="text-lg opacity-75 font-medium">
-              HPL Clubs — Your gateway to competitive excellence.
+              CCPL Clubs — Your gateway to competitive excellence.
             </p>
           </div>
         </div>

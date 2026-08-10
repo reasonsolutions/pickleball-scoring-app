@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { uploadPlayerPhoto, uploadTeamLogo, uploadNewsImage } from '../utils/cloudinary';
+import { uploadPlayerPhoto, uploadTeamLogo, uploadNewsImage, uploadShopProductImage } from '../utils/cloudinary';
+
 
 export default function CloudinaryImageUpload({ onImageUpload, currentImage, className = "", label = "Player Photo", uploadType = "player" }) {
   const [uploading, setUploading] = useState(false);
@@ -35,9 +36,12 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
           uploadFunction = uploadTeamLogo;
         } else if (uploadType === 'news') {
           uploadFunction = uploadNewsImage;
+        } else if (uploadType === 'shop') {
+          uploadFunction = uploadShopProductImage;
         } else {
           uploadFunction = uploadPlayerPhoto;
         }
+
         const result = await uploadFunction(file);
         
         // Call parent callback with the full Cloudinary result
@@ -54,9 +58,12 @@ export default function CloudinaryImageUpload({ onImageUpload, currentImage, cla
           imageType = 'team logo';
         } else if (uploadType === 'news') {
           imageType = 'news image';
+        } else if (uploadType === 'shop') {
+          imageType = 'product image';
         } else {
           imageType = 'player photo';
         }
+
         if (uploadError.message.includes('Invalid upload preset')) {
           alert(`Cloudinary upload preset not configured. Please set up an unsigned upload preset named "player_photos" in your Cloudinary dashboard.`);
         } else if (uploadError.message.includes('Upload failed')) {

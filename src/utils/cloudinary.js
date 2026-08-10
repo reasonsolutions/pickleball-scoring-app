@@ -131,16 +131,20 @@ export const uploadNewsImage = async (file) => {
   }
 };
 
-// Upload function for ads images using unsigned upload
+// Upload function for ads images/videos using unsigned upload
 export const uploadAdsImage = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', UPLOAD_PRESET);
   formData.append('folder', 'pickleball_app/ads');
+  
+  // Determine if it's a video or image
+  const isVideo = file.type.startsWith('video/');
+  const endpoint = isVideo ? 'video' : 'image';
 
   try {
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpoint}/upload`,
       {
         method: 'POST',
         body: formData,
@@ -166,10 +170,11 @@ export const uploadAdsImage = async (file) => {
       secure_url: data.secure_url,
       public_id: data.public_id,
       url: data.secure_url, // Keep for backward compatibility
-      publicId: data.public_id // Keep for backward compatibility
+      publicId: data.public_id, // Keep for backward compatibility
+      resource_type: data.resource_type // 'video' or 'image'
     };
   } catch (error) {
-    console.error('Error uploading ads image to Cloudinary:', error);
+    console.error('Error uploading ads file to Cloudinary:', error);
     throw error;
   }
 };
@@ -303,12 +308,55 @@ export const uploadClubOwnerImage = async (file) => {
   }
 };
 
+// Upload function for shop product images using unsigned upload
+export const uploadShopProductImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/shop_products');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url,
+      publicId: data.public_id
+    };
+  } catch (error) {
+    console.error('Error uploading shop product image to Cloudinary:', error);
+    throw error;
+  }
+};
+
 // Upload function for club logo using unsigned upload
 export const uploadClubLogo = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', UPLOAD_PRESET);
   formData.append('folder', 'pickleball_app/club_logos');
+
 
   try {
     const response = await fetch(
@@ -342,6 +390,92 @@ export const uploadClubLogo = async (file) => {
     };
   } catch (error) {
     console.error('Error uploading club logo to Cloudinary:', error);
+    throw error;
+  }
+};
+
+// Upload function for match day images using unsigned upload
+export const uploadMatchDayImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/matchdays');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading match day image to Cloudinary:', error);
+    throw error;
+  }
+};
+
+// Upload function for vendor menu item images using unsigned upload
+export const uploadVendorMenuItem = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/vendor_items');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading vendor menu item to Cloudinary:', error);
     throw error;
   }
 };

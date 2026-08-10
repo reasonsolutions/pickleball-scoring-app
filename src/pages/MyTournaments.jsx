@@ -20,7 +20,6 @@ export default function MyTournaments() {
         setLoading(true);
         
         if (isSuperAdmin()) {
-          // Super admins see all tournaments in the database
           try {
             const allTournaments = await getAllTournaments();
             setTournaments(allTournaments);
@@ -30,7 +29,6 @@ export default function MyTournaments() {
             setLoading(false);
           }
         } else if (isTeamAdmin()) {
-          // Team admins see the tournament they're associated with
           if (currentUser.tournamentId) {
             const tournamentDoc = await getDoc(doc(db, 'tournaments', currentUser.tournamentId));
             if (tournamentDoc.exists()) {
@@ -42,7 +40,6 @@ export default function MyTournaments() {
           }
           setLoading(false);
         } else {
-          // Default case - show tournaments created by user
           const q = query(
             collection(db, 'tournaments'),
             where('createdBy', '==', currentUser.uid),
@@ -94,7 +91,6 @@ export default function MyTournaments() {
   const currentTournaments = filterTournaments(tournaments, 'current');
   const pastTournaments = filterTournaments(tournaments, 'past');
 
-  // Scroll functions for tournament cards
   const scrollLeft = () => {
     const container = document.querySelector('.tournaments-container');
     if (container) {
@@ -112,18 +108,28 @@ export default function MyTournaments() {
   const renderTournaments = (tournamentList, emptyMessage) => {
     if (loading) {
       return (
-        <div className="flex justify-center items-center py-12">
-          <span className="loading loading-spinner loading-lg"></span>
+        <div className="flex justify-center items-center py-20">
+          <div className="text-center">
+            <svg className="animate-spin h-12 w-12 text-orange-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-gray-600">Loading tournaments...</p>
+          </div>
         </div>
       );
     }
 
     if (tournamentList.length === 0) {
       return (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🏓</div>
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{emptyMessage}</h3>
-          <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-4">
+            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">{emptyMessage}</h3>
+          <p className="text-gray-600 mb-6">
             {isTeamAdmin()
               ? "No tournament assigned to your team admin account."
               : activeTab === 'current'
@@ -132,11 +138,10 @@ export default function MyTournaments() {
             }
           </p>
           {activeTab === 'current' && isSuperAdmin() && (
-            <Link to="/admin/tournaments/create" className="btn" style={{
-              backgroundColor: 'var(--primary-green)',
-              color: 'var(--text-primary)',
-              border: 'none'
-            }}>
+            <Link to="/admin/tournaments/create" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
               Create Tournament
             </Link>
           )}
@@ -144,23 +149,19 @@ export default function MyTournaments() {
       );
     }
 
-    // Use horizontal scrolling layout when there are more than 4 tournaments
     if (tournamentList.length > 4) {
       return (
-        <div className="relative">
-          <div className="flex items-center">
-            {/* Left Arrow */}
+        <div className="relative group">
+          <div className="flex items-center gap-4">
             <button
               onClick={scrollLeft}
-              className="flex-shrink-0 p-2 rounded-full bg-white shadow-md hover:bg-gray-50 transition-colors mr-4 z-10"
-              style={{ backgroundColor: 'var(--bg-card)' }}
+              className="flex-shrink-0 p-2 rounded-full bg-white shadow-md hover:shadow-lg hover:bg-gray-50 transition-all z-10 border border-gray-200"
             >
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
-            {/* Tournaments Container */}
             <div className="tournaments-container flex-1 overflow-x-auto scrollbar-hide">
               <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
                 {tournamentList.map(tournament => (
@@ -171,11 +172,9 @@ export default function MyTournaments() {
               </div>
             </div>
 
-            {/* Right Arrow */}
             <button
               onClick={scrollRight}
-              className="flex-shrink-0 p-2 rounded-full bg-white shadow-md hover:bg-gray-50 transition-colors ml-4 z-10"
-              style={{ backgroundColor: 'var(--bg-card)' }}
+              className="flex-shrink-0 p-2 rounded-full bg-white shadow-md hover:shadow-lg hover:bg-gray-50 transition-all z-10 border border-gray-200"
             >
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -186,7 +185,6 @@ export default function MyTournaments() {
       );
     }
 
-    // Use grid layout for 4 or fewer tournaments
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {tournamentList.map(tournament => (
@@ -198,88 +196,128 @@ export default function MyTournaments() {
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {isTeamAdmin() ? 'My Tournament' : 'My Tournaments'}
-            </h1>
-            <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-              {isTeamAdmin()
-                ? `Tournament you're managing as ${currentUser?.teamName || 'Team'} Admin`
-                : 'Manage and track your pickleball tournaments'
-              }
-            </p>
-          </div>
-          {isSuperAdmin() && (
-            <Link to="/admin/tournaments/create" className="btn" style={{
-              backgroundColor: 'var(--primary-green)',
-              color: 'var(--text-primary)',
-              border: 'none'
-            }}>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Create Tournament
-            </Link>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="stat rounded-lg card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <div className="stat-title" style={{ color: 'var(--text-secondary)' }}>Total Tournaments</div>
-            <div className="stat-value" style={{ color: 'var(--primary-blue)' }}>{tournaments.length}</div>
-          </div>
-          <div className="stat rounded-lg card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <div className="stat-title" style={{ color: 'var(--text-secondary)' }}>Active Tournaments</div>
-            <div className="stat-value" style={{ color: 'var(--success-green)' }}>{currentTournaments.length}</div>
-          </div>
-          <div className="stat rounded-lg card-fitMove" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <div className="stat-title" style={{ color: 'var(--text-secondary)' }}>Completed Tournaments</div>
-            <div className="stat-value" style={{ color: 'var(--text-secondary)' }}>{pastTournaments.length}</div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Section */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">
+                  {isTeamAdmin() ? 'My Tournament' : 'My Tournaments'}
+                </h1>
+                <p className="text-gray-600 mt-2">
+                  {isTeamAdmin()
+                    ? `Tournament you're managing as ${currentUser?.teamName || 'Team'} Admin`
+                    : 'Manage and track your pickleball tournaments'
+                  }
+                </p>
+              </div>
+              {isSuperAdmin() && (
+                <Link to="/admin/tournaments/create" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium whitespace-nowrap">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Tournament
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="tabs tabs-boxed mb-6" style={{ backgroundColor: 'var(--bg-card)' }}>
-          <button
-            className={`tab ${activeTab === 'current' ? 'tab-active' : ''}`}
-            style={activeTab === 'current' ? {
-              backgroundColor: 'var(--primary-green)',
-              color: 'var(--text-primary)'
-            } : {
-              color: 'var(--text-secondary)'
-            }}
-            onClick={() => setActiveTab('current')}
-          >
-            Current Tournaments ({currentTournaments.length})
-          </button>
-          <button
-            className={`tab ${activeTab === 'past' ? 'tab-active' : ''}`}
-            style={activeTab === 'past' ? {
-              backgroundColor: 'var(--primary-green)',
-              color: 'var(--text-primary)'
-            } : {
-              color: 'var(--text-secondary)'
-            }}
-            onClick={() => setActiveTab('past')}
-          >
-            Past Tournaments ({pastTournaments.length})
-          </button>
-        </div>
+        {/* Stats Section */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Total Tournaments */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Tournaments</p>
+                  <p className="text-3xl font-bold text-gray-900">{tournaments.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </div>
+            </div>
 
-        {/* Tournament Content */}
-        <div className="min-h-96">
-          {activeTab === 'current' && renderTournaments(
-            currentTournaments,
-            "No current tournaments"
-          )}
-          {activeTab === 'past' && renderTournaments(
-            pastTournaments,
-            "No past tournaments"
-          )}
+            {/* Active Tournaments */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Active Tournaments</p>
+                  <p className="text-3xl font-bold text-gray-900">{currentTournaments.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Completed Tournaments */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Completed Tournaments</p>
+                  <p className="text-3xl font-bold text-gray-900">{pastTournaments.length}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-8 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('current')}
+              className={`px-6 py-4 font-medium text-sm transition-all border-b-2 ${
+                activeTab === 'current'
+                  ? 'text-orange-600 border-orange-500'
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Current Tournaments ({currentTournaments.length})
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('past')}
+              className={`px-6 py-4 font-medium text-sm transition-all border-b-2 ${
+                activeTab === 'past'
+                  ? 'text-orange-600 border-orange-500'
+                  : 'text-gray-600 border-transparent hover:text-gray-900'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Past Tournaments ({pastTournaments.length})
+              </span>
+            </button>
+          </div>
+
+          {/* Tournament Content */}
+          <div className="min-h-96">
+            {activeTab === 'current' && renderTournaments(
+              currentTournaments,
+              "No current tournaments"
+            )}
+            {activeTab === 'past' && renderTournaments(
+              pastTournaments,
+              "No past tournaments"
+            )}
+          </div>
         </div>
       </div>
     </MainLayout>

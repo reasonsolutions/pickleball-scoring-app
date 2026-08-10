@@ -437,8 +437,8 @@ export default function NewHome() {
       <NewHomeNavbar />
 
       {/* Hero Section Slider */}
-      <div className="py-4 sm:py-8">
-        <div className="mx-auto px-4 w-full max-w-full sm:w-full sm:max-w-none lg:w-full lg:max-w-none xl:w-[1600px] xl:max-w-[1600px]">
+      <div className="py-4 sm:py-8 overflow-hidden">
+        <div className="mx-auto px-4 w-full max-w-[100vw] xl:max-w-[1600px]">
           <div className="hero-section relative overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl h-[50vh] sm:h-[60vh] lg:h-[80vh]">
             {featuredArticles.length > 0 ? (
               <>

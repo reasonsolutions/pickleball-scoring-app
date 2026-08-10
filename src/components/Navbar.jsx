@@ -39,12 +39,12 @@ export default function Navbar() {
             >
               <li><a href="/admin">Dashboard</a></li>
               <li><a href="/admin/tournaments">My Tournaments</a></li>
-              <li><a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer">Fantasy HPL</a></li>
+              <li><a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer">Fantasy CCPL</a></li>
             </ul>
           )}
         </div>
         <a className="btn btn-ghost text-xl font-bold text-primary" href="/admin" style={{ color: 'var(--primary-green)' }}>
-          <img src={hplLogo} alt="HPL Logo" style={{ height: '6rem', width: 'auto' }} />
+          <img src={hplLogo} alt="CCPL Logo" style={{ height: '6rem', width: 'auto' }} />
         </a>
       </div>
 
@@ -52,7 +52,7 @@ export default function Navbar() {
         <ul className="menu menu-horizontal px-1">
           <li><a href="/admin" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">Dashboard</a></li>
           <li><a href="/admin/tournaments" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">My Tournaments</a></li>
-          <li><a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">Fantasy HPL</a></li>
+          <li><a href="https://hpl.cricbattle.com" target="_blank" rel="noopener noreferrer" className="btn btn-ghost hover:bg-primary hover:bg-opacity-10">Fantasy CCPL</a></li>
         </ul>
       </div>
 

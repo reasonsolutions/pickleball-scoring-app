@@ -175,8 +175,8 @@ export default function AddPlayersTeams() {
         ...doc.data()
       }));
 
-      // For HPL Clubs format, fetch logos from hpl-clubs collection
-      if (tournament?.format === 'HPL Clubs') {
+      // For CCPL Clubs format, fetch logos from hpl-clubs collection
+      if (tournament?.format === 'CCPL Clubs') {
         try {
           const clubsRef = collection(db, 'hpl-clubs');
           const clubsSnapshot = await getDocs(clubsRef);
@@ -210,7 +210,7 @@ export default function AddPlayersTeams() {
             };
           });
         } catch (error) {
-          console.error('Error fetching HPL Clubs logos:', error);
+          console.error('Error fetching CCPL Clubs logos:', error);
           // Continue with teams data even if club logo fetch fails
         }
       }
@@ -950,7 +950,7 @@ export default function AddPlayersTeams() {
       
       // Check if team has hplClubId
       if (!team.hplClubId) {
-        setError(`Team "${team.name}" is not linked to an HPL Club. Please link it first.`);
+        setError(`Team "${team.name}" is not linked to an CCPL Club. Please link it first.`);
         return;
       }
 
@@ -1892,7 +1892,7 @@ export default function AddPlayersTeams() {
               >
                 Teams
               </button>
-              {tournament?.format === 'HPL Clubs' && (
+              {tournament?.format === 'CCPL Clubs' && (
                 <button
                   className={`tab ${activeTab === 'conferences' ? 'tab-active' : ''}`}
                   onClick={() => setActiveTab('conferences')}
@@ -2413,7 +2413,7 @@ export default function AddPlayersTeams() {
             )}
 
             {/* Conferences Tab */}
-            {activeTab === 'conferences' && tournament?.format === 'HPL Clubs' && (
+            {activeTab === 'conferences' && tournament?.format === 'CCPL Clubs' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold">Conference Management</h3>

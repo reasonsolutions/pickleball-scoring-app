@@ -5,6 +5,7 @@ const logger = require("firebase-functions/logger");
 const nodemailer = require("nodemailer");
 const DuprApiClient = require('./duprApiClient');
 const passwordResetEmail = require('./sendPasswordResetEmail');
+const crypto = require('crypto');
 
 // Initialize Firebase Admin
 initializeApp();
@@ -1183,6 +1184,102 @@ exports.testDuprApi = onRequest({cors: true}, async (request, response) => {
       error: 'Test failed',
       message: error.message,
       details: error.stack
+    });
+  }
+});
+
+// Razorpay Payment Verification Function
+exports.verifyRazorpayPayment = onRequest({cors: true}, async (request, response) => {
+  try {
+    setCorsHeaders(response);
+    if (handlePreflight(request, response)) return;
+
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = request.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return response.status(400).json({
+        status: 'error',
+        message: 'Missing required payment verification parameters'
+      });
+    }
+
+    // Get Razorpay secret from environment
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET || 'xp5Es37EQ7WdMejQC5vJ1qTw';
+
+    // Create signature hash
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', razorpaySecret)
+      .update(body)
+      .digest('hex');
+
+    // Verify signature
+    if (expectedSignature === razorpay_signature) {
+      logger.info(`Payment verified successfully: ${razorpay_payment_id}`);
+      
+      return response.status(200).json({
+        status: 'success',
+        message: 'Payment verified successfully',
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id
+      });
+    } else {
+      logger.error(`Payment verification failed for: ${razorpay_payment_id}`);
+      
+      return response.status(400).json({
+        status: 'error',
+        message: 'Payment verification failed - Invalid signature'
+      });
+    }
+
+  } catch (error) {
+    logger.error('Error verifying Razorpay payment:', error);
+    return response.status(500).json({
+      status: 'error',
+      message: 'Payment verification error',
+      error: error.message
+    });
+  }
+});
+
+// Create Razorpay Order Function
+exports.createRazorpayOrder = onRequest({cors: true}, async (request, response) => {
+  try {
+    setCorsHeaders(response);
+    if (handlePreflight(request, response)) return;
+
+    const { amount, currency = 'INR', receipt, notes } = request.body;
+
+    if (!amount) {
+      return response.status(400).json({
+        status: 'error',
+        message: 'Amount is required'
+      });
+    }
+
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_Sfh0BL4V2hv19K';
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET || 'xp5Es37EQ7WdMejQC5vJ1qTw';
+
+    // For now, return a mock order ID
+    // In production, you would call Razorpay API to create an order
+    const orderId = 'order_' + Date.now();
+
+    logger.info(`Order created: ${orderId} for amount: ${amount}`);
+
+    return response.status(200).json({
+      status: 'success',
+      orderId: orderId,
+      amount: amount,
+      currency: currency,
+      keyId: razorpayKeyId
+    });
+
+  } catch (error) {
+    logger.error('Error creating Razorpay order:', error);
+    return response.status(500).json({
+      status: 'error',
+      message: 'Failed to create order',
+      error: error.message
     });
   }
 });

@@ -30,7 +30,7 @@ export default function NotificationBar() {
         }}
       >
         <div className="notification-text">
-          🏆 The Mavericks and All Stars will battle it out in the biggest and Final Showdown of HPL Season 1! Watch it here
+          🏆 The Mavericks and All Stars will battle it out in the biggest and Final Showdown of CCPL Season 1! Watch it here
         </div>
         <div className="notification-arrow">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

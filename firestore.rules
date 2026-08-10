@@ -411,6 +411,272 @@ service cloud.firestore {
                    isSuperAdminSimple();
     }
     
+    // Clubs Ads collection rules - for advertisement videos management
+    match /clubs-ads/{adId} {
+      // Allow public read and write access for ads management
+      allow read, write: if true;
+    }
+    
+    // Products collection rules - for Shop management
+    match /products/{productId} {
+      // Allow public read access for products (needed for shop display)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete products
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // App Settings collection rules - for mobile app configuration
+    match /app-settings/{settingId} {
+      // Allow public read access for app settings (needed for mobile app)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete app settings
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // HPL Users collection rules - for custom user management
+    // WARNING: This stores passwords directly - use Firebase Auth in production
+    match /hpl-users/{userId} {
+      // Allow public read access (excluding password field in queries)
+      allow read: if true;
+      
+      // Allow anyone to create a user account (for registration)
+      allow create: if request.resource.data.keys().hasAll(['email', 'password', 'phone_number', 'photo_url']) &&
+                   request.resource.data.email is string &&
+                   request.resource.data.password is string &&
+                   request.resource.data.phone_number is string &&
+                   request.resource.data.photo_url is string;
+      
+      // Allow users to update their own data or super admins to update any user
+      allow update: if request.auth != null &&
+                   (request.auth.token.email == resource.data.email ||
+                    isSuperAdminSimple());
+      
+      // Only super admins can delete users
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Fantasy Teams - for user fantasy teams
+    // Structure includes gameweeks for player selections per gameweek:
+    // gameweeks: {
+    //   [gameweekNumber]: {
+    //     playerIds: string[];
+    //     points: number;
+    //     locked: boolean;
+    //   }
+    // }
+    match /fantasy-teams/{teamId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+    
+    // Fantasy Players - for player stats per tournament
+    match /fantasy-players/{tournamentId}/players/{playerId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && isSuperAdminSimple();
+    }
+    
+    // Ticketing collection rules - for ticket and pass management
+    match /ticketing/{ticketId} {
+      // Allow public read access for tickets (needed for mobile app shop)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete tickets
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      // Ticket Types subcollection
+      match /ticketTypes/{typeId} {
+        // Allow public read access for ticket types
+        allow read: if true;
+        
+        // Only super admins can create, update, or delete ticket types
+        allow create: if request.auth != null &&
+                     isSuperAdminSimple();
+        
+        allow update: if request.auth != null &&
+                     isSuperAdminSimple();
+        
+        allow delete: if request.auth != null &&
+                     isSuperAdminSimple();
+      }
+      
+      // Passes subcollection - for pass requests
+      match /passes/{passId} {
+        // Allow public read access for passes (users can see their own requests)
+        allow read: if true;
+        
+        // Allow anyone to create a pass request
+        allow create: if true;
+        
+        // Only super admins can update pass status (approve/reject)
+        allow update: if request.auth != null &&
+                     isSuperAdminSimple();
+        
+        // Only super admins can delete passes
+        allow delete: if request.auth != null &&
+                     isSuperAdminSimple();
+      }
+      
+      // Orders subcollection rules (for future ticket purchases)
+      match /orders/{orderId} {
+        // Allow public read access for orders
+        allow read: if true;
+        
+        // Allow authenticated users to create orders
+        allow create: if request.auth != null;
+        
+        // Only super admins or order creator can update orders
+        allow update: if request.auth != null &&
+                     (isSuperAdminSimple() ||
+                      request.auth.uid == resource.data.userId);
+        
+        // Only super admins can delete orders
+        allow delete: if request.auth != null &&
+                     isSuperAdminSimple();
+        
+        // Tickets subcollection rules (individual tickets with QR codes)
+        match /tickets/{ticketId} {
+          // Allow public read access for tickets
+          allow read: if true;
+          
+          // Allow authenticated users to create tickets
+          allow create: if request.auth != null;
+          
+          // Only super admins can update tickets (e.g., mark as used)
+          allow update: if request.auth != null &&
+                       isSuperAdminSimple();
+          
+          // Only super admins can delete tickets
+          allow delete: if request.auth != null &&
+                       isSuperAdminSimple();
+        }
+      }
+    }
+    
+    // Vendors collection rules - for vendor management
+    match /vendors/{vendorId} {
+      // Allow public read access for vendors (needed for vendor portal)
+      allow read: if true;
+      
+      // Only super admins can create vendors
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      // Super admins can update vendors, or vendors can update their own data
+      allow update: if request.auth != null &&
+                   (isSuperAdminSimple() ||
+                    request.auth.token.email == resource.data.email);
+      
+      // Only super admins can delete vendors
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Vendor Setup Tokens collection rules - for password setup
+    match /vendor-setup-tokens/{tokenId} {
+      // Allow public read access for token verification
+      allow read: if true;
+      
+      // Only super admins and the vendor service can create tokens
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      // Allow updates to mark tokens as used (public access for password setup)
+      allow update: if true;
+      
+      // Only super admins can delete tokens
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
+    // Vendor Items collection rules - for menu item management
+    match /vendor-items/{itemId} {
+      // Allow public read access for menu items (for order placement)
+      allow read: if true;
+      
+      // Allow anyone to create menu items (vendors use custom auth, not Firebase Auth)
+      allow create: if true;
+      
+      // Allow anyone to update menu items (vendors use custom auth, not Firebase Auth)
+      allow update: if true;
+      
+      // Allow anyone to delete menu items (vendors use custom auth, not Firebase Auth)
+      allow delete: if true;
+    }
+    
+    // Vendor Orders collection rules - for order management
+    match /vendor-orders/{orderId} {
+      // Allow public read access for orders (vendors use custom auth)
+      allow read: if true;
+      
+      // Allow anyone to create orders (vendors use custom auth, not Firebase Auth)
+      allow create: if true;
+      
+      // Allow anyone to update orders (vendors use custom auth, not Firebase Auth)
+      allow update: if true;
+      
+      // Allow anyone to delete orders (vendors use custom auth, not Firebase Auth)
+      allow delete: if true;
+    }
+    
+    // CCPL Users collection rules - for mobile app user management
+    match /ccpl-users/{userId} {
+      // Allow public read and write access for user management
+      // Since we're not using Firebase Auth, allow all operations
+      allow read, write: if true;
+    }
+    
+    // Ticketing collection rules - for ticketing and pass management
+    match /ticketing/{ticketingId} {
+      // Allow public read access for ticketing documents
+      allow read: if true;
+      
+      // Allow authenticated users to create ticketing documents
+      allow create: if true;
+      
+      // Allow authenticated users to update ticketing documents
+      allow update: if true;
+      
+      // Passes subcollection rules
+      match /passes/{passId} {
+        // Allow public read access for passes
+        allow read: if true;
+        
+        // Allow authenticated users to create pass requests
+        allow create: if true;
+        
+        // Allow authenticated users to update pass requests
+        allow update: if true;
+        
+        // Allow authenticated users to delete pass requests
+        allow delete: if true;
+      }
+    }
+
+    
     // Function to validate clubs player data structure
     function isValidClubsPlayerData(data) {
       return data.keys().hasAll(['fullName', 'mobileNumber', 'emailId', 'password', 'gender', 'dateOfBirth', 'singlesRating', 'doublesRating', 'singlesReliabilityScore', 'doublesReliabilityScore', 'whyPickYou', 'leagueCommitment', 'registrationFee']) &&
@@ -779,5 +1045,56 @@ service cloud.firestore {
             exists(/databases/$(database)/documents/tournaments/$(tournamentId)) &&
             get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.createdBy == request.auth.uid;
    }
- }
+   
+   // Function to validate ticketing (match day) data structure
+   function isValidTicketingData(data) {
+     return data.keys().hasAll(['name', 'tournamentId', 'date', 'hostTeam', 'hostTeamId', 'deadline']) &&
+            data.name is string &&
+            data.tournamentId is string &&
+            data.date is string &&
+            data.hostTeam is string &&
+            data.hostTeamId is string &&
+            data.deadline is string &&
+            (data.imageUrl == null || data.imageUrl is string) &&
+            (data.imagePublicId == null || data.imagePublicId is string) &&
+            (data.status == null || data.status is string) &&
+            (data.status == null || data.status in ['active', 'completed', 'cancelled']) &&
+            (data.totalTickets == null || data.totalTickets is number) &&
+            (data.soldTickets == null || data.soldTickets is number) &&
+            (data.revenue == null || data.revenue is number) &&
+            (data.createdAt == null || data.createdAt is timestamp) &&
+            (data.updatedAt == null || data.updatedAt is timestamp);
+   }
+   
+   // Function to validate ticket type data structure
+   function isValidTicketTypeData(data) {
+     return data.keys().hasAll(['name', 'price', 'quantity']) &&
+            data.name is string &&
+            data.price is number &&
+            data.price >= 0 &&
+            data.quantity is number &&
+            data.quantity >= 0 &&
+            (data.sold == null || data.sold is number) &&
+            (data.sold == null || data.sold >= 0) &&
+            (data.available == null || data.available is number) &&
+            (data.available == null || data.available >= 0) &&
+            (data.createdAt == null || data.createdAt is timestamp);
+  }
+  
+  // Function to validate vendor data structure
+  function isValidVendorData(data) {
+    return data.keys().hasAll(['name', 'email', 'phone', 'category']) &&
+           data.name is string &&
+           data.email is string &&
+           data.phone is string &&
+           data.category is string &&
+           data.category in ['Food', 'Merchandise', 'Others'] &&
+           (data.logo == null || data.logo is string) &&
+           (data.status == null || data.status is string) &&
+           (data.status == null || data.status in ['pending', 'active', 'inactive']) &&
+           (data.passwordSetAt == null || data.passwordSetAt is string) &&
+           (data.createdAt == null || data.createdAt is timestamp) &&
+           (data.updatedAt == null || data.updatedAt is timestamp);
+  }
+}
 }

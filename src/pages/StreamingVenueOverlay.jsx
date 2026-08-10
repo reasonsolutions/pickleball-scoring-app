@@ -13,7 +13,7 @@ import keerthiLogo from '../assets/keerthi.png';
 import nandiLogo from '../assets/nandi.png';
 import teramorLogo from '../assets/teramor.png';
 import raptorsLogo from '../assets/raptors.png';
-import clubLeagueLogo from '../assets/clubleaguelogo.png';
+import centrecourtWhiteLogo from '../assets/centrecourtwhite.png';
 import praneethLogo from '../assets/Praneeth.png';
 
 export default function StreamingVenueOverlay() {
@@ -43,7 +43,7 @@ export default function StreamingVenueOverlay() {
 
   // Team logo mapping
   const teamLogos = {
-    'HPL': hplLogoWhite,
+    'CCPL': hplLogoWhite,
     'Challenger': challengerLogo,
     'Centre Court': centrecourtLogo,
     'Mavericks': mavericksLogo,
@@ -56,17 +56,9 @@ export default function StreamingVenueOverlay() {
     'Raptors': raptorsLogo
   };
 
-  // Logo rotation effect - toggle every 30 seconds with flip animation
+  // Keep Praneeth logo always visible
   useEffect(() => {
-    const logoInterval = setInterval(() => {
-      setLogoFlip(true);
-      setTimeout(() => {
-        setShowPraneethLogo(prev => !prev);
-        setLogoFlip(false);
-      }, 300); // Half of the flip animation duration
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(logoInterval);
+    setShowPraneethLogo(true);
   }, []);
 
   // Fetch all matches for this venue (initial load only)
@@ -200,6 +192,7 @@ export default function StreamingVenueOverlay() {
             console.log('📊 Match data updated from Firebase:', matchData);
             console.log('📊 Match scores:', matchData.scores);
             console.log('📊 Current match index:', currentMatchIndex);
+            console.log('🎯 Current Fixture ID:', currentMatch.id);
 
             // Update matches array with latest data
             setMatches(prevMatches =>
@@ -488,6 +481,49 @@ export default function StreamingVenueOverlay() {
     return totalScore.toString();
   };
 
+  const getMatchesWon = (teamKey) => {
+    const currentMatch = matches[currentMatchIndex];
+    if (!currentMatch || !currentMatch.fixtureGroupId) return 0;
+
+    let winsCount = 0;
+    const fixtureGroupId = currentMatch.fixtureGroupId;
+
+    // Count wins across all completed matches in the same fixtureGroupId
+    matches.forEach(match => {
+      // Only count matches in the same fixture group
+      if (match.fixtureGroupId !== fixtureGroupId) return;
+      
+      // Only count completed matches
+      if (match.status !== 'completed') return;
+      
+      if (!match.scores || !match.scores.player1 || !match.scores.player2) return;
+
+      // Get the total score for each team in this match
+      let team1TotalScore = 0;
+      let team2TotalScore = 0;
+
+      Object.keys(match.scores.player1).forEach(gameKey => {
+        if (gameKey.startsWith('game')) {
+          team1TotalScore += match.scores.player1[gameKey] || 0;
+          team2TotalScore += match.scores.player2[gameKey] || 0;
+        }
+      });
+
+      // Determine winner of this match
+      if (teamKey === 'team1') {
+        if (team1TotalScore > team2TotalScore) {
+          winsCount++;
+        }
+      } else {
+        if (team2TotalScore > team1TotalScore) {
+          winsCount++;
+        }
+      }
+    });
+
+    return winsCount;
+  };
+
   const ServeTicker = ({ ticker, side }) => {
     if (!ticker) return null;
 
@@ -577,26 +613,18 @@ export default function StreamingVenueOverlay() {
 
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden">
-      {/* Club League Logo - Top Right with rotation */}
+      {/* Praneeth Logo - Top Right */}
       <div className="absolute top-4 right-4 z-40">
-        <div
-          className={`transition-transform duration-600 ${logoFlip ? 'scale-x-0' : 'scale-x-100'}`}
-          style={{
-            transformOrigin: 'center',
-            transformStyle: 'preserve-3d'
-          }}
-        >
-          <img
-            src={showPraneethLogo ? praneethLogo : clubLeagueLogo}
-            alt={showPraneethLogo ? 'Praneeth' : 'Club League'}
-            className="h-28 w-auto object-contain"
-          />
-        </div>
+        <img
+          src={praneethLogo}
+          alt="Praneeth"
+          className="h-28 w-auto object-contain"
+        />
       </div>
 
       {/* Score Display and Venue - Top Left Corner */}
-      <div className="absolute top-4 left-4 z-40">
-        <div className="flex flex-col space-y-0 w-96">
+      <div className="absolute top-4 left-4 z-40" style={{ transform: 'scale(0.8)', transformOrigin: 'top left' }}>
+        <div className="flex flex-col space-y-0 w-auto">
           {/* Match Info Header */}
           <div className="flex items-center space-x-0 mb-0">
             {(currentMatch.status === 'in-progress' || currentMatch.status === 'live') && (
@@ -618,103 +646,104 @@ export default function StreamingVenueOverlay() {
             </div>
           </div>
 
-          {/* Team 1 Row */}
-          <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-3 py-2 shadow-lg border-2 border-orange-500 grid grid-cols-12 items-center gap-2">
-            <div className="col-span-2 flex justify-center">
-              <div className="w-10 h-10">
+          {/* Main Score Container with Logo on Left */}
+          <div className="flex items-stretch gap-0">
+            {/* Left Logo - Vertically Centered */}
+            <div className="flex items-center justify-center px-3 bg-gradient-to-r from-slate-700 to-slate-800 border-2 border-orange-500">
+              <div className="w-16 h-16">
                 <img
-                  src={getTeamLogo('team1')}
-                  alt={currentMatch.team1Name}
+                  src={centrecourtWhiteLogo}
+                  alt="Centre Court"
                   className="w-full h-full object-contain"
                 />
               </div>
             </div>
 
-            <div className="col-span-5 flex flex-col min-w-0 space-y-0.5">
-              {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
-                <>
-                  <div className="text-sm sm:text-base font-black text-orange-300 whitespace-nowrap">
-                    {currentMatch.player1Team1 || 'TBD'}
+            {/* Matches Won Column */}
+            <div className="flex flex-col space-y-0 bg-gradient-to-r from-slate-700 to-slate-800 border-2 border-orange-500 border-l-0">
+              {/* Team 1 Wins */}
+              <div className="flex items-center justify-center px-3 py-2 flex-1 border-b border-orange-500">
+                <div className="text-lg sm:text-xl font-black text-white">
+                  {getMatchesWon('team1')}
+                </div>
+              </div>
+
+              {/* Team 2 Wins */}
+              <div className="flex items-center justify-center px-3 py-2 flex-1">
+                <div className="text-lg sm:text-xl font-black text-white">
+                  {getMatchesWon('team2')}
+                </div>
+              </div>
+            </div>
+
+            {/* Middle Section - Teams and Info - Extended Width */}
+            <div className="flex flex-col space-y-0 min-w-96">
+              {/* Team 1 Row */}
+              <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-2 shadow-lg border-2 border-orange-500 border-l-0 flex items-center justify-between gap-2 flex-1">
+                <div className="flex flex-col gap-0 flex-1">
+                  <div className="text-lg sm:text-2xl font-black text-white whitespace-nowrap uppercase">
+                    {currentMatch.team1Name || 'Team 1'}
                   </div>
-                  {currentMatch.player2Team1 && (
-                    <div className="text-sm sm:text-base font-black text-orange-300 whitespace-nowrap">
-                      {currentMatch.player2Team1}
+                  {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
+                    <div className="text-sm sm:text-base font-black text-orange-300 whitespace-nowrap uppercase">
+                      {currentMatch.player1Team1 || 'TBD'}
+                      {currentMatch.player2Team1 && ` / ${currentMatch.player2Team1}`}
                     </div>
                   )}
-                </>
-              )}
-              {(currentMatch.matchType === 'dreamBreaker') && (
-                <div className="text-sm sm:text-base font-black text-white whitespace-nowrap">
-                  {currentMatch.team1Name}
                 </div>
-              )}
-            </div>
-
-            {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
-              <div className="col-span-2 flex justify-center items-center space-x-1">
-                {currentMatch.servingPlayer === 'player1' && (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                    {(currentMatch.teamServeCount || 0) === 1 && (
-                      <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
+                  <div className="flex justify-center items-center space-x-1">
+                    {currentMatch.servingPlayer === 'player1' && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        {(currentMatch.teamServeCount || 0) === 1 && (
+                          <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        )}
+                      </>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
-            )}
 
-            <div className={`col-span-3 text-2xl sm:text-3xl font-black text-right ${pointTicker && pointTicker.team === 'player1' ? 'animate-score-pulse' : ''}`}>
-              {formatScore('player1')}
-            </div>
-          </div>
-
-          {/* Team 2 Row */}
-          <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-3 py-2 shadow-lg border-2 border-orange-500 grid grid-cols-12 items-center gap-2">
-            <div className="col-span-2 flex justify-center">
-              <div className="w-10 h-10">
-                <img
-                  src={getTeamLogo('team2')}
-                  alt={currentMatch.team2Name}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
-
-            <div className="col-span-5 flex flex-col min-w-0 space-y-0.5">
-              {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
-                <>
-                  <div className="text-sm sm:text-base font-black text-orange-300 whitespace-nowrap">
-                    {currentMatch.player1Team2 || 'TBD'}
+              {/* Team 2 Row */}
+              <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-4 py-2 shadow-lg border-2 border-orange-500 border-l-0 border-t-0 flex items-center justify-between gap-2 flex-1">
+                <div className="flex flex-col gap-0 flex-1">
+                  <div className="text-lg sm:text-2xl font-black text-white whitespace-nowrap uppercase">
+                    {currentMatch.team2Name || 'Team 2'}
                   </div>
-                  {currentMatch.player2Team2 && (
-                    <div className="text-sm sm:text-base font-black text-orange-300 whitespace-nowrap">
-                      {currentMatch.player2Team2}
+                  {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
+                    <div className="text-sm sm:text-base font-black text-orange-300 whitespace-nowrap uppercase">
+                      {currentMatch.player1Team2 || 'TBD'}
+                      {currentMatch.player2Team2 && ` / ${currentMatch.player2Team2}`}
                     </div>
                   )}
-                </>
-              )}
-              {(currentMatch.matchType === 'dreamBreaker') && (
-                <div className="text-sm sm:text-base font-black text-white whitespace-nowrap">
-                  {currentMatch.team2Name}
                 </div>
-              )}
-            </div>
-
-            {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
-              <div className="col-span-2 flex justify-center items-center space-x-1">
-                {currentMatch.servingPlayer === 'player2' && (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                    {(currentMatch.teamServeCount || 0) === 1 && (
-                      <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                {(!currentMatch.matchType || currentMatch.matchType !== 'dreamBreaker') && (
+                  <div className="flex justify-center items-center space-x-1">
+                    {currentMatch.servingPlayer === 'player2' && (
+                      <>
+                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        {(currentMatch.teamServeCount || 0) === 1 && (
+                          <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        )}
+                      </>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
-            )}
+            </div>
 
-            <div className={`col-span-3 text-2xl sm:text-3xl font-black text-right ${pointTicker && pointTicker.team === 'player2' ? 'animate-score-pulse' : ''}`}>
-              {formatScore('player2')}
+            {/* Right Section - Scores with Orange Background */}
+            <div className="flex flex-col space-y-0">
+              {/* Score 1 */}
+              <div className="bg-orange-600 text-white text-3xl sm:text-4xl font-black text-center py-2 px-3 shadow-lg border-2 border-orange-500 border-l-0 flex items-center justify-center min-w-16 flex-1">
+                {formatScore('player1')}
+              </div>
+
+              {/* Score 2 */}
+              <div className="bg-orange-600 text-white text-3xl sm:text-4xl font-black text-center py-2 px-3 shadow-lg border-2 border-orange-500 border-l-0 border-t-0 flex items-center justify-center min-w-16 flex-1">
+                {formatScore('player2')}
+              </div>
             </div>
           </div>
 

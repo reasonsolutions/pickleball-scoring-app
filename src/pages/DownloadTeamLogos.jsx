@@ -47,21 +47,21 @@ export default function DownloadTeamLogos() {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
-  // Fetch teams from HPL Clubs tournament
+  // Fetch teams from CCPL Clubs tournament
   useEffect(() => {
     const fetchTeams = async () => {
       try {
         setLoading(true);
 
-        // Find the HPL Clubs tournament
+        // Find the CCPL Clubs tournament
         const tournamentsRef = collection(db, 'tournaments');
         const tournamentsSnapshot = await getDocs(tournamentsRef);
 
         let hplClubsTournamentId = null;
         tournamentsSnapshot.docs.forEach(doc => {
           const data = doc.data();
-          if (data.name === 'HPL Clubs' ||
-              data.tournamentName === 'HPL Clubs' ||
+          if (data.name === 'CCPL Clubs' ||
+              data.tournamentName === 'CCPL Clubs' ||
               data.name?.toLowerCase().includes('hpl clubs') ||
               data.tournamentName?.toLowerCase().includes('hpl clubs')) {
             hplClubsTournamentId = doc.id;
@@ -82,7 +82,7 @@ export default function DownloadTeamLogos() {
           clubsData[doc.id] = doc.data();
         });
 
-        // Fetch teams for HPL Clubs tournament
+        // Fetch teams for CCPL Clubs tournament
         const teamsQuery = query(
           collection(db, 'teams'),
           where('tournamentId', '==', hplClubsTournamentId)

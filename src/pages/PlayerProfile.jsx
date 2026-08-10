@@ -306,7 +306,7 @@ export default function PlayerProfile() {
               <p>Welcome ${playerData.fullName} to your team!</p>
               
               <p>Best regards,<br>
-              HPL Clubs Team</p>
+              CCPL Clubs Team</p>
               
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
               <p style="color: #9ca3af; font-size: 12px;">
@@ -387,10 +387,10 @@ export default function PlayerProfile() {
       });
 
       const options = {
-        key: 'rzp_live_SBc21pvQK1l6sZ',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_Sfh0BL4V2hv19K',
         amount: totalAmountInPaise,
         currency: 'INR',
-        name: 'HPL Club Registration',
+        name: 'CCPL Club Registration',
         description: `Player Registration - ${playerData.fullName}`,
         handler: function (response) {
           console.log('Player registration payment successful:', response);
@@ -1645,7 +1645,7 @@ export default function PlayerProfile() {
 
             <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4 mb-6">
               <p className="text-blue-300 text-sm" style={{fontFamily: 'Avantique, sans-serif'}}>
-                <strong>Note:</strong> This is a one-time registration fee required to join any HPL club.
+                <strong>Note:</strong> This is a one-time registration fee required to join any CCPL club.
                 Once paid, you'll be officially part of the club and can participate in all activities.
               </p>
             </div>

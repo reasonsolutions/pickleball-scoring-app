@@ -1,0 +1,222 @@
+/* ───────────── Zuume Cut Fonts ───────────── */
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 300;
+  font-style: normal;
+  src: url("/score UI/fonts/zuume-cut-light.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 300;
+  font-style: italic;
+  src: url("/score UI/fonts/zuume-cut-light-italic.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 400;
+  font-style: normal;
+  src: url("/score UI/fonts/zuume-cut-regular.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 400;
+  font-style: italic;
+  src: url("/score UI/fonts/zuume-cut-italic.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 700;
+  font-style: normal;
+  src: url("/score UI/fonts/zuume-cut-bold.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 700;
+  font-style: italic;
+  src: url("/score UI/fonts/zuume-cut-bold-italic.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 900;
+  font-style: normal;
+  src: url("/score UI/fonts/zuume-cut-black.woff") format("woff");
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Zuume Cut";
+  font-weight: 900;
+  font-style: italic;
+  src: url("/score UI/fonts/zuume-cut-black-italic.woff") format("woff");
+  font-display: block;
+}
+
+/* ───────────── Display Font Classes ───────────── */
+.zuume-display {
+  font-family: "Zuume Cut", "Inter", system-ui, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.zuume-display-bold {
+  font-family: "Zuume Cut", "Inter", system-ui, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.zuume-display-regular {
+  font-family: "Zuume Cut", "Inter", system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* ───────────── Animations ───────────── */
+@keyframes live-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55), 0 0 12px #fff;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    transform: scale(0.92);
+  }
+}
+
+@keyframes drs-heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(1);
+  }
+}
+
+.animate-drs-heartbeat {
+  animation: drs-heartbeat 1.5s ease-in-out infinite;
+}
+
+/* ───────────── Utility Classes ───────────── */
+.text-zuume-display {
+  font-family: "Zuume Cut", "Inter", system-ui, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.text-zuume-bold {
+  font-family: "Zuume Cut", "Inter", system-ui, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.text-zuume-regular {
+  font-family: "Zuume Cut", "Inter", system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* ───────────── Serve Dot Animation ───────────── */
+.serve-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FF8A3C;
+  box-shadow: 0 0 24px #FF8A3C, 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+  animation: serve-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes serve-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 138, 60, 0.55), 0 0 24px #FF8A3C, 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(255, 138, 60, 0), 0 0 32px #FF8A3C, 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+    transform: scale(0.94);
+  }
+}
+
+.serve-dot-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ───────────── Sliding Images Animations ───────────── */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.sliding-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ───────────── Responsive 2:1 Aspect Ratio ───────────── */
+@media (aspect-ratio: 2 / 1) {
+  /* Score numbers - much larger */
+  .score-number-2-1 {
+    font-size: 280px !important;
+  }
+
+  /* Score dash - proportionally larger */
+  .score-dash-2-1 {
+    font-size: 200px !important;
+  }
+
+  /* Team names - moderately larger */
+  .team-name-2-1 {
+    font-size: 72px !important;
+  }
+
+  /* Player names - moderately larger (reduced by 30%) */
+  .player-name-2-1 {
+    font-size: 28px !important;
+  }
+
+  /* Match type badge - larger */
+  .match-type-badge-2-1 {
+    font-size: 32px !important;
+    padding: 12px 24px !important;
+  }
+
+  /* Matches won text - larger */
+  .matches-won-2-1 {
+    font-size: 96px !important;
+  }
+}

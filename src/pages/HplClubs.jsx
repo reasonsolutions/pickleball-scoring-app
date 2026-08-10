@@ -511,7 +511,7 @@ export default function HplClubs() {
             <>
               Home of
               <br />
-              HPL Clubs
+              CCPL Clubs
             </>
           }
           description={
@@ -558,17 +558,17 @@ export default function HplClubs() {
                 <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 flex items-center justify-center">
                   <img
                     src={hplClubsLogo}
-                    alt="HPL Clubs Logo"
+                    alt="CCPL Clubs Logo"
                     className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-contain"
                     onError={(e) => {
-                      // Fallback to a simple HPL text if image fails
+                      // Fallback to a simple CCPL text if image fails
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
                   <div className="hidden w-full h-full items-center justify-center">
                     <span className="text-orange-500 font-bold text-lg sm:text-xl lg:text-2xl" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      HPL CLUBS
+                      CCPL CLUBS
                     </span>
                   </div>
                 </div>
@@ -581,7 +581,7 @@ export default function HplClubs() {
                   <span className="text-orange-300">a Club or Player</span>
                 </h2>
                 <p className="text-white text-base sm:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto lg:mx-0" style={{fontFamily: 'Avantique, sans-serif'}}>
-                  The HPL Club League is a grassroots, club-based pickleball competition designed to build long-term community, identity, and structure within the sport.
+                  The CCPL Club League is a grassroots, club-based pickleball competition designed to build long-term community, identity, and structure within the sport.
                 </p>
               </div>
 
@@ -625,7 +625,7 @@ export default function HplClubs() {
                   {/* Top Section */}
                   <div>
                     <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      #HPLCLUBS
+                      #CCPLCLUBS
                     </h2>
                   </div>
                   
@@ -668,7 +668,7 @@ export default function HplClubs() {
                   {/* Top Section */}
                   <div>
                     <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{fontFamily: 'Avantique, sans-serif'}}>
-                      #HPLPLAYERS
+                      #CCPLPLAYERS
                     </h2>
                   </div>
                   

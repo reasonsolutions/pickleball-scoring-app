@@ -25,9 +25,9 @@ export default function Videos() {
           id: doc.id,
           ...doc.data()
         }));
-        // Filter out "HPL Clubs" tournament
+        // Filter out "CCPL Clubs" tournament
         const tournamentsList = allTournaments.filter(
-          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+          tournament => tournament.name !== 'CCPL Clubs' && tournament.tournamentName !== 'CCPL Clubs'
         );
         setTournaments(tournamentsList);
         
@@ -203,10 +203,10 @@ export default function Videos() {
           {/* Left Side - Navigation Buttons */}
           <div className="flex space-x-0">
             <Link to="/new-home" className="nav-button bg-white text-gray-800 px-3 sm:px-6 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl hover:bg-gray-100 transition-colors border-t-4 border-b-4 border-l-4 border-r-2 border-black" style={{fontFamily: 'Avantique, sans-serif'}}>
-              HPL
+              CCPL
             </Link>
             <Link to="/hpl-clubs" className="nav-button bg-white text-gray-800 px-2 sm:px-4 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl hover:bg-gray-100 transition-colors border-t-4 border-b-4 border-l-2 border-r-4 border-black" style={{fontFamily: 'Avantique, sans-serif'}}>
-              <span className="hidden sm:inline" style={{fontFamily: 'Avantique, sans-serif'}}>HPL Clubs</span>
+              <span className="hidden sm:inline" style={{fontFamily: 'Avantique, sans-serif'}}>CCPL Clubs</span>
               <span className="sm:hidden" style={{fontFamily: 'Avantique, sans-serif'}}>Clubs</span>
             </Link>
           </div>

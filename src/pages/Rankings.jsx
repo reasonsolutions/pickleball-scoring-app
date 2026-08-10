@@ -43,9 +43,9 @@ export default function Rankings() {
           id: doc.id,
           ...doc.data()
         }));
-        // Filter out "HPL Clubs" tournament
+        // Filter out "CCPL Clubs" tournament
         const tournamentsList = allTournaments.filter(
-          tournament => tournament.name !== 'HPL Clubs' && tournament.tournamentName !== 'HPL Clubs'
+          tournament => tournament.name !== 'CCPL Clubs' && tournament.tournamentName !== 'CCPL Clubs'
         );
         setTournaments(tournamentsList);
         
@@ -239,10 +239,11 @@ export default function Rankings() {
           // Get all fixtures involving this team, excluding playoff fixtures
           const teamFixtures = Object.values(fixtureGroups).filter(fixture => {
             const isTeamInvolved = fixture.team1 === team.id || fixture.team2 === team.id;
-            // Exclude playoff fixtures from rankings calculations
-            const playoffTypes = ['playoff', 'Qualifier', 'Qualifier 1', 'Qualifier 2', 'Eliminator', 'Final'];
-            const isNotPlayoff = !fixture.fixtureType || !playoffTypes.includes(fixture.fixtureType);
-            return isTeamInvolved && isNotPlayoff;
+            // Exclude playoff fixtures from rankings calculations (case-insensitive)
+            const excludedFixtureTypes = ['playoff', 'qualifier', 'qualifier 1', 'qualifier 2', 'eliminator', 'final'];
+            const fixtureTypeNormalized = fixture.fixtureType ? fixture.fixtureType.toLowerCase() : '';
+            const isExcludedType = fixture.fixtureType && excludedFixtureTypes.includes(fixtureTypeNormalized);
+            return isTeamInvolved && !isExcludedType;
           });
 
           let battleWins = 0; // Number of fixtures won

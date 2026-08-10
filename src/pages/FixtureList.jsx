@@ -517,6 +517,44 @@ export default function FixtureList() {
       console.log('Original match time:', editingMatch.time);
       console.log('New time from form:', editForm.time);
       
+      // Helper function to find player ID by name
+      const findPlayerId = (playerName) => {
+        if (!playerName || typeof playerName !== 'string') return null;
+        const normalizedName = playerName.trim().toLowerCase();
+        const player = players.find(p => p.name?.trim().toLowerCase() === normalizedName);
+        return player?.id || null;
+      };
+      
+      // Build player ID fields
+      const playerIdFields = {};
+      if (editForm.player1Team1) {
+        const playerId = findPlayerId(editForm.player1Team1);
+        if (playerId) playerIdFields.player1Team1Id = playerId;
+      }
+      if (editForm.player2Team1) {
+        const playerId = findPlayerId(editForm.player2Team1);
+        if (playerId) playerIdFields.player2Team1Id = playerId;
+      }
+      if (editForm.player1Team2) {
+        const playerId = findPlayerId(editForm.player1Team2);
+        if (playerId) playerIdFields.player1Team2Id = playerId;
+      }
+      if (editForm.player2Team2) {
+        const playerId = findPlayerId(editForm.player2Team2);
+        if (playerId) playerIdFields.player2Team2Id = playerId;
+      }
+      
+      // Handle dream breaker player IDs
+      const dreamBreakerIdFields = {};
+      if (editingMatch.matchType === 'dreamBreaker') {
+        if (Array.isArray(editForm.gameBreakerPlayersTeam1)) {
+          dreamBreakerIdFields.gameBreakerPlayersTeam1Ids = editForm.gameBreakerPlayersTeam1.map(name => findPlayerId(name) || '');
+        }
+        if (Array.isArray(editForm.gameBreakerPlayersTeam2)) {
+          dreamBreakerIdFields.gameBreakerPlayersTeam2Ids = editForm.gameBreakerPlayersTeam2.map(name => findPlayerId(name) || '');
+        }
+      }
+      
       const updatedMatch = {
         // Keep all existing required fields
         tournamentId: editingMatch.tournamentId,
@@ -541,10 +579,13 @@ export default function FixtureList() {
         player1Team2: editForm.player1Team2,
         player2Team2: editForm.player2Team2,
         youtubeLink: editForm.youtubeLink,
+        // Add player ID fields
+        ...playerIdFields,
         // Game Breaker specific fields
         ...(editingMatch.matchType === 'dreamBreaker' && {
           gameBreakerPlayersTeam1: editForm.gameBreakerPlayersTeam1,
-          gameBreakerPlayersTeam2: editForm.gameBreakerPlayersTeam2
+          gameBreakerPlayersTeam2: editForm.gameBreakerPlayersTeam2,
+          ...dreamBreakerIdFields
         }),
         // Optional fields that might exist
         ...(editingMatch.fixtureType && { fixtureType: editingMatch.fixtureType }),
@@ -556,14 +597,18 @@ export default function FixtureList() {
       };
 
       console.log('Update object being sent to Firebase:', updatedMatch);
+      console.log('Player IDs assigned:', playerIdFields);
+      if (Object.keys(dreamBreakerIdFields).length > 0) {
+        console.log('Dream breaker player IDs assigned:', dreamBreakerIdFields);
+      }
       
       await updateDoc(doc(db, 'fixtures', editingMatch.id), updatedMatch);
       
       console.log('Firebase update completed successfully');
       
       // Update local state
-      setMatches(prev => prev.map(match => 
-        match.id === editingMatch.id 
+      setMatches(prev => prev.map(match =>
+        match.id === editingMatch.id
           ? { ...match, ...updatedMatch, date: { toDate: () => new Date(editForm.date) } }
           : match
       ));
@@ -710,7 +755,7 @@ export default function FixtureList() {
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4">
             <button
-              className="btn btn-ghost btn-sm flex-shrink-0"
+              className="btn btn-primary btn-sm flex-shrink-0"
               onClick={() => navigate(`/admin/tournaments/${tournamentId}/fixtures`)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -825,7 +870,7 @@ export default function FixtureList() {
                       {isSuperAdmin() && (
                         <>
                           <button
-                            className="btn btn-ghost btn-xs sm:btn-sm"
+                            className="btn btn-secondary btn-xs sm:btn-sm"
                             onClick={() => {
                               const tvUrl = `${window.location.origin}/tv/${match.id}`;
                               window.open(tvUrl, '_blank');
@@ -835,7 +880,7 @@ export default function FixtureList() {
                             <span className="text-lg">📺</span>
                           </button>
                           <button
-                            className="btn btn-ghost btn-xs sm:btn-sm"
+                            className="btn btn-secondary btn-xs sm:btn-sm"
                             onClick={() => {
                               const umpireUrl = `${window.location.origin}/umpire/${match.id}`;
                               window.open(umpireUrl, '_blank');
@@ -845,7 +890,7 @@ export default function FixtureList() {
                             <span className="text-lg">⚖️</span>
                           </button>
                           <button
-                            className="btn btn-ghost btn-xs sm:btn-sm"
+                            className="btn btn-secondary btn-xs sm:btn-sm"
                             onClick={() => {
                               const basicScoreUrl = `${window.location.origin}/basic-score/${match.id}`;
                               window.open(basicScoreUrl, '_blank');
@@ -855,7 +900,7 @@ export default function FixtureList() {
                             <span className="text-lg">📊</span>
                           </button>
                           <button
-                            className="btn btn-ghost btn-xs sm:btn-sm text-warning"
+                            className="btn btn-error btn-xs sm:btn-sm"
                             onClick={() => handleResetMatch(match)}
                             title="Reset Teams & Players"
                           >
@@ -868,7 +913,7 @@ export default function FixtureList() {
                       {/* Edit Button */}
                       {(isSuperAdmin() || (isTeamAdmin() && getTeamAdminTeam(match))) && (
                         <button
-                          className={`btn btn-ghost btn-xs sm:btn-sm ${isTeamAdmin() && isDeadlinePassed(match) ? 'btn-disabled opacity-50' : ''}`}
+                          className={`btn btn-primary btn-xs sm:btn-sm ${isTeamAdmin() && isDeadlinePassed(match) ? 'btn-disabled opacity-50' : ''}`}
                           onClick={() => handleEditMatch(match)}
                           title={isTeamAdmin() && isDeadlinePassed(match) ? "Deadline passed - cannot edit" : "Edit match"}
                           disabled={isTeamAdmin() && isDeadlinePassed(match)}
@@ -1069,7 +1114,7 @@ export default function FixtureList() {
                                 </div>
                                 {!isDeadlinePassed(match) ? (
                                   <button
-                                    className="btn btn-primary btn-sm"
+                                    className="btn btn-warning btn-sm"
                                     onClick={() => {
                                     setEditingMatch(match);
                                     // Reset filters when opening modal
@@ -1105,7 +1150,7 @@ export default function FixtureList() {
                                 ✓ Your {isSingles ? 'player' : 'team'} has been selected
                                 {!isDeadlinePassed(match) && (
                                   <button
-                                    className="btn btn-outline btn-xs ml-2"
+                                    className="btn btn-warning btn-xs ml-2"
                                     onClick={() => {
                                       setEditingMatch(match);
                                       // Reset filters when opening modal
@@ -1185,7 +1230,7 @@ export default function FixtureList() {
                                 </div>
                                 {!isDeadlinePassed(match) ? (
                                   <button
-                                    className="btn btn-primary btn-sm"
+                                    className="btn btn-warning btn-sm"
                                     onClick={() => {
                                     setEditingMatch(match);
                                     // Reset filters when opening modal
@@ -1223,7 +1268,7 @@ export default function FixtureList() {
                                 ✓ Your 8 players have been selected for this Game Breaker match
                                 {!isDeadlinePassed(match) && (
                                   <button
-                                    className="btn btn-outline btn-xs ml-2"
+                                    className="btn btn-warning btn-xs ml-2"
                                     onClick={() => {
                                       setEditingMatch(match);
                                       // Reset filters when opening modal
@@ -1544,7 +1589,7 @@ export default function FixtureList() {
                                       </div>
                                       <button
                                         type="button"
-                                        className="btn btn-ghost btn-xs text-error"
+                                        className="btn btn-error btn-xs"
                                         onClick={() => {
                                           const newPlayers = [...editForm.gameBreakerPlayersTeam1];
                                           newPlayers[index] = '';
@@ -1675,7 +1720,7 @@ export default function FixtureList() {
                                       </div>
                                       <button
                                         type="button"
-                                        className="btn btn-ghost btn-xs text-error"
+                                        className="btn btn-error btn-xs"
                                         onClick={() => {
                                           const newPlayers = [...editForm.gameBreakerPlayersTeam2];
                                           newPlayers[index] = '';
@@ -1788,7 +1833,7 @@ export default function FixtureList() {
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                       <button
                         type="button"
-                        className="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto"
+                        className="btn btn-neutral btn-sm sm:btn-md w-full sm:w-auto"
                         onClick={() => {
                           setShowEditModal(false);
                           setEditingMatch(null);

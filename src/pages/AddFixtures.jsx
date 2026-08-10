@@ -5,7 +5,11 @@ import { db } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
 import CloudinaryImageUpload from '../components/CloudinaryImageUpload';
+import ModernFixtureCard from '../components/ModernFixtureCard';
+import ModernFixtureModal from '../components/ModernFixtureModal';
+import ModernFormInput from '../components/ModernFormInput';
 import * as XLSX from 'xlsx';
+import styles from '../styles/AddFixtures.module.css';
 
 export default function AddFixtures() {
   const { id } = useParams();
@@ -488,9 +492,9 @@ export default function AddFixtures() {
         return;
       }
 
-      // Parse date string (YYYY-MM-DD) and create date at local midnight
+      // Parse date string (YYYY-MM-DD) and create date at noon to avoid timezone issues
       const [year, month, day] = editForm.date.split('-');
-      const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
       
       const updatedFixture = {
         // Ensure all required fields are explicitly included
@@ -532,8 +536,8 @@ export default function AddFixtures() {
       await updateDoc(doc(db, 'fixtures', editingFixture.id), updatedFixture);
       console.log('✅ DEBUG: Fixture saved successfully');
       
-      // Update all matches in this fixture group with the same court, time, playingTime, and venue values
-      if ((editForm.court || editForm.time || editForm.playingTime || editForm.venue) && editingFixture.fixtureGroupId) {
+      // Update all matches in this fixture group with the same date, court, time, playingTime, and venue values
+      if ((editForm.date || editForm.court || editForm.time || editForm.playingTime || editForm.venue) && editingFixture.fixtureGroupId) {
         try {
           // Query all matches in the same fixture group
           const fixtureGroupQuery = query(
@@ -558,10 +562,15 @@ export default function AddFixtures() {
           }
           
           fixtureGroupSnapshot.docs.forEach((docSnapshot) => {
-            // Update each match in the fixture group with the court value, time, playingTime, and venue details
+            // Update each match in the fixture group with the date, court value, time, playingTime, and venue details
             const updateData = {
               updatedAt: serverTimestamp()
             };
+            
+            // Add date if provided (use the same dateObj created earlier)
+            if (editForm.date) {
+              updateData.date = Timestamp.fromDate(dateObj);
+            }
             
             // Add court if provided
             if (editForm.court) {
@@ -595,9 +604,9 @@ export default function AddFixtures() {
           });
           
           await batch.commit();
-          console.log('✅ DEBUG: All matches in fixture group updated successfully');
+          console.log('✅ DEBUG: All matches in fixture group updated successfully with date, court, time, and venue');
         } catch (batchError) {
-          console.error('Error updating fixture group matches with court, time, and venue:', batchError);
+          console.error('Error updating fixture group matches with date, court, time, and venue:', batchError);
           // Don't fail the main update if batch update fails
         }
       }
@@ -2041,7 +2050,7 @@ export default function AddFixtures() {
     return (
       <MainLayout>
         <div className="flex justify-center items-center min-h-[400px]">
-          <span className="loading loading-spinner loading-lg"></span>
+          <div className={styles.loadingSpinner}></div>
         </div>
       </MainLayout>
     );
@@ -2074,107 +2083,204 @@ export default function AddFixtures() {
 
   return (
     <MainLayout>
-      <div className="max-w-full mx-auto px-2 sm:px-4 lg:max-w-7xl">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+      {/* Modern Header with Gradient */}
+      <div className={styles.headerGradient}>
+        <div className={`${styles.headerContent} max-w-7xl mx-auto`}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className={styles.headerTitle}>
+                {isTeamAdmin() ? '🏆 My Team Fixtures' : '⚡ Tournament Fixtures'}
+              </h1>
+              <p className={styles.headerSubtitle}>
+                {isTeamAdmin()
+                  ? `${tournament?.name} - ${currentUser?.teamName || 'Team'} fixtures only`
+                  : tournament?.name
+                }
+              </p>
+            </div>
             <button
-              className="btn btn-ghost btn-sm flex-shrink-0 self-start"
+              className={`${styles.buttonSecondary} flex items-center gap-2 h-fit`}
               onClick={() => navigate(`/admin/tournaments/${id}`)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="hidden sm:inline">Back to Tournament</span>
-              <span className="sm:hidden">Back</span>
+              <span className="hidden sm:inline">Back</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-full mx-auto px-2 sm:px-4 lg:max-w-7xl">
+        {/* Action Buttons Section */}
+        <div className="my-6 sm:my-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             
             {/* Venue Streaming Overlay - Always visible */}
             <button
-              className="btn btn-warning btn-sm sm:btn-md flex-shrink-0"
+              className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+              style={{
+                background: 'linear-gradient(135deg, #FFD93D 0%, #FFC107 100%)',
+                color: '#2D3748',
+                fontWeight: '700',
+                boxShadow: '0 4px 15px rgba(255, 217, 61, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
               onClick={() => {
                 const venueStreamingUrl = `${window.location.origin}/streaming-venues/${id}`;
                 window.open(venueStreamingUrl, '_blank');
               }}
               title="View matches grouped by venue for streaming overlay access"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
               <span className="hidden sm:inline">Venue Streaming Overlay</span>
               <span className="sm:hidden">Venue</span>
+            </button>
+
+            {/* Venue Screen - Always visible */}
+            <button
+              className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+              style={{
+                background: 'linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)',
+                color: 'white',
+                fontWeight: '700',
+                boxShadow: '0 4px 15px rgba(0, 212, 255, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={() => {
+                const venueScreenUrl = `${window.location.origin}/venue-screen/${id}`;
+                window.open(venueScreenUrl, '_blank');
+              }}
+              title="View venue screen display"
+            >
+              <span className="hidden sm:inline">Venue Screen</span>
+              <span className="sm:hidden">Screen</span>
+            </button>
+
+            {/* Streaming Ads - Always visible */}
+            <button
+              className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+              style={{
+                background: 'linear-gradient(135deg, #FF6B6B 0%, #EE5A52 100%)',
+                color: 'white',
+                fontWeight: '700',
+                boxShadow: '0 4px 15px rgba(255, 107, 107, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={() => {
+                const streamingAdsUrl = `${window.location.origin}/streaming-ads/${id}`;
+                window.open(streamingAdsUrl, '_blank');
+              }}
+              title="View streaming ads overlay"
+            >
+              <span className="hidden sm:inline">Streaming Ads</span>
+              <span className="sm:hidden">Ads</span>
             </button>
 
             {isSuperAdmin() && (
               <div className="flex gap-2">
                 <button
-                  className="btn btn-primary btn-sm sm:btn-md flex-shrink-0"
+                  className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                  style={{
+                    background: 'linear-gradient(135deg, #9AFF00 0%, #7FD700 100%)',
+                    color: '#2D3748',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 15px rgba(154, 255, 0, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                   onClick={handleCreateFixtureClick}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                  </svg>
                   <span className="hidden sm:inline">Create Fixture</span>
                   <span className="sm:hidden">Create</span>
                 </button>
                 
                 <button
-                  className="btn btn-info btn-sm sm:btn-md flex-shrink-0"
+                  className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                  style={{
+                    background: 'linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%)',
+                    color: 'white',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 15px rgba(79, 195, 247, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                   onClick={() => {
                     const umpireMatchListUrl = `${window.location.origin}/umpire-matches/${id}`;
                     window.open(umpireMatchListUrl, '_blank');
                   }}
                   title="View all matches for umpire access"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
                   <span className="hidden sm:inline">Umpire Match List</span>
                   <span className="sm:hidden">Umpire</span>
                 </button>
                 
                 <button
-                  className="btn btn-warning btn-sm sm:btn-md flex-shrink-0"
+                  className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                  style={{
+                    background: 'linear-gradient(135deg, #FFD93D 0%, #FFC107 100%)',
+                    color: '#2D3748',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 15px rgba(255, 217, 61, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                   onClick={() => {
                     const streamingMatchListUrl = `${window.location.origin}/streaming-matches/${id}`;
                     window.open(streamingMatchListUrl, '_blank');
                   }}
                   title="View all matches for streaming overlay access"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
                   <span className="hidden sm:inline">Streaming Overlay List</span>
                   <span className="sm:hidden">Streaming</span>
                 </button>
                 
                 <button
-                  className="btn btn-secondary btn-sm sm:btn-md flex-shrink-0"
+                  className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                  style={{
+                    background: 'linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%)',
+                    color: 'white',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 15px rgba(79, 195, 247, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                   onClick={() => {
                     const screenDisplayUrl = `${window.location.origin}/screen-display/${id}`;
                     window.open(screenDisplayUrl, '_blank');
                   }}
                   title="Open screen display with date selection"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
                   <span className="hidden sm:inline">Screen Display</span>
                   <span className="sm:hidden">Screen</span>
                 </button>
                 
                 <button
-                  className="btn btn-info btn-sm sm:btn-md flex-shrink-0"
+                  className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                  style={{
+                    background: 'linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%)',
+                    color: 'white',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 15px rgba(79, 195, 247, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                   onClick={() => {
                     const apiUrl = `${window.location.origin}/api-matches/${id}`;
                     window.open(apiUrl, '_blank');
                   }}
                   title="Open API matches with JSON data access"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
                   <span className="hidden sm:inline">API</span>
                   <span className="sm:hidden">API</span>
                 </button>
@@ -2383,28 +2489,31 @@ export default function AddFixtures() {
               )}
             </div>
 
-            {/* Tabs for Round Robin mode */}
+            {/* Modern Tab Navigation */}
             {(fixtureStyle === 'roundrobin' || fixtureStyle === null) && (
-              <div className="tabs tabs-bordered mb-6">
+              <div className={styles.tabNavigation}>
                 <button
-                  className={`tab tab-lg ${activeTab === 'fixtures' ? 'tab-active' : ''}`}
+                  className={`${styles.tabButton} ${activeTab === 'fixtures' ? styles.active : ''}`}
                   onClick={() => setActiveTab('fixtures')}
+                  style={activeTab === 'fixtures' ? { backgroundColor: '#9AFF00', color: '#2D3748', fontWeight: '700', borderRadius: '8px 8px 0 0' } : {}}
                 >
-                  Fixtures
+                  <span className="mr-2">📋</span> Fixtures
                 </button>
                 {!isTeamAdmin() && (
                   <>
                     <button
-                      className={`tab tab-lg ${activeTab === 'playoffs' ? 'tab-active' : ''}`}
+                      className={`${styles.tabButton} ${activeTab === 'playoffs' ? styles.active : ''}`}
                       onClick={() => setActiveTab('playoffs')}
+                      style={activeTab === 'playoffs' ? { backgroundColor: '#4FC3F7', color: 'white', fontWeight: '700', borderRadius: '8px 8px 0 0' } : {}}
                     >
-                      Playoffs
+                      <span className="mr-2">🏆</span> Playoffs
                     </button>
                     <button
-                      className={`tab tab-lg ${activeTab === 'ranking' ? 'tab-active' : ''}`}
+                      className={`${styles.tabButton} ${activeTab === 'ranking' ? styles.active : ''}`}
                       onClick={() => setActiveTab('ranking')}
+                      style={activeTab === 'ranking' ? { backgroundColor: '#FFD93D', color: '#2D3748', fontWeight: '700', borderRadius: '8px 8px 0 0' } : {}}
                     >
-                      Ranking
+                      <span className="mr-2">📊</span> Ranking
                     </button>
                   </>
                 )}
@@ -2494,9 +2603,20 @@ export default function AddFixtures() {
             </div>
             
             {Object.keys(fixtureGroups).length === 0 && Object.keys(fixtures).length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-base-content/50 text-lg mb-4">No fixtures created yet</div>
-                <p className="text-base-content/70">Click "Create Fixture" above to create your first fixture</p>
+              <div className={styles.emptyState}>
+                <div className={styles.emptyStateIcon}>📭</div>
+                <h3 className={styles.emptyStateTitle}>No Fixtures Yet</h3>
+                <p className={styles.emptyStateDescription}>
+                  Get started by creating your first fixture. Click the button below to begin.
+                </p>
+                {isSuperAdmin() && (
+                  <button
+                    className={styles.buttonPrimary}
+                    onClick={handleCreateFixtureClick}
+                  >
+                    ✨ Create First Fixture
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -2513,79 +2633,13 @@ export default function AddFixtures() {
                     })
                 )
                   .map(([groupKey, group]) => (
-                    <div
+                    <ModernFixtureCard
                       key={groupKey}
-                      className="card bg-base-200 shadow-md hover:shadow-lg transition-shadow cursor-pointer w-full overflow-hidden"
-                      onClick={() => navigate(`/admin/tournaments/${id}/fixtures/${group.id}`)}
-                    >
-                      <div className="card-body p-4 sm:p-6">
-                        {/* Venue display at center top */}
-                        {group.matches[0]?.venueName && (
-                          <div className="text-center mb-4">
-                            <div className="badge badge-accent badge-lg">
-                              📍 {group.matches[0].venueName}
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-4">
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
-                            <div className="text-base sm:text-lg font-bold flex-shrink-0">
-                              {group.date.toDate().toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </div>
-                            {group.matches[0]?.court && (
-                              <div className="badge badge-info badge-sm sm:badge-md">
-                                {group.matches[0].court}
-                              </div>
-                            )}
-                            <div className="badge badge-primary badge-sm sm:badge-lg">
-                              {formatFixtureType(group.matches[0]?.fixtureType)}
-                            </div>
-                            <div className="badge badge-secondary badge-sm sm:badge-lg">
-                              {group.matches.length} matches
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {isSuperAdmin() && (
-                              <button
-                                className="btn btn-ghost btn-xs sm:btn-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditFixture(group.matches[0]);
-                                }}
-                                title="Edit"
-                              >
-                                <span className="hidden sm:inline">Edit</span>
-                                <span className="sm:hidden text-lg">✏️</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-3">
-                          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary break-words min-w-0">{group.team1Name}</div>
-                          <div className="text-base sm:text-lg lg:text-xl font-medium text-base-content/60 flex-shrink-0 self-center">VS</div>
-                          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-secondary break-words min-w-0 sm:text-right">{group.team2Name}</div>
-                        </div>
-                        
-                        {/* Show match types */}
-                        <div className="flex flex-wrap gap-1 sm:gap-2 mt-4">
-                          {group.matches.map((match, index) => (
-                            <div key={index} className="badge badge-outline badge-sm sm:badge-md break-words">
-                              {match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="text-center mt-4 text-xs sm:text-sm text-base-content/60">
-                          Click to view all matches
-                        </div>
-                      </div>
-                    </div>
+                      group={group}
+                      onEdit={handleEditFixture}
+                      onNavigate={() => navigate(`/admin/tournaments/${id}/fixtures/${group.id}`)}
+                      isSuperAdmin={isSuperAdmin()}
+                    />
                   ))}
 
                 {/* Show Custom and Round Robin fixtures (individual) */}
@@ -3813,7 +3867,7 @@ export default function AddFixtures() {
                   </div>
                 </div>
 
-                {/* HPL Clubs Game Breaker Option */}
+                {/* CCPL Clubs Game Breaker Option */}
                 <div
                   className="card bg-base-200 shadow-md hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-info"
                   onClick={() => handleFixtureStyleSelect('dreambreaker')}
@@ -3826,7 +3880,7 @@ export default function AddFixtures() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-lg">HPL Clubs Game Breaker</h4>
+                        <h4 className="font-bold text-lg">CCPL Clubs Game Breaker</h4>
                         <p className="text-sm text-base-content/70 mt-1">
                           Automatically creates 6 matches between two clubs:
                         </p>

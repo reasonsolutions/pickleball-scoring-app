@@ -27,8 +27,8 @@ export default function TVDisplay() {
 
   // Team logo mapping with multiple variations
   const teamLogos = {
-    // HPL variations
-    'HPL': hplLogoWhite,
+    // CCPL variations
+    'CCPL': hplLogoWhite,
     'hpl': hplLogoWhite,
     
     // Challenger variations

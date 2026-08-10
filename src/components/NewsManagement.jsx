@@ -5,6 +5,7 @@ import CloudinaryImageUpload from './CloudinaryImageUpload';
 import MDEditor from '@uiw/react-md-editor';
 import MarkdownPreview from '@uiw/react-markdown-preview';
 import '@uiw/react-md-editor/markdown-editor.css';
+import { marked } from 'marked';
 
 export default function NewsManagement() {
   const [news, setNews] = useState([]);
@@ -51,12 +52,18 @@ export default function NewsManagement() {
 
     setSaving(true);
     try {
+      // Convert markdown to HTML for rich text format
+      const descriptionHtml = newArticle.description
+        ? marked(newArticle.description, { breaks: true, gfm: true })
+        : '';
+
       // Ensure all required fields are present and properly formatted
       const articleData = {
         title: newArticle.title,
         subtext: newArticle.subtext,
         publishDate: new Date(newArticle.publishDate),
-        description: newArticle.description || '',
+        description: newArticle.description || '', // Keep markdown for editing
+        descriptionHtml: descriptionHtml, // Store HTML for display
         featuredImage: newArticle.featuredImage || null,
         featured: newArticle.featured || false,
         createdAt: new Date(),
@@ -89,11 +96,17 @@ export default function NewsManagement() {
 
     setSaving(true);
     try {
+      // Convert markdown to HTML for rich text format
+      const descriptionHtml = editingArticle.description
+        ? marked(editingArticle.description, { breaks: true, gfm: true })
+        : '';
+
       // Ensure all required fields are present and properly formatted
       const updateData = {
         title: editingArticle.title,
         subtext: editingArticle.subtext,
-        description: editingArticle.description || '',
+        description: editingArticle.description || '', // Keep markdown for editing
+        descriptionHtml: descriptionHtml, // Store HTML for display
         featuredImage: editingArticle.featuredImage || null,
         publishDate: new Date(editingArticle.publishDate),
         featured: editingArticle.featured || false,

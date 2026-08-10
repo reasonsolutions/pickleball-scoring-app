@@ -360,7 +360,7 @@ export default function ResetPassword() {
               Create a new secure password for your account.
             </p>
             <p className="text-lg opacity-75 font-medium">
-              HPL Clubs — Your gateway to competitive excellence.
+              CCPL Clubs — Your gateway to competitive excellence.
             </p>
           </div>
         </div>

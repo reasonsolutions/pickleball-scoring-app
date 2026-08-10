@@ -902,7 +902,7 @@ export default function HplPlayerRegistration() {
               </p>
               
               <p className="text-base sm:text-lg lg:text-xl leading-relaxed" style={{fontFamily: 'Avantique, sans-serif'}}>
-                Register here to be part of the HPL Club League player pool.
+                Register here to be part of the CCPL Club League player pool.
               </p>
               
               <p className="text-base sm:text-lg lg:text-xl leading-relaxed" style={{fontFamily: 'Avantique, sans-serif'}}>
@@ -1630,7 +1630,7 @@ export default function HplPlayerRegistration() {
               
               {/* Message */}
               <div className="space-y-3 text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                <p>You're now part of the HPL Club League player pool.</p>
+                <p>You're now part of the CCPL Club League player pool.</p>
                 <p>Clubs will review profiles and send invitations through the platform.</p>
                 <p>Keep an eye on your dashboard.</p>
                 <p className="text-orange-400 font-semibold">Welcome to club sport.</p>

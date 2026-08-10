@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pickleball Umpire — Award-Winning Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    background: #0A0A0B;
+    min-height: 100vh;
+    color: #F2F2F2;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  #root { min-height: 100vh; display: flex; flex-direction: column; }
+  .court-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 50%, rgba(232,255,74,0.05), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(57,224,121,0.04), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(255,90,71,0.04), transparent 60%);
+  }
+  .page-chrome {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 1200px; margin: 0 auto;
+    padding: 40px 32px 24px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 32px; flex-wrap: wrap;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .brand-dot {
+    width: 10px; height: 10px; border-radius: 5px;
+    background: #E8FF4A;
+    box-shadow: 0 0 14px #E8FF4A;
+  }
+  .brand-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: rgba(255,255,255,0.4); text-transform: uppercase;
+  }
+  .brand-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
+    color: #fff; margin-top: 2px;
+  }
+  .legend {
+    display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.5); text-transform: uppercase;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-kbd {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+    padding: 3px 6px; border-radius: 4px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff;
+  }
+  .stage-wrap {
+    position: relative; z-index: 1;
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 0 16px 40px;
+  }
+  .device-shell {
+    transform-origin: center center;
+  }
+  .page-foot {
+    position: relative; z-index: 1;
+    text-align: center; padding: 16px 24px 36px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 500; letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.25); text-transform: uppercase;
+  }
+  /* hide scrollbars inside device */
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<template id="__bundler_thumbnail" data-bg-color="#0B0D12">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0B0D12"/>
+    <circle cx="600" cy="400" r="180" fill="none" stroke="#E8FF4A" stroke-width="14"/>
+    <circle cx="540" cy="330" r="18" fill="#E8FF4A"/>
+    <circle cx="640" cy="310" r="18" fill="#E8FF4A"/>
+    <circle cx="680" cy="390" r="18" fill="#E8FF4A"/>
+    <circle cx="540" cy="470" r="18" fill="#E8FF4A"/>
+    <circle cx="640" cy="490" r="18" fill="#E8FF4A"/>
+    <circle cx="680" cy="410" r="18" fill="#E8FF4A"/>
+    <text x="600" y="640" text-anchor="middle" font-family="monospace" font-size="36" font-weight="700" fill="#E8FF4A" letter-spacing="8">UMPIRE</text>
+  </svg>
+</template>
+<body>
+<div class="court-bg"></div>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="scoreboard.jsx"></script>
+
+<script type="text/babel">
+  const { useState, useEffect } = React;
+
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "stadium",
+    "interactionMode": "buttons",
+    "matchType": "doubles"
+  }/*EDITMODE-END*/;
+
+  function App() {
+    const [tweaks, setTweaksRaw] = useState(() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('umpire-tweaks') || 'null');
+        return { ...TWEAK_DEFAULTS, ...(saved || {}) };
+      } catch { return TWEAK_DEFAULTS; }
+    });
+
+    const setTweaks = (next) => {
+      setTweaksRaw(next);
+      try { localStorage.setItem('umpire-tweaks', JSON.stringify(next)); } catch {}
+      try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*'); } catch {}
+    };
+
+    // Edit-mode handshake
+    useEffect(() => {
+      const onMsg = (e) => {
+        if (!e.data) return;
+        if (e.data.type === '__activate_edit_mode') {
+          // Our Tweaks panel is already exposed via the ⋯ button; no-op.
+        }
+      };
+      window.addEventListener('message', onMsg);
+      window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+      return () => window.removeEventListener('message', onMsg);
+    }, []);
+
+    const theme = window.THEMES[tweaks.theme];
+
+    return (
+      <>
+        <div className="page-chrome">
+          <div>
+            <div className="brand">
+              <div className="brand-dot" />
+              <div>
+                <div className="brand-kicker">Umpire · Live Match</div>
+                <div className="brand-title">Court 3 — Semifinal</div>
+              </div>
+            </div>
+          </div>
+          <div className="legend">
+            <div className="legend-item"><span className="legend-kbd">{window.THEMES[tweaks.theme].name}</span> THEME</div>
+            <div className="legend-item"><span className="legend-kbd">{tweaks.interactionMode}</span> INPUT</div>
+            <div className="legend-item"><span className="legend-kbd">{tweaks.matchType}</span> FORMAT</div>
+            <div className="legend-item" style={{ color: 'rgba(255,255,255,0.3)'}}>Tap ⋯ top-right of phone to change</div>
+          </div>
+        </div>
+
+        <div className="stage-wrap">
+          <div className="device-shell">
+            <IOSDevice width={390} height={844} dark={theme.dark}>
+              <Scoreboard tweaks={tweaks} setTweaks={setTweaks} />
+            </IOSDevice>
+          </div>
+        </div>
+
+        <div className="page-foot">
+          Pickleball Umpire · Award-Winning Redesign · v2
+        </div>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
