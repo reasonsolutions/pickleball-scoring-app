@@ -64,6 +64,7 @@ import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
 import SuperAdminManagement from './pages/SuperAdminManagement';
 import AdminClubs from './pages/AdminClubs';
+import AdminPlayers from './pages/AdminPlayers';
 import ScreenDisplay from './pages/ScreenDisplay';
 import MainDisplay from './pages/MainDisplay';
 import MainDisplay1 from './pages/MainDisplay1';
@@ -98,6 +99,16 @@ import Vendors from './pages/Vendors';
 import VendorSetupPassword from './pages/VendorSetupPassword';
 import VendorLogin from './pages/VendorLogin';
 import VendorHome from './pages/VendorHome';
+import CCPLHome from './pages/CCPLHome';
+import CCPLSignup from './pages/CCPLSignup';
+import CCPLLogin from './pages/CCPLLogin';
+import CCPLResetPassword from './pages/CCPLResetPassword';
+import CCPLProfile from './pages/CCPLProfile';
+import CcplTeamProfile from './pages/CcplTeamProfile';
+import CcplTeams from './pages/CcplTeams';
+import CcplTeamDetails from './pages/CcplTeamDetails';
+import CcplNewsArticle from './pages/CcplNewsArticle';
+import TeamAdminSetupPassword from './pages/TeamAdminSetupPassword';
 
 function App() {
   // Debug logging for routing
@@ -117,12 +128,22 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/logins" element={<Logins />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<NewHome />} />
+            <Route path="/" element={<CCPLHome />} />
+            <Route path="/ccpl-home" element={<CCPLHome />} />
+            <Route path="/ccpl-s1" element={<NewHome />} />
+            <Route path="/new-home" element={<NewHome />} />
             <Route path="/old-home" element={<Home />} />
             <Route path="/hpl-clubs" element={<HplClubs />} />
             <Route path="/hpl-club-rules" element={<HplClubRules />} />
             <Route path="/hpl-club-registration" element={<HplClubRegistration />} />
             <Route path="/hpl-player-registration" element={<HplPlayerRegistration />} />
+            <Route path="/ccpl-signup" element={<CCPLSignup />} />
+            <Route path="/ccpl-login" element={<CCPLLogin />} />
+            <Route path="/ccpl-reset-password" element={<CCPLResetPassword />} />
+            <Route path="/ccpl-profile/:userId" element={<CCPLProfile />} />
+            <Route path="/ccpl-teamprofile/:teamId" element={<CcplTeamProfile />} />
+            <Route path="/ccpl-teams" element={<CcplTeams />} />
+            <Route path="/ccpl-teams/:teamSlug" element={<CcplTeamDetails />} />
             <Route path="/clubs" element={<Clubs />} />
             <Route path="/club-info/:clubId" element={<ClubInfo />} />
             <Route path="/clubs-results" element={<ClubsResults />} />
@@ -145,7 +166,7 @@ function App() {
             <Route path="/download-team-logos" element={<DownloadTeamLogos />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/news" element={<News />} />
-            <Route path="/news/:id" element={<NewsArticle />} />
+            <Route path="/news/:id" element={<CcplNewsArticle />} />
             <Route path="/results" element={<Results />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/teams/:tournamentId/:teamId" element={<TeamDetail />} />
@@ -238,6 +259,12 @@ function App() {
             <Route path="/admin/clubs" element={
               <ProtectedRoute>
                 <AdminClubs />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/players" element={
+              <ProtectedRoute>
+                <AdminPlayers />
               </ProtectedRoute>
             } />
             
@@ -339,6 +366,9 @@ function App() {
 
             {/* Vendor Home Route - POS System for logged-in vendors */}
             <Route path="/vendor/home" element={<VendorHome />} />
+
+            {/* Team Admin Setup Password Route - Public access for team admins */}
+            <Route path="/team-admin/setup-password" element={<TeamAdminSetupPassword />} />
 
             
             <Route path="/admin-draft-view" element={<AdminDraftView />} />

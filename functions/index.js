@@ -7,6 +7,26 @@ const DuprApiClient = require('./duprApiClient');
 const passwordResetEmail = require('./sendPasswordResetEmail');
 const crypto = require('crypto');
 
+// Import and export WhatsApp OTP function (v2 HTTP function)
+const whatsappOtpModule = require('./sendWhatsAppOTP');
+exports.sendWhatsAppOtpHttp = whatsappOtpModule.sendWhatsAppOtpHttp;
+
+// Import and export Player Approval WhatsApp function
+const playerApprovalWhatsAppModule = require('./sendPlayerApprovalWhatsApp');
+exports.sendPlayerApprovalWhatsAppHttp = playerApprovalWhatsAppModule.sendPlayerApprovalWhatsAppHttp;
+
+// Import and export CCPL Registration Email function
+const ccplRegistrationEmailModule = require('./sendCCPLRegistrationEmail');
+exports.sendCCPLRegistrationEmail = ccplRegistrationEmailModule.sendCCPLRegistrationEmail;
+
+// Import and export Razorpay Payment Verification by Email function
+const razorpayVerificationModule = require('./verifyRazorpayPaymentByEmail');
+exports.verifyRazorpayPaymentByEmail = razorpayVerificationModule.verifyRazorpayPaymentByEmail;
+
+// Import and export CCPL Password Reset function
+const ccplResetPasswordModule = require('./ccplResetPassword');
+exports.ccplResetPassword = ccplResetPasswordModule.ccplResetPassword;
+
 // Initialize Firebase Admin
 initializeApp();
 const db = getFirestore();
@@ -1286,3 +1306,122 @@ exports.createRazorpayOrder = onRequest({cors: true}, async (request, response) 
 
 // Export password reset email function
 exports.sendPasswordResetEmail = passwordResetEmail.sendPasswordResetEmail;
+
+// Send Team Admin Invitation Email Function
+exports.sendTeamAdminInvite = onRequest({cors: true}, async (request, response) => {
+  try {
+    setCorsHeaders(response);
+    if (handlePreflight(request, response)) return;
+
+    const { to, name, teamName, setupLink } = request.body;
+    
+    if (!to || !name || !teamName || !setupLink) {
+      response.status(400).json({
+        status: 'error',
+        message: 'Email recipient, name, team name, and setup link are required'
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      response.status(400).json({
+        status: 'error',
+        message: 'Invalid email format'
+      });
+      return;
+    }
+
+    // Configure email transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'hpl@centrecourt.ventures',
+        pass: 'ktrnasnndenawfka'
+      }
+    });
+
+    // Email template
+    const mailOptions = {
+      from: 'hpl@centrecourt.ventures',
+      to: to,
+      subject: 'You\'ve Been Invited as a Team Admin - CCPL',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #f97316; margin: 0;">CCPL Team Admin Invitation</h1>
+            <p style="color: #666; margin: 10px 0;">Welcome to the Team!</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 10px;">
+            <h2 style="color: #333; margin-bottom: 20px;">Hello ${name},</h2>
+            <p style="color: #666; margin: 15px 0;">
+              You have been invited to join as a Team Admin for <strong>${teamName}</strong> in the CCPL tournament.
+            </p>
+            <p style="color: #666; margin: 15px 0;">
+              As a Team Admin, you will have access to manage your team's roster, view match schedules, and coordinate with your players.
+            </p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">Your Account Details:</h3>
+              <p style="color: #666; margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Email:</strong> ${to}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Team:</strong> ${teamName}</p>
+              <p style="color: #666; margin: 5px 0;"><strong>Role:</strong> Team Admin</p>
+            </div>
+            
+            <p style="color: #666; margin: 15px 0;">
+              To complete your registration and set up your password, please click the button below:
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${setupLink}" style="background-color: #f97316; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                Set Up Your Password
+              </a>
+            </div>
+            
+            <p style="color: #666; margin: 15px 0; font-size: 14px;">
+              If the button doesn't work, you can also copy and paste the following link into your browser:
+            </p>
+            <p style="background: #e9ecef; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #666;">
+              ${setupLink}
+            </p>
+            
+            <p style="color: #999; font-size: 14px; margin: 20px 0;">
+              This invitation link will expire in 48 hours for security reasons.
+            </p>
+          </div>
+          
+          <div style="margin-top: 30px; text-align: center;">
+            <p style="color: #666; font-size: 14px;">
+              If you didn't expect this invitation or have any questions, please contact the tournament administrator.
+            </p>
+            <p style="color: #999; font-size: 12px;">
+              © 2026 CCPL. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    logger.info(`Team admin invitation sent successfully to ${to} for team: ${teamName}`);
+
+    response.status(200).json({
+      status: 'success',
+      message: 'Team admin invitation sent successfully',
+      recipient: to,
+      teamName: teamName
+    });
+
+  } catch (error) {
+    logger.error('Error sending team admin invitation:', error);
+    response.status(500).json({
+      status: 'error',
+      message: 'Failed to send team admin invitation'
+    });
+  }
+});

@@ -307,6 +307,126 @@ export const uploadClubLogoOptimized = async (file) => {
 };
 
 /**
+ * Upload CCPL player photo with optimization
+ */
+export const uploadCCPLPlayerPhoto = async (file) => {
+  return uploadImageOptimized(file, 'pickleball_app/ccpl/player_photos', {
+    compressionQuality: 0.85,
+    maxWidth: 1200,
+    maxHeight: 1200,
+    maxSizeKB: 400
+  });
+};
+
+/**
+ * Upload document (image or PDF) without compression
+ * Used for government IDs and residency documents that may be PDFs
+ *
+ * @param {File} file - The document file to upload (image or PDF)
+ * @param {string} folder - Cloudinary folder path
+ * @returns {Promise<Object>} - Upload result
+ */
+export const uploadDocumentRaw = async (file, folder) => {
+  try {
+    console.log(`Uploading document: ${file.name}, size: ${(file.size / 1024).toFixed(2)} KB, type: ${file.type}`);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('folder', folder);
+    
+    // Add tags for better organization
+    formData.append('tags', 'document');
+    
+    // Determine resource type based on file type
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const resourceType = isPDF ? 'raw' : 'image';
+    
+    // Upload to Cloudinary
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      throw new Error(data.error?.message || 'Upload failed');
+    }
+
+    console.log('Document uploaded successfully:', data.secure_url);
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url,
+      publicId: data.public_id,
+      resource_type: resourceType,
+      format: data.format
+    };
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    throw error;
+  }
+};
+
+/**
+ * Upload CCPL government ID document (supports images and PDFs)
+ */
+export const uploadCCPLGovIdDocument = async (file) => {
+  const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  
+  if (isPDF) {
+    // Upload PDF without compression
+    return uploadDocumentRaw(file, 'pickleball_app/ccpl/gov_id_documents');
+  } else {
+    // Upload image with compression
+    return uploadImageOptimized(file, 'pickleball_app/ccpl/gov_id_documents', {
+      compressionQuality: 0.9,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      maxSizeKB: 600
+    });
+  }
+};
+
+/**
+ * Upload CCPL residency document (supports images and PDFs)
+ */
+export const uploadCCPLResidencyDocument = async (file) => {
+  const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  
+  if (isPDF) {
+    // Upload PDF without compression
+    return uploadDocumentRaw(file, 'pickleball_app/ccpl/residency_documents');
+  } else {
+    // Upload image with compression
+    return uploadImageOptimized(file, 'pickleball_app/ccpl/residency_documents', {
+      compressionQuality: 0.9,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      maxSizeKB: 600
+    });
+  }
+};
+
+/**
+ * Upload CCPL action photo with optimization
+ */
+export const uploadCCPLActionPhoto = async (file) => {
+  return uploadImageOptimized(file, 'pickleball_app/ccpl/action_photos', {
+    compressionQuality: 0.85,
+    maxWidth: 1920,
+    maxHeight: 1920,
+    maxSizeKB: 500
+  });
+};
+
+/**
  * Generate thumbnail URL (for list views, etc.)
  * Reduces bandwidth by serving smaller images
  */
@@ -353,10 +473,15 @@ export default {
   getOptimizedImageUrl,
   getResponsiveImageUrls,
   uploadImageOptimized,
+  uploadDocumentRaw,
   uploadPlayerPhotoOptimized,
   uploadTeamLogoOptimized,
   uploadNewsImageOptimized,
   uploadClubLogoOptimized,
+  uploadCCPLPlayerPhoto,
+  uploadCCPLGovIdDocument,
+  uploadCCPLResidencyDocument,
+  uploadCCPLActionPhoto,
   getThumbnailUrl,
   getAvatarUrl,
   getBannerUrl

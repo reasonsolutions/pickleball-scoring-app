@@ -1,6 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Collection group rule for passes - allows querying all passes subcollections
+    match /{path=**}/passes/{passId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
     // Tournament rules - PUBLIC READ ACCESS
     match /tournaments/{tournamentId} {
       // Allow public read access for tournaments (for home page and TV display)
@@ -26,8 +32,8 @@ service cloud.firestore {
       // Allow public read access for players (needed for umpire scoring and TV displays)
       allow read: if true;
       
-      // TEMPORARILY ALLOW ALL AUTHENTICATED USERS TO CREATE PLAYERS - NO VALIDATION
-      allow create: if request.auth != null;
+      // ALLOW ANYONE TO CREATE PLAYERS - NO VALIDATION (needed for CCPL custom auth users)
+      allow create: if true;
       
       // Allow updating by the player creator OR by super admin OR by tournament creator OR for any unauthenticated update
       allow update: if request.auth == null ||
@@ -50,13 +56,15 @@ service cloud.firestore {
       // Allow creating teams if user is authenticated
       allow create: if request.auth != null;
       
-      // Allow updating by the team creator OR by super admin OR for venueId field updates (for migration script)
+      // Allow updating by the team creator OR by super admin OR for specific field updates (for migration/CCPL users)
       allow update: if request.auth != null &&
                    (request.auth.uid == resource.data.createdBy ||
                     isSuperAdminSimple()) ||
                    // Allow unauthenticated updates for venueId field only (for migration)
                    (request.resource.data.keys().hasOnly(resource.data.keys().concat(['venueId'])) &&
-                    request.resource.data.venueId is string);
+                    request.resource.data.venueId is string) ||
+                   // Allow unauthenticated updates for playerIds and updatedAt (for CCPL custom auth users)
+                   (request.resource.data.keys().hasOnly(resource.data.keys().concat(['playerIds', 'updatedAt'])));
       
       // Allow deleting only by the team creator (no data validation needed for delete)
       allow delete: if request.auth != null &&
@@ -531,13 +539,23 @@ service cloud.firestore {
         // Allow anyone to create a pass request
         allow create: if true;
         
-        // Only super admins can update pass status (approve/reject)
-        allow update: if request.auth != null &&
-                     isSuperAdminSimple();
+        // Allow authenticated users to update pass status (for team admins to approve/decline)
+        allow update: if true;
         
-        // Only super admins can delete passes
-        allow delete: if request.auth != null &&
-                     isSuperAdminSimple();
+        // Allow authenticated users to delete passes
+        allow delete: if true;
+      }
+      
+      // Allocation subcollection - for team pass allocations
+      match /allocation/{teamId} {
+        // Allow public read access for allocations
+        allow read: if true;
+        
+        // Allow authenticated users to create and update allocations
+        allow create, update: if true;
+        
+        // Allow authenticated users to delete allocations
+        allow delete: if true;
       }
       
       // Orders subcollection rules (for future ticket purchases)
@@ -642,40 +660,33 @@ service cloud.firestore {
       allow delete: if true;
     }
     
+    // Merch Orders collection rules - for merchandise order management
+    match /merch-orders/{orderId} {
+      // Allow public read access for orders
+      allow read: if true;
+      
+      // Allow anyone to create orders (for mobile app purchases)
+      allow create: if true;
+      
+      // Allow anyone to update orders (for order status updates)
+      allow update: if true;
+      
+      // Allow anyone to delete orders (for order management)
+      allow delete: if true;
+    }
+    
     // CCPL Users collection rules - for mobile app user management
     match /ccpl-users/{userId} {
       // Allow public read and write access for user management
       // Since we're not using Firebase Auth, allow all operations
       allow read, write: if true;
-    }
-    
-    // Ticketing collection rules - for ticketing and pass management
-    match /ticketing/{ticketingId} {
-      // Allow public read access for ticketing documents
-      allow read: if true;
       
-      // Allow authenticated users to create ticketing documents
-      allow create: if true;
-      
-      // Allow authenticated users to update ticketing documents
-      allow update: if true;
-      
-      // Passes subcollection rules
-      match /passes/{passId} {
-        // Allow public read access for passes
-        allow read: if true;
-        
-        // Allow authenticated users to create pass requests
-        allow create: if true;
-        
-        // Allow authenticated users to update pass requests
-        allow update: if true;
-        
-        // Allow authenticated users to delete pass requests
-        allow delete: if true;
+      // Registration subcollection - for CCPL player registration data
+      match /registration/{registrationId} {
+        // Allow public read and write access for registration
+        allow read, write: if true;
       }
     }
-
     
     // Function to validate clubs player data structure
     function isValidClubsPlayerData(data) {

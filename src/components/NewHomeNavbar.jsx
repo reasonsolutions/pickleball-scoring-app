@@ -71,11 +71,18 @@ export default function NewHomeNavbar() {
           {/* Left Side - Navigation Buttons */}
           <div className="flex space-x-0 h-full">
             <Link
-              to="/new-home"
-              className={`nav-button ${!isHplClubsPage() ? 'active bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-800 hover:bg-gray-100'} px-3 sm:px-6 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl transition-colors border-t-4 border-b-4 border-l-4 border-r-2 border-black`}
+              to="/ccpl-home"
+              className={`nav-button ${location.pathname === '/ccpl-home' || location.pathname === '/ccpl-signup' ? 'active bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-800 hover:bg-gray-100'} px-3 sm:px-6 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl transition-colors border-t-4 border-b-4 border-l-4 border-r-2 border-black`}
               style={{fontFamily: 'Avantique, sans-serif'}}
             >
-              CCPL
+              CCPL S2
+            </Link>
+            <Link
+              to="/new-home"
+              className={`nav-button ${location.pathname === '/new-home' || location.pathname === '/ccpl-s1' ? 'active bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-800 hover:bg-gray-100'} px-3 sm:px-6 lg:px-8 py-2 sm:py-3 font-bold text-lg sm:text-xl lg:text-2xl transition-colors border-t-4 border-b-4 border-l-2 border-r-2 border-black`}
+              style={{fontFamily: 'Avantique, sans-serif'}}
+            >
+              CCPL S1
             </Link>
             <Link
               to="/hpl-clubs"

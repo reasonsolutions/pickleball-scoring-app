@@ -4,6 +4,7 @@ import { getMatchDayById, getPassesByMatchDay } from '../services/ticketingServi
 import { db } from '../utils/firebase';
 import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
+import PassQRModal from '../components/PassQRModal';
 
 export default function MatchDayOrders() {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ export default function MatchDayOrders() {
   const [activeTab, setActiveTab] = useState('passes'); // 'passes' or 'allocation'
   const [teamAllocations, setTeamAllocations] = useState({});
   const [savingAllocations, setSavingAllocations] = useState(false);
-  const [allTeams, setAllTeams] = useState([]);
+  const [allTeams, setAllTeams] = useState([]); // Array of team objects with id and name
+  const [qrModal, setQrModal] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -37,6 +39,11 @@ export default function MatchDayOrders() {
       
       setMatchDay(matchDayData);
       setPasses(passesData);
+      
+      // Now fetch teams using the tournamentId from matchDayData
+      if (matchDayData?.tournamentId) {
+        await fetchAllTeamsWithTournamentId(matchDayData.tournamentId);
+      }
       
       // Fetch user names for both actionBy and userId fields
       const actionByIds = passesData.map(pass => pass.actionBy).filter(Boolean);
@@ -62,11 +69,8 @@ export default function MatchDayOrders() {
       
       setUserNames(userNamesMap);
       
-      // Fetch all teams and allocations
-      await Promise.all([
-        fetchAllTeams(),
-        fetchTeamAllocations()
-      ]);
+      // Fetch team allocations (ignore errors if subcollection doesn't exist yet)
+      await fetchTeamAllocations();
       
       setError(null);
     } catch (err) {
@@ -77,13 +81,10 @@ export default function MatchDayOrders() {
     }
   };
 
-  const fetchAllTeams = async () => {
+  const fetchAllTeamsWithTournamentId = async (tournamentId) => {
     try {
-      // Get the active tournament ID from matchDay data
-      const tournamentId = matchDay?.tournamentId;
-      
       if (!tournamentId) {
-        console.error('No tournament ID found');
+        console.error('No tournament ID provided');
         return;
       }
 
@@ -92,10 +93,19 @@ export default function MatchDayOrders() {
       const tournamentTeams = teamsSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(team => team.tournamentId === tournamentId)
-        .map(team => team.name)
-        .filter(Boolean);
+        .map(team => ({ id: team.id, name: team.name }))
+        .filter(team => team.name);
       
-      setAllTeams(tournamentTeams.sort());
+      // Sort by team name
+      tournamentTeams.sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Add CCPL as a hardcoded team for superadmin pass requests
+      tournamentTeams.push({
+        id: 'CCPL_SUPERADMIN_TEAM',
+        name: 'CCPL'
+      });
+      
+      setAllTeams(tournamentTeams);
     } catch (error) {
       console.error('Error fetching teams:', error);
     }
@@ -103,12 +113,15 @@ export default function MatchDayOrders() {
 
   const fetchTeamAllocations = async () => {
     try {
-      const allocationsRef = doc(db, 'ticketing', id, 'allocations', 'teams');
-      const allocationsDoc = await getDoc(allocationsRef);
+      // Fetch all allocation documents from the allocation subcollection (keyed by teamId)
+      const allocationsSnapshot = await getDocs(collection(db, 'ticketing', id, 'allocation'));
+      const allocations = {};
       
-      if (allocationsDoc.exists()) {
-        setTeamAllocations(allocationsDoc.data());
-      }
+      allocationsSnapshot.docs.forEach(doc => {
+        allocations[doc.id] = doc.data().allocated || 0;
+      });
+      
+      setTeamAllocations(allocations);
     } catch (error) {
       console.error('Error fetching team allocations:', error);
     }
@@ -117,8 +130,21 @@ export default function MatchDayOrders() {
   const handleSaveAllocations = async () => {
     try {
       setSavingAllocations(true);
-      const allocationsRef = doc(db, 'ticketing', id, 'allocations', 'teams');
-      await setDoc(allocationsRef, teamAllocations);
+      
+      // Save each team's allocation as a separate document in the allocation subcollection
+      // Document ID is the teamId
+      const savePromises = Object.entries(teamAllocations).map(([teamId, allocated]) => {
+        const team = allTeams.find(t => t.id === teamId);
+        const allocationRef = doc(db, 'ticketing', id, 'allocation', teamId);
+        return setDoc(allocationRef, {
+          teamId,
+          teamName: team?.name || '',
+          allocated: parseInt(allocated) || 0,
+          updatedAt: new Date()
+        });
+      });
+      
+      await Promise.all(savePromises);
       alert('Team allocations saved successfully!');
     } catch (error) {
       console.error('Error saving allocations:', error);
@@ -128,10 +154,10 @@ export default function MatchDayOrders() {
     }
   };
 
-  const handleAllocationChange = (team, value) => {
+  const handleAllocationChange = (teamId, value) => {
     setTeamAllocations(prev => ({
       ...prev,
-      [team]: parseInt(value) || 0
+      [teamId]: parseInt(value) || 0
     }));
   };
 
@@ -421,12 +447,15 @@ export default function MatchDayOrders() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredPasses.length === 0 ? (
               <tr>
-                <td colSpan="10" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="11" className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -483,12 +512,36 @@ export default function MatchDayOrders() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(pass.createdAt)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {(pass.status === 'approved' || pass.status === 'confirmed') ? (
+                      <button
+                        onClick={() => setQrModal(pass)}
+                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                        title="View QR Codes"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {/* QR Modal */}
+      {qrModal && (
+        <PassQRModal
+          pass={qrModal}
+          matchDayName={matchDay?.name}
+          onClose={() => setQrModal(null)}
+        />
+      )}
         </>
       )}
 
@@ -511,14 +564,14 @@ export default function MatchDayOrders() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allTeams.map(team => {
-                      const teamPasses = passes.filter(p => p.team === team);
+                      const teamPasses = passes.filter(p => p.teamId === team.id);
                       const requested = teamPasses.filter(p => p.status === 'pending').length;
                       const issued = teamPasses.filter(p => p.status === 'approved' || p.status === 'confirmed').length;
-                      const allocated = teamAllocations[team] || 0;
+                      const allocated = teamAllocations[team.id] || 0;
 
                       return (
-                        <div key={team} className="border border-gray-200 rounded-lg p-4">
-                          <h3 className="font-semibold text-gray-900 mb-3">{team}</h3>
+                        <div key={team.id} className="border border-gray-200 rounded-lg p-4">
+                          <h3 className="font-semibold text-gray-900 mb-3">{team.name}</h3>
                           
                           <div className="space-y-2 mb-4">
                             <div className="flex justify-between text-sm">
@@ -536,15 +589,15 @@ export default function MatchDayOrders() {
                           </div>
 
                           <div>
-                            <label htmlFor={`allocation-${team}`} className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor={`allocation-${team.id}`} className="block text-sm font-medium text-gray-700 mb-1">
                               Allocated Passes
                             </label>
                             <input
-                              id={`allocation-${team}`}
+                              id={`allocation-${team.id}`}
                               type="number"
                               min="0"
-                              value={teamAllocations[team] || 0}
-                              onChange={(e) => handleAllocationChange(team, e.target.value)}
+                              value={teamAllocations[team.id] || 0}
+                              onChange={(e) => handleAllocationChange(team.id, e.target.value)}
                               className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             />
                           </div>
