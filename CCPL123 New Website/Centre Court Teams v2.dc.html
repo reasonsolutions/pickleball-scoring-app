@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;text-decoration:none;}
+    a:hover{color:#0b0b0c;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="teams" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Teams Header" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(56px,7vw,96px) 6vw calc(5vw + clamp(56px,7vw,96px));overflow:hidden;">
+  <div style="position:absolute;right:-1vw;bottom:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,32vw,520px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.14);">08</div>
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div data-reveal="1" style="position:relative;max-width:1400px;margin:0 auto;display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:28px 48px;">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <span style="display:inline-flex;width:fit-content;flex:none;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">CCPL Hyderabad / Season 2</span></span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.8);white-space:nowrap;">Eight Franchises</span>
+      </div>
+      <h1 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,10vw,160px);line-height:.84;letter-spacing:-.01em;">The <span style="color:#e27b46;">Franchises.</span></h1>
+    </div>
+    <p style="position:relative;margin:0;max-width:{{introMaxWidth}};font-size:16px;font-weight:500;line-height:1.6;color:#e8e8e8;border-left:4px solid #e27b46;padding-left:16px;background:rgba(11,11,12,.6);">Eight franchises. One round robin, seven matchdays, every squad on court each week. Pick a badge to see its roster.</p>
+  </div>
+</section>
+
+<section data-screen-label="Franchise Grid" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;margin-top:-5vw;padding:calc(5vw + clamp(40px,5vw,64px)) 6vw calc(5vw + clamp(64px,8vw,110px));clip-path:polygon(0 5vw,100% 0,100% 100%,0 100%);">
+  <div style="max-width:1400px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:{{gridCols}};gap:{{gridGap}};">
+      <sc-for list="{{teams}}" as="team" hint-placeholder-count="8">
+        <a href="{{team.href}}" data-reveal="card" onMouseEnter="{{team.enter}}" onMouseLeave="{{team.leave}}" style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:2px solid #0b0b0c;text-decoration:none;background:{{team.bg}};color:{{team.ink}};transition:background .3s ease,color .3s ease;">
+          <span style="position:absolute;right:-4px;top:-10px;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:{{numSize}};line-height:.8;color:transparent;-webkit-text-stroke:2px {{team.stroke}};transition:-webkit-text-stroke-color .3s ease,transform .5s cubic-bezier(.2,.7,.2,1);transform:translateX({{team.numX}});">{{team.num}}</span>
+          <span style="position:absolute;left:0;top:0;bottom:0;width:8px;background:#e27b46;transition:transform .35s cubic-bezier(.2,.7,.2,1);transform-origin:top;transform:scaleY({{team.edge}});"></span>
+          <div style="position:relative;display:flex;align-items:center;justify-content:center;padding:{{cardPadding}};">
+            <div style="width:{{logoSize}};height:{{logoSize}};transition:transform .5s cubic-bezier(.2,.7,.2,1);transform:scale({{team.logoScale}});">
+              <image-slot id="{{team.slotId}}" shape="rect" placeholder="Drop team logo" style="width:100%;height:100%;"></image-slot>
+            </div>
+          </div>
+          <div style="position:relative;padding:0 {{namePadX}} 18px;display:flex;flex-direction:column;gap:6px;">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:{{team.subInk}};transition:color .3s ease;">{{team.tag}}</span>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:{{nameSize}};line-height:.95;text-transform:uppercase;">{{team.name}}</span>
+          </div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 {{namePadX}};border-top:2px solid #0b0b0c;background:{{team.barBg}};color:#0b0b0c;transition:background .3s ease;">
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:19px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;">View team</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" style="transition:transform .3s ease;transform:translateX({{team.arrowX}});"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px 24px;margin-top:28px;">
+      <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5f5b52;">Every player represents more than themselves.</span>
+      <a href="Centre Court Player Signup v2.dc.html" style="display:inline-flex;transform:skewX(-14deg);background:#0b0b0c;color:#ffffff;padding:13px 24px;transition:background .2s ease;" style-hover="background:#e27b46;color:#0b0b0c">
+        <span style="display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.05em;text-transform:uppercase;">Enter the auction pool
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  state = { isMobile: typeof window !== 'undefined' && window.innerWidth < 860, hover: -1 };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }));
+  };
+  componentDidMount() { window.addEventListener('resize', this.updateSize); this.observe(); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); this._io && this._io.disconnect(); }
+
+  observe() {
+    this._io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.style.opacity = '1'; e.target.style.transform = 'none'; this._io.unobserve(e.target);
+    }), { threshold: 0.1 });
+    let n = 0;
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      if (el.dataset.seen) return;
+      el.dataset.seen = '1';
+      const d = el.dataset.reveal === 'card' ? (n++ % 4) * 0.08 : 0;
+      el.style.opacity = '0'; el.style.transform = 'translateY(32px)';
+      el.style.transition = `opacity .7s ease ${d}s, transform .8s cubic-bezier(.2,.7,.2,1) ${d}s, background .3s ease, color .3s ease`;
+      this._io.observe(el);
+    });
+  }
+
+  renderVals() {
+    const { isMobile, hover } = this.state;
+    const raw = [
+      { slug: 'team-01', name: 'Team One', tag: 'Franchise 01' },
+      { slug: 'team-02', name: 'Team Two', tag: 'Franchise 02' },
+      { slug: 'team-03', name: 'Team Three', tag: 'Franchise 03' },
+      { slug: 'team-04', name: 'Team Four', tag: 'Franchise 04' },
+      { slug: 'team-05', name: 'Team Five', tag: 'Franchise 05' },
+      { slug: 'team-06', name: 'Team Six', tag: 'Franchise 06' },
+      { slug: 'team-07', name: 'Team Seven', tag: 'Franchise 07' },
+      { slug: 'team-08', name: 'Team Eight', tag: 'Franchise 08' },
+    ];
+    const teams = raw.map((t, i) => {
+      const on = hover === i;
+      return {
+        name: t.name, tag: t.tag,
+        num: String(i + 1).padStart(2, '0'),
+        slotId: 'team-logo-' + t.slug,
+        href: 'Centre Court Team v2.dc.html?team=' + t.slug,
+        bg: on ? '#0b0b0c' : '#ffffff',
+        ink: on ? '#ffffff' : '#0b0b0c',
+        subInk: on ? '#e27b46' : '#5f5b52',
+        stroke: on ? 'rgba(226,123,70,.55)' : 'rgba(11,11,12,.12)',
+        numX: on ? '-8px' : '0px',
+        edge: on ? 1 : 0,
+        logoScale: on ? 1.06 : 1,
+        barBg: on ? '#e27b46' : '#f6e3de',
+        arrowX: on ? '5px' : '0px',
+        enter: () => this.setState({ hover: i }),
+        leave: () => this.setState({ hover: -1 }),
+      };
+    });
+    return {
+      teams,
+      headerGridCols: isMobile ? '1fr' : 'minmax(0,1fr) 360px',
+      introMaxWidth: isMobile ? '100%' : '360px',
+      gridCols: isMobile ? 'repeat(2,minmax(0,1fr))' : 'repeat(auto-fill,minmax(240px,1fr))',
+      gridGap: isMobile ? '12px' : '20px',
+      cardPadding: isMobile ? '28px 14px 18px' : '48px 24px 28px',
+      logoSize: isMobile ? '76px' : '120px',
+      numSize: isMobile ? '84px' : '130px',
+      nameSize: isMobile ? '24px' : '34px',
+      namePadX: isMobile ? '14px' : '22px',
+    };
+  }
+}
+</script>
+</body>
+</html>

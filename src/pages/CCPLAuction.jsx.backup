@@ -1,0 +1,625 @@
+import React, { useState, useEffect, useRef } from 'react';
+import CCPLNavbar from '../components/CCPLNavbar';
+import CCPLFooter from '../components/CCPLFooter';
+
+export default function CCPLAuction() {
+  const [auctionState, setAuctionState] = useState(null);
+  const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const [state, setState] = useState({
+    predAmount: null,
+    predTeam: null,
+    locked: false,
+    now: Date.now(),
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+    isNarrow: typeof window !== 'undefined' && window.innerWidth < 1150,
+  });
+
+  const pollInterval = useRef(null);
+
+  // Fetch auction state and teams
+  useEffect(() => {
+    const fetchAuctionData = async () => {
+      try {
+        const [stateRes, teamsRes] = await Promise.all([
+          fetch('/arenagrid-api/auctions/148/state'),
+          fetch('/arenagrid-api/auctions/148/teams')
+        ]);
+
+        if (!stateRes.ok || !teamsRes.ok) {
+          throw new Error('Failed to fetch auction data');
+        }
+
+        const stateData = await stateRes.json();
+        const teamsData = await teamsRes.json();
+
+        setAuctionState(stateData);
+        setTeams(teamsData);
+        setLoading(false);
+
+        // Initialize prediction amount if not set
+        if (!state.predAmount && stateData.currentPlayer) {
+          setState(prev => ({
+            ...prev,
+            predAmount: stateData.currentPlayer.basePrice + 25000
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching auction data:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchAuctionData();
+
+    // Poll for updates every 2 seconds
+    pollInterval.current = setInterval(fetchAuctionData, 2000);
+
+    return () => {
+      if (pollInterval.current) clearInterval(pollInterval.current);
+    };
+  }, []);
+
+  // Handle window resize
+  useEffect(() => {
+    const updateSize = () => {
+      const isMobile = window.innerWidth < 860;
+      const isNarrow = window.innerWidth < 1150;
+      setState(prev => (prev.isMobile === isMobile && prev.isNarrow === isNarrow ? prev : { ...prev, isMobile, isNarrow }));
+    };
+
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  // Update now timestamp
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setState(prev => ({ ...prev, now: Date.now() }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const money = (n) => '₹' + Number(n).toLocaleString('en-IN');
+
+  const ago = (timestamp) => {
+    const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+    if (seconds < 5) return 'Just now';
+    if (seconds < 60) return seconds + 's ago';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes + 'm ago';
+    return Math.floor(minutes / 60) + 'h ago';
+  };
+
+  const incAmount = () => setState(prev => ({ ...prev, predAmount: prev.predAmount + 25000 }));
+  const decAmount = () => setState(prev => ({ 
+    ...prev, 
+    predAmount: Math.max(auctionState?.currentPlayer?.basePrice || 0, prev.predAmount - 25000) 
+  }));
+  const selectTeam = (t) => setState(prev => ({ ...prev, predTeam: t }));
+  const submitPrediction = () => setState(prev => (prev.predTeam ? { ...prev, locked: true } : prev));
+  const editPrediction = () => setState(prev => (auctionState?.currentPlayer?.status === 'sold' ? prev : { ...prev, locked: false }));
+
+  const s = state;
+  const isMobile = s.isMobile;
+  const isNarrow = s.isNarrow;
+
+  if (loading) {
+    return (
+      <div style={{ background: '#0b0b0c', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}>Loading Auction...</div>
+          <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>Connecting to live auction feed</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ background: '#0b0b0c', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
+        <div style={{ textAlign: 'center', maxWidth: '500px', padding: '40px' }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px', color: '#ee3a24' }}>Connection Error</div>
+          <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>{error}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ padding: '12px 24px', background: '#ee3a24', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!auctionState || !auctionState.currentPlayer) {
+    return (
+      <div style={{ background: '#0b0b0c', minHeight: '100vh' }}>
+        <CCPLNavbar activePage="auction" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', marginBottom: '16px' }}>No Active Auction</div>
+            <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>The auction has not started yet or has ended</div>
+          </div>
+        </div>
+        <CCPLFooter />
+      </div>
+    );
+  }
+
+  const player = auctionState.currentPlayer;
+  const currentBid = auctionState.currentBid || player.basePrice;
+  const leadingTeam = auctionState.leadingTeam;
+  const bidHistory = auctionState.bidHistory || [];
+  const isSold = player.status === 'sold';
+  const hasBid = bidHistory.length > 0;
+
+  const teamChoices = teams.map(team => team.name).concat(['Unsold']).map(name => {
+    const on = s.predTeam === name;
+    const isUnsold = name === 'Unsold';
+    return {
+      name: isUnsold ? 'Unsold — 5 pts' : name,
+      select: () => selectTeam(name),
+      span: isUnsold ? 'span 2' : 'auto',
+      bg: on ? '#ee3a24' : '#0b0b0c',
+      border: on ? '#ee3a24' : isUnsold ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.18)',
+      color: on ? '#fff' : 'rgba(255,255,255,0.72)',
+    };
+  });
+
+  const feed = bidHistory.slice(0, 12).map((bid, i) => ({
+    team: bid.teamName,
+    amount: money(bid.amount),
+    ago: ago(bid.timestamp),
+    mark: i === 0 ? '▲' : String(bidHistory.length - i).padStart(2, '0'),
+    markColor: i === 0 ? '#ee3a24' : 'rgba(255,255,255,0.3)',
+    teamColor: i === 0 ? '#fff' : 'rgba(255,255,255,0.6)',
+  }));
+
+  const showResult = false; // We'll implement result logic later
+  const locked = s.locked && !showResult;
+  const showForm = !s.locked && !showResult;
+
+  return (
+    <div style={{ background: '#0b0b0c', minHeight: '100vh' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap');
+        
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/TournySignUp/uploads/zuume-cut-black.ttf') format('truetype');
+          font-weight: 900;
+          font-style: normal;
+        }
+        
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/TournySignUp/uploads/zuume-cut-bold.ttf') format('truetype');
+          font-weight: 700;
+          font-style: normal;
+        }
+        
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/TournySignUp/uploads/zuume-cut-regular.ttf') format('truetype');
+          font-weight: 500;
+          font-style: normal;
+        }
+        
+        body {
+          margin: 0;
+          background: #0b0b0c;
+        }
+        
+        ::selection {
+          background: #ee3a24;
+          color: #0b0b0c;
+        }
+        
+        @keyframes cc-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        
+        @keyframes cc-fade-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes cc-slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(-14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes cc-ring {
+          0% {
+            transform: scale(1);
+            opacity: 0.55;
+          }
+          100% {
+            transform: scale(2.4);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes cc-glow {
+          0%, 100% {
+            box-shadow: 0 0 0 1px rgba(238,58,36,0.3), 0 0 20px rgba(238,58,36,0.14);
+          }
+          50% {
+            box-shadow: 0 0 0 1px rgba(238,58,36,0.7), 0 0 44px rgba(238,58,36,0.38);
+          }
+        }
+        
+        .cc-in {
+          opacity: 0;
+          animation: cc-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .cc-row {
+          animation: cc-slide-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        
+        .cc-tap {
+          transition: transform 0.18s ease, opacity 0.18s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+        }
+        
+        .cc-tap:active {
+          transform: scale(0.97);
+        }
+        
+        .cc-team-btn:hover {
+          border-color: rgba(255,255,255,0.55) !important;
+        }
+        
+        .cc-glow {
+          position: relative;
+          opacity: 0;
+          animation: cc-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards, cc-glow 2.8s ease-in-out 0.8s infinite;
+        }
+        
+        .cc-feed-scroll {
+          max-height: ${isMobile ? '320px' : '392px'};
+          overflow-y: auto;
+        }
+        
+        .cc-feed-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .cc-feed-scroll::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.05);
+        }
+        
+        .cc-feed-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.2);
+          border-radius: 3px;
+        }
+        
+        .cc-feed-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255,255,255,0.3);
+        }
+      `}</style>
+
+      <CCPLNavbar activePage="auction" />
+
+      <section style={{
+        position: 'relative',
+        background: '#0b0b0c',
+        color: '#fff',
+        fontFamily: "'Montserrat', sans-serif",
+        padding: isMobile ? '32px 6vw 56px' : '56px 6vw 88px',
+        boxSizing: 'border-box',
+        overflow: 'hidden'
+      }}>
+        {/* Top Meta */}
+        <div className="cc-in" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '14px',
+          marginBottom: isMobile ? '32px' : '48px',
+          animationDelay: '0.05s'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '10px', height: '10px' }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#ee3a24', animation: 'cc-ring 1.8s ease-out infinite' }}></span>
+              <span style={{ position: 'relative', width: '8px', height: '8px', borderRadius: '50%', background: '#ee3a24' }}></span>
+            </span>
+            <span style={{ fontSize: '12px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>
+              Live Auction / CCPL Hyderabad Season 2
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ padding: '6px 14px', border: '1px solid rgba(255,255,255,0.16)', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>
+              Lot {player.lotNumber || '—'}
+            </span>
+            <span style={{ padding: '6px 14px', border: '1px solid rgba(255,255,255,0.16)', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>
+              {auctionState.viewerCount || 0} watching
+            </span>
+          </div>
+        </div>
+
+        {/* Header */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 340px',
+          alignItems: 'end',
+          gap: '20px',
+          marginBottom: isMobile ? '32px' : '56px'
+        }}>
+          <h1 style={{
+            fontFamily: "'Zuume Cut', system-ui, -apple-system, sans-serif",
+            fontWeight: 900,
+            fontSize: 'clamp(52px, 8vw, 132px)',
+            lineHeight: 0.86,
+            margin: 0,
+            textTransform: 'uppercase'
+          }}>
+            On The<br />Block.
+          </h1>
+          <p className="cc-in" style={{
+            margin: 0,
+            maxWidth: isMobile ? '100%' : '340px',
+            fontSize: '16px',
+            lineHeight: 1.65,
+            color: 'rgba(255,255,255,0.6)',
+            animationDelay: '0.3s'
+          }}>
+            Every bid, as it lands. Call the closing price and the badge before the hammer drops.
+          </p>
+        </div>
+
+        {/* Main Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isNarrow ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(340px,400px)',
+          gap: isMobile ? '18px' : '24px',
+          alignItems: 'start'
+        }}>
+          {/* Left Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '18px' : '24px', minWidth: 0 }}>
+            {/* Player Card */}
+            <div className="cc-in" style={{
+              position: 'relative',
+              border: '1px solid rgba(255,255,255,0.16)',
+              background: '#0e0e0f',
+              animationDelay: '0.35s'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,300px) minmax(0,1fr)' }}>
+                <div style={{
+                  position: 'relative',
+                  height: isMobile ? '260px' : '400px',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  background: '#141415'
+                }}>
+                  {player.photoUrl ? (
+                    <img src={player.photoUrl} alt={player.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'rgba(255,255,255,0.3)',
+                      fontSize: '14px'
+                    }}>
+                      Player Photo
+                    </div>
+                  )}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(180deg, rgba(11,11,12,0) 55%, rgba(11,11,12,0.9) 100%)',
+                    pointerEvents: 'none'
+                  }}></div>
+                  <span style={{
+                    position: 'absolute',
+                    top: '16px',
+                    left: '16px',
+                    padding: '6px 12px',
+                    background: '#ee3a24',
+                    fontFamily: "'Zuume Cut', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: '#fff'
+                  }}>
+                    {isSold ? 'Sold' : hasBid ? 'Bidding' : 'Opening'}
+                  </span>
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '16px',
+                    left: '16px',
+                    fontFamily: "'Zuume Cut', sans-serif",
+                    fontWeight: 900,
+                    fontSize: '44px',
+                    lineHeight: 1,
+                    color: 'rgba(255,255,255,0.28)'
+                  }}>
+                    {String(player.lotNumber || 0).padStart(2, '0')}
+                  </span>
+                </div>
+
+                <div style={{ padding: isMobile ? '24px 20px' : '30px 32px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                    {player.category || 'Player'}
+                  </span>
+                  <h2 style={{
+                    fontFamily: "'Zuume Cut', sans-serif",
+                    fontWeight: 900,
+                    fontSize: 'clamp(38px, 4.4vw, 62px)',
+                    lineHeight: 0.9,
+                    margin: '12px 0 0',
+                    textTransform: 'uppercase'
+                  }}>
+                    {player.name}
+                  </h2>
+
+                  <div style={{ flex: 1, minHeight: '22px' }}></div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    paddingTop: '22px',
+                    borderTop: '1px solid rgba(255,255,255,0.12)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                        {isSold ? 'Hammer price' : hasBid ? 'Current bid' : 'Base price'}
+                      </div>
+                      <div style={{
+                        fontFamily: "'Zuume Cut', sans-serif",
+                        fontWeight: 700,
+                        fontSize: 'clamp(40px, 5vw, 64px)',
+                        lineHeight: 0.92,
+                        color: '#ee3a24',
+                        marginTop: '8px'
+                      }}>
+                        {money(currentBid)}
+                      </div>
+                      <div style={{ fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: '8px' }}>
+                        {leadingTeam ? 'Leading — ' + leadingTeam.name : 'No bids yet'}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                        Base price
+                      </div>
+                      <div style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 700, fontSize: '32px', lineHeight: 1, marginTop: '8px', color: 'rgba(255,255,255,0.75)' }}>
+                        {money(player.basePrice)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {isSold && leadingTeam && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  padding: '16px 24px',
+                  background: '#ee3a24'
+                }}>
+                  <span style={{
+                    fontFamily: "'Zuume Cut', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '22px',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: '#fff'
+                  }}>
+                    {player.name} — Sold to {leadingTeam.name}
+                  </span>
+                  <span style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>
+                    Hammer {money(currentBid)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Live Bid Feed */}
+            <div className="cc-in" style={{
+              border: '1px solid rgba(255,255,255,0.16)',
+              background: '#0e0e0f',
+              animationDelay: '0.45s'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '18px 24px',
+                borderBottom: '1px solid rgba(255,255,255,0.12)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ee3a24', animation: 'cc-pulse 1.6s ease-in-out infinite' }}></div>
+                  <span style={{ fontWeight: 700, fontSize: '20px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Live Bid Feed
+                  </span>
+                </div>
+                <span style={{ fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                  {bidHistory.length} bids this lot
+                </span>
+              </div>
+              <div className="cc-feed-scroll">
+                {feed.length === 0 ? (
+                  <div style={{ padding: '40px 24px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
+                    No bids yet. Waiting for the first bid...
+                  </div>
+                ) : (
+                  feed.map((bid, idx) => (
+                    <div key={idx} className="cc-row" style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '24px minmax(0,1fr) auto auto' : '28px minmax(0,1fr) auto 72px',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '15px 24px',
+                      borderBottom: '1px solid rgba(255,255,255,0.07)'
+                    }}>
+                      <span style={{ fontWeight: 700, fontSize: '15px', color: bid.markColor }}>{bid.mark}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: bid.teamColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bid.team}</span>
+                      <span style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 700, fontSize: '22px', color: '#fff', textAlign: 'right' }}>{bid.amount}</span>
+                      <span style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', textAlign: 'right', whiteSpace: 'nowrap' }}>{bid.ago}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Prediction Panel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '18px' : '24px', minWidth: 0 }}>
+            <div className="cc-glow" style={{
+              border: '1px solid rgba(238,58,36,0.45)',
+              background: '#0e0e0f',
+              padding: isMobile ? '22px 20px' : '28px 26px',
+              overflow: 'hidden',
+              animationDelay: '0.5s'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                  Your call
+                </span>
+                <span style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#ee3a24' }}>
+                  {locked ? 'Locked' : isSold ? 'Closed' : 'Open'}
+                </span>
+              </div>
+              <h3 style={{ fontWeight: 700, fontSize: '30px', lineHeight: 0.95, margin: '0 0 6px', textTransform: 'uppercase' }}>
+                Predict The Hammer
+              </h3>
+              <p style={{ margin: '0 0 18px', fontSize: '13px', lineHeight: 1.6, color: 'rgba(255,255,255,0.5)' }}>
+                {locked
+                  ? 'Your call is in. You can change it until the hammer falls.'
+                  : 'Set a closing price and pick the franchise. Exact badge scores 60, price within ₹50,000 scores 40. Calling it unsold scores 5.'}
+              </p>
+
+              {showForm && (
+                <div>
+                  <div style={{ opacity: s.predTeam === 'Unsold' ? 0.35 : 1, transition: 'opacity 0.25s ease' }}>
+                    <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: '10px' }}>
+                      {s.predTeam === 'Unsold' ? 'Closing price — not counted' : 'Closing price'}

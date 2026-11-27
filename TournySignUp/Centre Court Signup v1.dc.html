@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-regular.ttf') format('truetype');font-weight:400;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:{{accentColor}};}
+    a:hover{color:#ffffff;}
+    ::selection{background:{{accentColor}};color:#0b0b0c;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    .cc-tile{transition:transform .5s cubic-bezier(.16,1,.3,1);}
+    .cc-tile:hover{transform:translateY(-6px);}
+    .cc-tile:hover .cc-arrow{transform:translateX(6px);}
+    .cc-arrow{transition:transform .3s ease;}
+    @keyframes cc-fade-up{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes cc-reveal{from{clip-path:inset(0 100% 0 0);}to{clip-path:inset(0 0% 0 0);}}
+    @keyframes cc-line-grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+    .cc-in{opacity:0;animation:cc-fade-up .9s cubic-bezier(.16,1,.3,1) forwards;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav" current="overview" hint-size="100%,146px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;padding:{{sectionPadding}};overflow:hidden;box-sizing:border-box;">
+
+  <div style="position:absolute;top:32px;left:6vw;right:6vw;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0.5),rgba(255,255,255,0) 75%);transform-origin:left;animation:cc-line-grow 1.1s cubic-bezier(.16,1,.3,1) both;"></div>
+  <div style="position:absolute;top:26px;left:6vw;width:1px;height:13px;background:#fff;"></div>
+  <div style="position:absolute;top:26px;right:6vw;width:1px;height:13px;background:#fff;"></div>
+
+  <div class="cc-in" style="position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:{{topMetaMargin}};animation-delay:.05s;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:{{accentColor}};animation:cc-pulse 2s ease-in-out infinite;"></div>
+      <span style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Centre Court Dream / 2026</span>
+    </div>
+    <span style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Registration Open</span>
+  </div>
+
+  <div style="position:relative;display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:20px;margin-bottom:{{headerMargin}};">
+    <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(56px,8.5vw,140px);line-height:0.86;letter-spacing:0.005em;margin:0;text-transform:uppercase;max-width:1000px;">
+      Own The<br>Centre.
+    </h1>
+    <p class="cc-in" style="margin:0;max-width:{{quoteMaxWidth}};font-size:13px;line-height:1.7;font-style:italic;color:rgba(255,255,255,0.45);text-align:{{quoteAlign}};animation-delay:.45s;">
+      &ldquo;Not every court is equal. This one remembers.&rdquo;
+    </p>
+  </div>
+
+  <p class="cc-in" style="position:relative;max-width:520px;font-size:17px;line-height:1.6;color:rgba(255,255,255,0.62);margin:0 0 {{introMargin}};animation-delay:.35s;">
+    The stage was always there. Now you are. Register your place and step into the tournament built for the ones who came to be seen.
+  </p>
+
+  <div style="position:relative;display:grid;grid-template-columns:{{mainGridCols}};gap:{{mainGridGap}};">
+
+    <a href="Centre Court Player Signup.dc.html" class="cc-tile cc-in" style="position:relative;display:block;height:{{tileHeight}};overflow:hidden;border:1px solid rgba(255,255,255,0.18);text-decoration:none;color:#fff;cursor:pointer;animation-delay:.5s;">
+      <div style="position:absolute;inset:0;">
+        <image-slot id="signup-hero" shape="rect" placeholder="Drop a player action photo" src="uploads/test1.png" credit="" style="width:100%;height:100%;"></image-slot>
+      </div>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.15) 45%,rgba(11,11,12,0.65) 72%,#0b0b0c 100%);pointer-events:none;"></div>
+      <div style="position:absolute;top:0;left:0;right:0;padding:26px 28px 0;display:flex;align-items:center;justify-content:space-between;pointer-events:none;">
+        <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);white-space:nowrap;">Step 01 &mdash; Enter</span>
+        <div style="width:10px;height:10px;border:1px solid #fff;transform:rotate(45deg);"></div>
+      </div>
+      <div style="position:absolute;top:14px;left:14px;width:16px;height:16px;border-top:2px solid #fff;border-left:2px solid #fff;pointer-events:none;"></div>
+      <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid #fff;border-right:2px solid #fff;pointer-events:none;"></div>
+      <div style="position:absolute;left:28px;right:28px;bottom:28px;pointer-events:none;">
+        <span style="display:inline-block;padding:5px 10px;background:{{accentColor}};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;margin-bottom:16px;white-space:nowrap;">Player Registration</span>
+        <h2 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(36px,3.6vw,54px);line-height:0.92;margin:0 0 14px;text-transform:uppercase;">
+          Sign Up To<br>Compete
+        </h2>
+        <span class="cc-arrow" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">Claim your spot <span style="font-size:16px;">&rarr;</span></span>
+      </div>
+    </a>
+
+    <div class="cc-in" style="position:relative;border:1px solid rgba(255,255,255,0.16);display:flex;flex-direction:column;height:{{rulesHeight}};animation-delay:.62s;">
+      <div style="position:absolute;top:-1px;right:-1px;width:14px;height:14px;border-top:2px solid #fff;border-right:2px solid #fff;"></div>
+      <div style="position:absolute;bottom:-1px;left:-1px;width:14px;height:14px;border-bottom:2px solid #fff;border-left:2px solid #fff;"></div>
+
+      <div style="padding:{{rulesPadTop}} {{rulesPadX}} 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+          <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.55);">Step 02 &mdash; Know</span>
+          <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:{{accentColor}};">The Rules</span>
+        </div>
+        <h2 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(34px,3.4vw,48px);line-height:0.95;margin:0 0 22px;text-transform:uppercase;">
+          Tournament<br>Rules
+        </h2>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;padding:0 {{rulesPadX}} 24px;overflow:{{rulesOverflow}};">
+        <sc-for list="{{rules}}" as="rule" hint-placeholder-count="6">
+          <div style="border-top:1px solid rgba(255,255,255,0.14);">
+            <button type="button" onClick="{{rule.toggle}}" style="width:100%;background:none;border:none;cursor:pointer;padding:16px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;">
+              <span style="display:flex;align-items:baseline;gap:14px;">
+                <span style="font-family:'Zuume Cut',sans-serif;font-style:italic;font-weight:700;font-size:14px;color:{{accentColor}};">{{rule.num}}</span>
+                <span style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:0.03em;">{{rule.title}}</span>
+              </span>
+              <span style="font-size:18px;color:rgba(255,255,255,0.5);flex-shrink:0;">{{rule.icon}}</span>
+            </button>
+            <sc-if value="{{rule.open}}" hint-placeholder-val="{{false}}">
+              <p style="margin:0 0 18px;padding-left:34px;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.58);max-width:420px;">{{rule.body}}</p>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <a href="Centre Court Player Rules.dc.html" style="background:linear-gradient(180deg,{{accentColor}},{{accentColorDark}});padding:18px {{rulesPadX}};display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;text-decoration:none;">
+        <span style="font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Know the rules before you play.</span>
+        <span style="font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#fff;text-decoration:underline;">Read Player Rules</span>
+      </a>
+    </div>
+
+  </div>
+
+  <div class="cc-in" style="position:relative;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:{{footerMargin}};animation-delay:.8s;">
+    <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.35);">Not everyone plays on Centre Court.</span>
+    <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.35);">Earned. Watched. Yours.</span>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ee3a24&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ee3a24&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]}}">
+class Component extends DCLogic {
+  state = {
+    openRule: 0,
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+  };
+
+  toggleRule = (i) => {
+    this.setState(s => ({ openRule: s.openRule === i ? -1 : i }));
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }));
+  };
+
+  componentDidMount() {
+    window.addEventListener('resize', this.updateSize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateSize);
+  }
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#ee3a24';
+    const accentColorDark = '#7d0f0f';
+    const isMobile = this.state.isMobile;
+    const rulesData = [
+      { title: 'Eligibility', body: 'Open to all registered players in their declared age category. Valid ID required at check-in; no exceptions on match day.' },
+      { title: 'Format', body: 'Single-elimination bracket seeded by ranking. Best of three sets, tiebreak at 6-6. Finals are best of five.' },
+      { title: 'Scoring', body: 'Standard scoring applies across all rounds. Disputed calls are reviewed by the on-court official only.' },
+      { title: 'Equipment', body: 'Players supply their own racquets and footwear. Tournament balls are provided and must be used for all matches.' },
+      { title: 'Conduct', body: 'Unsportsmanlike conduct results in point penalties, then disqualification. Respect the court, the crowd, and the opponent.' },
+      { title: 'Check-in', body: 'Players must check in 45 minutes before their scheduled match time. Late arrival forfeits the match.' },
+    ];
+    const rules = rulesData.map((r, i) => {
+      const open = this.state.openRule === i;
+      return {
+        num: String(i + 1).padStart(2, '0'),
+        title: r.title,
+        body: r.body,
+        open,
+        icon: open ? '\u2212' : '+',
+        toggle: () => this.toggleRule(i),
+      };
+    });
+    return {
+      accentColor, accentColorDark, rules,
+      sectionPadding: isMobile ? '32px 6vw 48px' : '56px 6vw 72px',
+      topMetaMargin: isMobile ? '36px' : '52px',
+      headerGridCols: isMobile ? '1fr' : '1fr auto',
+      headerMargin: isMobile ? '28px' : '64px',
+      quoteMaxWidth: isMobile ? '100%' : '220px',
+      quoteAlign: isMobile ? 'left' : 'right',
+      introMargin: isMobile ? '36px' : '56px',
+      mainGridCols: isMobile ? '1fr' : '1fr 1fr',
+      mainGridGap: isMobile ? '20px' : '28px',
+      tileHeight: isMobile ? '440px' : '640px',
+      rulesHeight: isMobile ? 'auto' : '640px',
+      rulesPadTop: isMobile ? '24px' : '32px',
+      rulesPadX: isMobile ? '20px' : '32px',
+      rulesOverflow: isMobile ? 'visible' : 'hidden',
+      footerMargin: isMobile ? '40px' : '56px',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

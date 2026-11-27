@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:{{accentColor}};}
+    a:hover{color:#ffffff;}
+    ::selection{background:{{accentColor}};color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="rules" hint-size="100%,158px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;min-height:100vh;box-sizing:border-box;padding:32px 6vw 96px;">
+
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:36px;">
+    <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Step 02 / Know</span>
+  </div>
+
+  <div style="position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.18);height:300px;max-width:1280px;margin:0 auto 4px;">
+    <div style="position:absolute;inset:0;">
+      <image-slot id="player-rules-hero" shape="rect" placeholder="Drop a player action photo"></image-slot>
+    </div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(11,11,12,0.85) 80%,#0b0b0c 100%);pointer-events:none;"></div>
+    <div style="position:absolute;top:14px;left:14px;width:16px;height:16px;border-top:2px solid #fff;border-left:2px solid #fff;"></div>
+    <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid #fff;border-right:2px solid #fff;"></div>
+    <div style="position:absolute;left:28px;right:28px;bottom:24px;">
+      <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(40px,5vw,64px);line-height:0.9;margin:0;text-transform:uppercase;">Player Rules.</h1>
+    </div>
+  </div>
+
+  <p style="max-width:1280px;margin:24px auto 20px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.55);">
+    Everything a player needs to know to register and compete in CCPL-HYD Season 2 &mdash; eligibility, contracts, match format and conduct. Drawn from the official Competition Regulations &amp; Operations Handbook.
+  </p>
+
+  <div style="display:flex;gap:10px;max-width:1280px;margin:0 auto 36px;">
+    <span style="padding:9px 18px;background:#fff;color:#0b0b0c;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Player Rules</span>
+    <a href="Centre Court League Rules v2.dc.html" style="padding:9px 18px;background:#1a1a1b;color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;">All Other Rules</a>
+  </div>
+
+  <div style="max-width:1280px;margin:0 auto;">
+    <sc-for list="{{chapters}}" as="ch" hint-placeholder-count="13">
+      <div style="border-top:1px solid rgba(255,255,255,0.14);">
+        <button type="button" onClick="{{ch.toggle}}" style="width:100%;background:none;border:none;cursor:pointer;padding:22px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;">
+          <span style="display:flex;align-items:baseline;gap:18px;">
+            <span style="font-family:'Zuume Cut',sans-serif;font-style:italic;font-weight:900;font-size:26px;color:{{accentColor}};flex-shrink:0;">{{ch.num}}</span>
+            <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;color:#fff;text-transform:uppercase;letter-spacing:0.03em;">{{ch.title}}</span>
+          </span>
+          <span style="font-size:22px;color:rgba(255,255,255,0.5);flex-shrink:0;">{{ch.icon}}</span>
+        </button>
+        <sc-if value="{{ch.open}}" hint-placeholder-val="{{false}}">
+          <div style="padding:0 0 28px 44px;display:flex;flex-direction:column;gap:20px;">
+            <sc-for list="{{ch.items}}" as="item" hint-placeholder-count="3">
+              <div>
+                <h4 style="margin:0 0 6px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:14px;color:{{accentColor}};text-transform:uppercase;letter-spacing:0.05em;">{{item.heading}}</h4>
+                <p style="margin:0;font-size:15px;line-height:1.7;color:rgba(255,255,255,0.62);max-width:760px;">{{item.body}}</p>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="max-width:1280px;margin:32px auto 0;background:linear-gradient(90deg,{{accentColor}},{{accentColorDark}});padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.9);">Ready to compete?</span>
+    <a href="Centre Court Player Signup v2.dc.html" style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;text-transform:uppercase;color:#fff;text-decoration:none;">Sign Up Now &rarr;</a>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer v2" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1400},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e27b46&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#e27b46&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]}}">
+class Component extends DCLogic {
+  state = { open: 0 };
+  toggle = (i) => this.setState(s => ({ open: s.open === i ? -1 : i }));
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#e27b46';
+    const accentColorDark = '#7d0f0f';
+    const data = [
+      { title: 'Registration & Eligibility', items: [
+        { heading: 'Who Must Register', body: "Every player wishing to participate in CCPL Season 2 must complete the official player registration process within the registration period announced by the League. Only registered players shall be eligible to participate in the League." },
+        { heading: 'Residency Requirement', body: "CCPL-HYD is a Hyper Local franchise competition. Eligible players are those whose permanent place of residence is within Hyderabad, or who are ordinarily residing in Hyderabad at the time of registration. Players whose primary residence is outside Hyderabad shall not be eligible to participate." },
+        { heading: 'Proof of Residency', body: "The League Committee may require documentary evidence such as an Aadhaar Card, Voter ID, Passport, Driving Licence, Rental Agreement, Employment Letter, Educational Institution Records or Utility Bills. Failure to provide satisfactory proof may result in rejection of the player's registration." },
+        { heading: 'Registration Window', body: "The official Player Registration Window opens on 14 August and closes on 22 August. Registrations received after the deadline shall not be considered for inclusion in the Player Auction — late registrations remain valid but go directly into the League Reserve Pool." },
+        { heading: 'Player Declaration', body: "By registering, every player confirms that all information submitted is true and accurate, that they satisfy all eligibility requirements, that they are medically fit to participate, and that they agree to comply with the Competition Handbook and accept the disciplinary jurisdiction of the League Committee." },
+      ]},
+      { title: 'Retentions & Pre-Auction Picks', items: [
+        { heading: 'Retentions', body: "Franchises may retain one player each from the previous season at a fixed retention value of ₹3,00,000, adjusted against the franchise's ₹10,00,000 Season 2 auction purse. A retained player becomes part of the squad before the Auction, does not enter the Auction Pool, and remains contracted for two seasons." },
+        { heading: 'Pre-Auction Picks', body: "A franchise may sign one Pre-Auction Pick at a fixed value of ₹3,00,000. A player already retained by another franchise is not eligible. Confirmed picks enter a two-season contract and are removed from the Auction Pool." },
+        { heading: 'Offer & Acceptance', body: "Both mechanisms require a formal offer emailed directly to the player and copied to info@centrecourt.ventures, with the player accepting by Reply All. Acceptance by any other method does not count, and the League must independently verify the agreement before it becomes official." },
+      ]},
+      { title: 'The Player Auction', items: [
+        { heading: 'Auction Pool', body: "The Official Auction Pool consists exclusively of players who completed registration within the window, satisfy eligibility requirements, and have not been retained or confirmed as a Pre-Auction Pick." },
+        { heading: 'Purse & Categories', body: "Every franchise is allocated a Season 2 Auction Purse of ₹10,00,000, which it may not exceed. The League Committee may classify players into categories (Category A–D) for auction purposes." },
+        { heading: 'Contract on Sale', body: "A player acquired through the Auction enters a two-season contract with the purchasing franchise at their auction price, and is paid on a pro-rata basis for the matchdays they are actively available." },
+        { heading: 'Unsold Players', body: "Players who remain unsold at the conclusion of the Auction automatically become members of the League Reserve Pool and remain eligible for signing during the Transfer Window." },
+      ]},
+      { title: 'Squad & Contracts', items: [
+        { heading: 'Squad Size & Composition', body: "Every franchise maintains a squad of ten (10) contracted players, including a minimum of three (3) female players at all times." },
+        { heading: 'Contract Length & Value', body: "Every contracted player — whether acquired through Retention, Pre-Auction Pick or Auction — remains associated with the franchise for two consecutive CCPL seasons at their Official Contract Value, which does not change during the season without League Committee approval." },
+        { heading: 'Payment Timeline', body: "The pro-rata value of a player's Official Contract Value after 3 matchdays is paid within seven (7) days of the conclusion of Matchday 3. The remaining balance is paid within seven (7) days following the conclusion of the League season." },
+        { heading: 'Player Availability', body: "Every contracted player must remain available throughout the season for League matches, official team activities, media commitments, sponsor obligations and promotional activities. Failure to fulfil these obligations without reasonable cause may constitute misconduct." },
+        { heading: 'Withdrawal', body: "A player wishing to withdraw must give written notice to both the franchise and the League Committee. Withdrawing without a valid reason or League approval is a breach of the Player Terms and Conditions and may result in disciplinary action." },
+      ]},
+      { title: 'Battle Format', items: [
+        { heading: 'Order of Play', body: "Each Battle consists of six matches played in order — Men's Doubles I, Women's Doubles, Men's Singles, Women's Singles, Men's Doubles II, Mixed Doubles — followed by a GameBreaker if the Battle is tied 3-3." },
+        { heading: 'Scoring', body: "All Singles and Doubles matches are a single set to 15 points using Service Point Scoring — only the serving player/team can score. A game is won by reaching 15 points with a 2-point lead; at 14-14 the game goes to deuce and continues until a 2-point margin is reached, with no maximum cap." },
+        { heading: 'Time-Outs', body: "Each franchise gets one 60-second Team Time-Out per scheduled match, requested only by the Team Captain or the players on court, while play is dead and before the next serve." },
+        { heading: 'Participation Limits', body: "No player may participate in more than two scheduled matches during a Battle (the GameBreaker doesn't count). Men's Doubles I and II must use completely different pairings, and every franchise must field at least two female players during every Battle." },
+        { heading: 'Line-Up Submission', body: "Each franchise submits its official Battle Line-Up — including all six matches and the full GameBreaker rotation — no later than 30 minutes before the Battle, via the Team Login on the App. Once accepted, it is final." },
+      ]},
+      { title: 'Impact Substitutions', items: [
+        { heading: 'Allowance', body: "Each franchise gets one Impact Substitution during the six scheduled matches, plus one additional Impact Substitution during the GameBreaker. Unused substitutions lapse at the end of the Battle." },
+        { heading: 'Gender-for-Gender', body: "Every Impact Substitution must be gender-for-gender — a male player may only be replaced by a male player, and a female player only by a female player." },
+        { heading: 'Timing & Notification', body: "A substitution for a scheduled match may only be made before that match begins, not once it has started. The Team Captain must notify the Referee of the outgoing and incoming player before it takes effect." },
+      ]},
+      { title: 'GameBreaker', items: [
+        { heading: 'Format', body: "The GameBreaker is a singles match using Rally Point Scoring to 25 points, with no requirement to win by a 2-point margin." },
+        { heading: 'Rotation', body: "Each franchise submits a rotation of 8 players in a fixed order; each plays a block of 4 consecutive rally points before the next player rotates in, recommencing from Player One if the game passes 32 points." },
+        { heading: "Women's Positions", body: "Rotation Positions 3 and 5 must be occupied by a female player. Male players cannot occupy these positions." },
+        { heading: 'Once Submitted', body: "The rotation order is final once submitted — no positions may be altered, no player may be skipped, and no player may receive extra rotation blocks." },
+      ]},
+      { title: 'Exceptional Circumstances', items: [
+        { heading: 'Medical Replacement', body: "A franchise may apply to replace a player who becomes medically incapable of playing for the rest of the season, supported by a medical certificate, diagnosis, and recovery timeline. Approval is entirely at the League Committee's discretion." },
+        { heading: 'Injury Mid-Match', body: "If a player is unable to continue a match due to injury after it has started, the match is stopped immediately and the opponent is declared the winner at the score when play was halted. If the player withdraws before the first rally, it is recorded as a 15–0 forfeiture." },
+        { heading: 'Voluntary Withdrawal', body: "A player wishing to withdraw must give written notice to both the franchise and the League Committee. Withdrawal does not automatically entitle the franchise to a replacement." },
+      ]},
+      { title: 'Matchday Operations', items: [
+        { heading: 'Reporting & Line-Up', body: "All franchises must report to the venue at the prescribed time. Only players in the Official Squad List may participate, and the League may verify player identity and eligibility at any time." },
+        { heading: 'Uniform & Equipment', body: "Players must wear the official franchise uniform and may not alter, conceal or remove League, franchise or sponsor branding without approval. Only League-approved equipment may be used." },
+        { heading: 'Referee Authority', body: "The Referee has complete authority over the match — scoring, time-outs, substitutions and player conduct during play. The Referee's decisions during live play are final." },
+        { heading: 'Medical Assistance', body: "The League provides basic medical assistance on Matchdays, but participation remains at the player's own risk and franchises remain responsible for their players' health and fitness." },
+      ]},
+      { title: 'Code of Conduct', items: [
+        { heading: 'Respect', body: "Participants must demonstrate respect towards opponents, teammates, officials, volunteers, venue staff, spectators and commercial partners. Abusive, threatening or intimidating behaviour will not be tolerated." },
+        { heading: 'Sportsmanship', body: "Participants must compete fairly and in the spirit of the game. Unsporting behaviour, deliberate gamesmanship or conduct that brings the competition into disrepute may constitute misconduct." },
+        { heading: 'Social Media', body: "No participant may publish material that is abusive, defamatory or discriminatory, incites hatred or violence, spreads false information, or discloses confidential League or franchise information." },
+      ]},
+      { title: 'Integrity & Safe Sport', items: [
+        { heading: 'Match Manipulation', body: "No participant may fix or manipulate any match, deliberately underperform, or influence a result for personal or third-party benefit. Any attempt to do so is a serious disciplinary offence." },
+        { heading: 'Betting', body: "No participant may place, facilitate or encourage betting on any CCPL match, or benefit from betting activity relating to the League. Any approach relating to betting or match manipulation must be reported immediately." },
+        { heading: 'Zero Tolerance', body: "The League has a zero-tolerance approach to harassment, bullying, intimidation, hazing, verbal or physical abuse, sexual harassment, racism and body shaming. No participant shall discriminate on the basis of race, ethnicity, nationality, religion, age, disability, gender, sexual orientation or any other protected characteristic." },
+      ]},
+      { title: 'Anti-Doping', items: [
+        { heading: 'Prohibited Substances', body: "No participant may use, possess, administer or distribute any prohibited performance-enhancing substance to gain an unfair sporting advantage." },
+        { heading: 'Alcohol & Drugs', body: "Illegal recreational drugs are strictly prohibited at League activities. No participant may compete or officiate while impaired by alcohol." },
+        { heading: 'Testing', body: "The League Committee may introduce anti-doping or substance testing at any time. Refusing to cooperate, interfering with testing, or providing false information may attract the same sanctions as a positive finding." },
+      ]},
+      { title: 'Discipline & Appeals', items: [
+        { heading: 'Investigation', body: "The League Committee may commence disciplinary proceedings following a complaint, a Match Official's report, or on its own initiative, and may request documents, obtain statements, and review evidence." },
+        { heading: 'Sanctions', body: "Sanctions can include a warning, financial penalty, forfeiture of a match or Battle, deduction of League Points, suspension for one or more matches or the remainder of the season, cancellation of registration, or expulsion from the League." },
+        { heading: 'Appeals', body: "A participant may submit a written request for review of a disciplinary decision within the period prescribed by the League. Decisions remain effective pending any review unless the League Committee determines otherwise." },
+      ]},
+    ];
+    const chapters = data.map((c, i) => {
+      const open = this.state.open === i;
+      return { num: String(i + 1).padStart(2, '0'), title: c.title, items: c.items, open, icon: open ? '\u2212' : '+', toggle: () => this.toggle(i) };
+    });
+    return { accentColor, accentColorDark, chapters };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:{{accentColor}};}
+    a:hover{color:#ffffff;}
+    ::selection{background:{{accentColor}};color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="rules" hint-size="100%,158px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;min-height:100vh;box-sizing:border-box;padding:32px 6vw 96px;">
+
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:36px;">
+    <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.6);">League Handbook</span>
+  </div>
+
+  <div style="position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.18);height:300px;max-width:1280px;margin:0 auto 4px;">
+    <div style="position:absolute;inset:0;">
+      <image-slot id="league-rules-hero" shape="rect" placeholder="Drop an arena or league photo"></image-slot>
+    </div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.1),rgba(11,11,12,0.85) 80%,#0b0b0c 100%);pointer-events:none;"></div>
+    <div style="position:absolute;top:14px;left:14px;width:16px;height:16px;border-top:2px solid #fff;border-left:2px solid #fff;"></div>
+    <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid #fff;border-right:2px solid #fff;"></div>
+    <div style="position:absolute;left:28px;right:28px;bottom:24px;">
+      <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(40px,5vw,64px);line-height:0.9;margin:0;text-transform:uppercase;">League Rules.</h1>
+    </div>
+  </div>
+
+  <p style="max-width:1280px;margin:24px auto 20px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.55);">
+    League structure, franchise operations and governance for CCPL-HYD Season 2 &mdash; everything outside the player-facing rules. Drawn from the official Competition Regulations &amp; Operations Handbook.
+  </p>
+
+  <div style="display:flex;gap:10px;max-width:1280px;margin:0 auto 36px;">
+    <a href="Centre Court Player Rules v2.dc.html" style="padding:9px 18px;background:#1a1a1b;color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;">Player Rules</a>
+    <span style="padding:9px 18px;background:#fff;color:#0b0b0c;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">All Other Rules</span>
+  </div>
+
+  <div style="max-width:1280px;margin:0 auto;">
+    <sc-for list="{{chapters}}" as="ch" hint-placeholder-count="6">
+      <div style="border-top:1px solid rgba(255,255,255,0.14);">
+        <button type="button" onClick="{{ch.toggle}}" style="width:100%;background:none;border:none;cursor:pointer;padding:22px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;">
+          <span style="display:flex;align-items:baseline;gap:18px;">
+            <span style="font-family:'Zuume Cut',sans-serif;font-style:italic;font-weight:900;font-size:26px;color:{{accentColor}};flex-shrink:0;">{{ch.num}}</span>
+            <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;color:#fff;text-transform:uppercase;letter-spacing:0.03em;">{{ch.title}}</span>
+          </span>
+          <span style="font-size:22px;color:rgba(255,255,255,0.5);flex-shrink:0;">{{ch.icon}}</span>
+        </button>
+        <sc-if value="{{ch.open}}" hint-placeholder-val="{{false}}">
+          <div style="padding:0 0 28px 44px;display:flex;flex-direction:column;gap:20px;">
+            <sc-for list="{{ch.items}}" as="item" hint-placeholder-count="3">
+              <div>
+                <h4 style="margin:0 0 6px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:14px;color:{{accentColor}};text-transform:uppercase;letter-spacing:0.05em;">{{item.heading}}</h4>
+                <p style="margin:0;font-size:15px;line-height:1.7;color:rgba(255,255,255,0.62);max-width:760px;">{{item.body}}</p>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="max-width:1280px;margin:32px auto 0;background:linear-gradient(90deg,{{accentColor}},{{accentColorDark}});padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.9);">Playing on Centre Court?</span>
+    <a href="Centre Court Player Rules v2.dc.html" style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;text-transform:uppercase;color:#fff;text-decoration:none;">Read Player Rules &rarr;</a>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer v2" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1200},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e27b46&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#e27b46&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]}}">
+class Component extends DCLogic {
+  state = { open: 0 };
+  toggle = (i) => this.setState(s => ({ open: s.open === i ? -1 : i }));
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#e27b46';
+    const accentColorDark = '#7d0f0f';
+    const data = [
+      { title: 'League Philosophy', items: [
+        { heading: 'About CCPL', body: "The Centre Court Pickleball League (CCPL-HYD) is Hyderabad's premier franchise-based pickleball league, built around franchises, player contracts, auctions, team identities and long-term relationships." },
+        { heading: 'Vision & Mission', body: "The League aims to build India's most respected city-based pickleball league — elevating competitive pickleball through professional operations, creating commercial opportunity for owners and partners, and building long-term player careers." },
+        { heading: 'Core Principles', body: "Every League Committee decision is guided by Sporting Integrity, Professionalism, Player First, Franchise Value and Community." },
+      ]},
+      { title: 'League Structure & Format', items: [
+        { heading: 'Competition Format', body: "Season 2 consists of eight (8) franchise teams competing in a single-season championship, conducted in three phases: the League Stage (single Round Robin, seven matchdays), the Playoffs (top four franchises), and the Championship Final." },
+        { heading: 'Matchdays', body: "Fixtures are ordinarily conducted every Saturday according to a pre-released schedule, with all 8 teams playing each matchday. The League may modify fixtures for weather, venue availability, broadcast requirements, public holidays or force majeure." },
+        { heading: 'League Table & Ranking', body: "The League Table tracks Battles Played, Won, Lost, League Points, Games Differential and Points Differential. Ties are broken by Games Differential, then Points Differential, then Total Points Scored, then Head-to-Head, then a Committee draw." },
+      ]},
+      { title: 'Season Calendar', items: [
+        { heading: 'Key Dates', body: "Pre-Auction Pick Deadline 22 August; Owners' Retreat 3–6 September; Player Auction 5 September; Fixtures Released 24 September; Opening Matchday 17 October; League Stage runs 17 October – 28 November; Playoffs 5 December; Finals 12 December." },
+        { heading: 'Right to Amend', body: "The League reserves the right to amend any date in the season calendar where operationally required." },
+      ]},
+      { title: 'Player Movement & Transfer Window', items: [
+        { heading: 'Transfer Window', body: "CCPL Season 2 has one official Mid-Season Transfer Window, opening only after three matchdays are fully completed. Each franchise may replace a maximum of two contracted players during this window." },
+        { heading: 'Who Can Be Replaced', body: "Only Auction Players may be released and replaced. Players acquired through Retention or Pre-Auction Pick cannot be released or replaced, except through an approved Medical Replacement." },
+        { heading: 'Replacement Process', body: "A franchise nominates a Priority 1 and, optionally, a Priority 2 release, each with a ranked list of five preferred replacements from the Reserve Pool. Requests are due by Sunday 5:00 PM IST following the relevant matchday, and allocated in reverse League Table order — the lowest-placed franchise gets first priority." },
+        { heading: 'Financial Terms', body: "A replacement player's base value must be lower than the signing value of the player they replace. The released player is paid pro-rata through the matchdays completed; the replacement is paid their full agreed value regardless of when they join." },
+        { heading: 'Tampering', body: "No franchise or representative may approach, negotiate with or induce a contracted player of another franchise outside the official player movement mechanisms. This constitutes Player Tampering and may result in financial penalties, suspension or cancellation of registration." },
+      ]},
+      { title: 'Owner Participation Policy', items: [
+        { heading: 'Ownership vs. Participation', body: "The League treats franchise ownership and player participation as two distinct, independent roles. Franchise owners shall ordinarily remain non-playing stakeholders; ownership does not confer any right to participate as a player." },
+        { heading: 'Anti-Circumvention', body: "No franchise or individual may restructure ownership primarily to obtain player eligibility. The League Committee determines ownership based on substance — beneficial ownership, financial interest and control — rather than legal form." },
+        { heading: 'Future Framework', body: "Should the League Committee determine that owner participation would strengthen the League's sporting integrity and competitive balance, a separate Owner Participation Framework may be introduced and published independently." },
+      ]},
+      { title: 'League Governance', items: [
+        { heading: 'League Committee', body: "The League is administered by the League Committee, which is responsible for the organisation, operation and governance of the League, and exercises its powers in good faith and in the League's best interests." },
+        { heading: 'Powers', body: "The Committee administers the Regulations, determines eligibility, approves registrations and transfers, appoints officials, interprets the rules, investigates disciplinary matters and issues Official League Circulars." },
+        { heading: 'Official Communications', body: "Official League Circulars and directives may be issued via the Official League Platform, email or WhatsApp, and are binding on all participants once issued. Franchises are responsible for keeping their owners, players and representatives informed." },
+        { heading: 'Amendments & Force Majeure', body: "The League Committee may amend these Regulations where necessary, consulting franchises where practicable. It may also suspend, postpone or modify the competition due to force majeure events beyond its reasonable control." },
+        { heading: 'Final Authority', body: "These Regulations are interpreted according to their purpose and spirit rather than literal wording. The League Committee has exclusive authority to administer, interpret and enforce them, and its decisions are final and binding." },
+      ]},
+    ];
+    const chapters = data.map((c, i) => {
+      const open = this.state.open === i;
+      return { num: String(i + 1).padStart(2, '0'), title: c.title, items: c.items, open, icon: open ? '\u2212' : '+', toggle: () => this.toggle(i) };
+    });
+    return { accentColor, accentColorDark, chapters };
+  }
+}
+
+</script>
+</body>
+</html>

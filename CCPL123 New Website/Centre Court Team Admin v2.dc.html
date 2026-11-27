@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;text-decoration:none;}
+    a:hover{color:#0b0b0c;}
+    textarea::placeholder{color:#8a857a;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="teams" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Admin Header" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(40px,5vw,72px) 6vw calc(5vw + clamp(48px,6vw,80px));overflow:hidden;">
+  <div style="position:absolute;right:-1vw;bottom:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,30vw,480px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.14);">ADMIN</div>
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div style="position:relative;max-width:1400px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;gap:clamp(24px,4vw,56px);">
+    <div style="position:relative;width:clamp(130px,15vw,200px);height:clamp(130px,15vw,200px);flex:none;background:#ffffff;border:2px solid #ffffff;padding:16px;display:flex;">
+      <span style="position:absolute;left:0;top:0;bottom:0;width:8px;background:#e27b46;"></span>
+      <image-slot id="admin-team-logo" shape="rect" placeholder="Drop team logo" style="width:100%;height:100%;"></image-slot>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <span style="display:inline-flex;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">Team Admin</span></span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);">Siddharth Reddy</span>
+      </div>
+      <h1 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,10vw,160px);line-height:.84;letter-spacing:-.01em;">The <span style="color:#e27b46;">Mavericks</span></h1>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Admin Body" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;margin-top:-5vw;padding:calc(5vw + clamp(32px,4vw,56px)) 6vw calc(5vw + clamp(64px,8vw,110px));clip-path:polygon(0 5vw,100% 0,100% 100%,0 100%);">
+  <div style="max-width:1400px;margin:0 auto;">
+
+    <div style="display:flex;flex-wrap:wrap;border:2px solid #0b0b0c;background:#ffffff;margin-bottom:clamp(28px,4vw,48px);">
+      <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="4">
+        <button type="button" onClick="{{tab.select}}" style="flex:1 1 auto;border:0;border-right:2px solid #0b0b0c;margin-right:-2px;background:{{tab.bg}};color:{{tab.ink}};padding:16px 20px;cursor:pointer;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:24px;letter-spacing:.04em;text-transform:uppercase;line-height:1;transition:background .2s ease,color .2s ease;display:flex;align-items:center;justify-content:center;gap:10px;" style-hover="color:#e27b46"><span style="white-space:nowrap;">{{tab.label}}</span><sc-if value="{{tab.hasBadge}}" hint-placeholder-val="{{false}}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:#e27b46;color:#0b0b0c;font-family:'Montserrat',sans-serif;font-style:normal;font-weight:800;font-size:12px;letter-spacing:0;">{{tab.badge}}</span></sc-if></button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{isInfo}}" hint-placeholder-val="{{true}}">
+      <h2 style="margin:0 0 24px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">Team <span style="color:#e27b46;">Information.</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:stretch;">
+        <div style="position:relative;background:#ffffff;border:2px solid #0b0b0c;">
+          <div style="padding:16px 24px;background:#0b0b0c;color:#ffffff;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:1;letter-spacing:.04em;text-transform:uppercase;">Basic Details</div>
+          <div style="display:flex;flex-direction:column;padding:8px 24px 12px;">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:16px 0;border-bottom:1px solid #d8d4ca;min-width:0;">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">{{f.label}}</span>
+                <span style="font-size:16px;font-weight:600;overflow-wrap:anywhere;">{{f.value}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position:relative;background:#ffffff;border:2px solid #0b0b0c;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px 12px 24px;background:#0b0b0c;color:#ffffff;">
+            <span style="min-width:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:1.1;letter-spacing:.04em;text-transform:uppercase;">Additional Details</span>
+            <sc-if value="{{notEditing}}" hint-placeholder-val="{{true}}">
+              <button type="button" onClick="{{startEdit}}" style="display:inline-flex;transform:skewX(-14deg);background:#e27b46;color:#0b0b0c;border:0;padding:8px 18px;cursor:pointer;" style-hover="background:#ffffff"><span style="transform:skewX(14deg);font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;">Edit</span></button>
+            </sc-if>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:24px;">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">Team Description</span>
+            <sc-if value="{{notEditing}}" hint-placeholder-val="{{true}}">
+              <p style="margin:0;font-size:16px;font-weight:500;line-height:1.6;color:{{descInk}};text-wrap:pretty;white-space:pre-wrap;">{{descText}}</p>
+            </sc-if>
+            <sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+              <textarea rows="6" value="{{draft}}" onChange="{{onDraft}}" placeholder="Tell fans about your team" style="background:#f2f0ea;border:2px solid #0b0b0c;color:#0b0b0c;font-family:'Montserrat',sans-serif;font-weight:500;font-size:15px;line-height:1.5;padding:14px 16px;outline:none;resize:vertical;border-radius:0;" style-focus="border-color:#e27b46;background:#ffffff"></textarea>
+              <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button type="button" onClick="{{cancelEdit}}" style="background:transparent;border:2px solid #0b0b0c;color:#0b0b0c;padding:10px 18px;cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;" style-hover="background:#0b0b0c;color:#ffffff">Cancel</button>
+                <button type="button" onClick="{{saveEdit}}" style="display:inline-flex;transform:skewX(-14deg);background:#0b0b0c;color:#ffffff;border:0;padding:10px 22px;cursor:pointer;" style-hover="background:#e27b46;color:#0b0b0c"><span style="transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.05em;text-transform:uppercase;">Save</span></button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isPlayers}}" hint-placeholder-val="{{false}}">
+      <h2 style="margin:0 0 24px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">The <span style="color:#e27b46;">Squad.</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+        <sc-for list="{{players}}" as="p" hint-placeholder-count="8">
+          <div style="position:relative;display:flex;flex-direction:column;border:2px solid #0b0b0c;background:#ffffff;transition:background .25s ease,color .25s ease;" style-hover="background:#0b0b0c;color:#ffffff">
+            <div style="position:relative;aspect-ratio:4/5;background:#e4e1d8;border-bottom:2px solid #0b0b0c;">
+              <image-slot id="{{p.slotId}}" shape="rect" placeholder="Player photo" style="width:100%;height:100%;"></image-slot>
+              <span style="position:absolute;top:0;left:0;display:inline-flex;background:#0b0b0c;padding:6px 10px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;line-height:1;color:#e27b46;">{{p.num}}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px 16px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:.95;text-transform:uppercase;">{{p.name}}</span>
+                <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#e27b46;">{{p.gender}}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #d8d4ca;padding-top:12px;gap:12px;">
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:30px;line-height:.9;">{{p.singles}}</span>
+                  <span style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8a857a;">Singles Rating</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:30px;line-height:.9;">{{p.doubles}}</span>
+                  <span style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8a857a;">Doubles Rating</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isAssets}}" hint-placeholder-val="{{false}}">
+      <h2 style="margin:0 0 24px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">Design <span style="color:#e27b46;">Assets.</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">
+        <sc-for list="{{assets}}" as="a" hint-placeholder-count="3">
+          <div style="border:2px solid #0b0b0c;background:#ffffff;display:flex;flex-direction:column;">
+            <div style="aspect-ratio:{{a.ratio}};background:#e4e1d8;border-bottom:2px solid #0b0b0c;">
+              <image-slot id="{{a.id}}" shape="rect" placeholder="{{a.hint}}" style="width:100%;height:100%;"></image-slot>
+            </div>
+            <span style="padding:14px 16px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:24px;line-height:1;text-transform:uppercase;">{{a.label}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isPasses}}" hint-placeholder-val="{{false}}">
+      <h2 style="margin:0 0 24px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">Pass <span style="color:#e27b46;">Requests.</span></h2>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));border:2px solid #0b0b0c;margin-bottom:24px;">
+        <div style="position:relative;overflow:hidden;background:#0b0b0c;color:#ffffff;padding:24px 28px;display:flex;flex-direction:column;gap:6px;">
+          <span style="position:absolute;left:0;top:0;bottom:0;width:8px;background:#e27b46;"></span>
+          <span style="font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;">Passes Left</span>
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(120px,14vw,200px);line-height:.8;">{{passesLeft}}</span>
+          <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,.7);">of {{allotment}} allotted this season</span>
+        </div>
+        <div style="background:#ffffff;padding:24px 28px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;border-left:2px solid #0b0b0c;">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:72px;line-height:.85;color:#e27b46;">{{pendingPasses}}</span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">Passes awaiting approval / {{pendingCount}} requests</span>
+        </div>
+        <div style="background:#ffffff;padding:24px 28px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;border-left:2px solid #0b0b0c;">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:72px;line-height:.85;">{{issued}}</span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">Passes issued</span>
+        </div>
+      </div>
+
+      <div style="border:2px solid #0b0b0c;background:#ffffff;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:12px 16px 12px 20px;background:#0b0b0c;color:#ffffff;">
+          <label style="display:flex;align-items:center;gap:12px;cursor:pointer;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">
+            <input type="checkbox" checked="{{allSelected}}" onChange="{{toggleAll}}" style="width:18px;height:18px;accent-color:#e27b46;cursor:pointer;margin:0;"/>
+            {{selectionLabel}}
+          </label>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <sc-if value="{{hasWarn}}" hint-placeholder-val="{{false}}">
+              <span style="font-size:12px;font-weight:700;color:#e27b46;">{{warn}}</span>
+            </sc-if>
+            <button type="button" onClick="{{approveSelected}}" disabled="{{approveDisabled}}" style="display:inline-flex;transform:skewX(-14deg);background:{{approveBg}};color:#0b0b0c;border:0;padding:10px 22px;cursor:{{approveCursor}};" style-hover="background:#ffffff"><span style="transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;">Approve selected</span></button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <div style="min-width:980px;">
+            <div style="display:grid;grid-template-columns:52px 1.1fr 1.5fr 1.1fr 80px 2fr 130px;gap:16px;align-items:center;padding:12px 20px;border-bottom:2px solid #0b0b0c;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">
+              <span></span><span>Name</span><span>Email</span><span>Phone</span><span># Passes</span><span>Message</span><span style="text-align:right;">Status</span>
+            </div>
+            <sc-for list="{{requests}}" as="r" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:52px 1.1fr 1.5fr 1.1fr 80px 2fr 130px;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid #d8d4ca;background:{{r.bg}};opacity:{{r.opacity}};">
+                <span style="display:flex;">
+                  <sc-if value="{{r.pending}}" hint-placeholder-val="{{true}}">
+                    <input type="checkbox" checked="{{r.checked}}" onChange="{{r.toggle}}" style="width:18px;height:18px;accent-color:#e27b46;cursor:pointer;margin:0;"/>
+                  </sc-if>
+                </span>
+                <span style="font-size:15px;font-weight:700;">{{r.name}}</span>
+                <span style="font-size:14px;font-weight:500;overflow-wrap:anywhere;">{{r.email}}</span>
+                <span style="font-size:14px;font-weight:500;">{{r.phone}}</span>
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:28px;line-height:1;">{{r.count}}</span>
+                <span style="font-size:13px;font-weight:500;line-height:1.5;color:#5f5b52;text-wrap:pretty;">{{r.message}}</span>
+                <span style="display:flex;justify-content:flex-end;">
+                  <sc-if value="{{r.pending}}" hint-placeholder-val="{{true}}">
+                    <button type="button" onClick="{{r.approve}}" style="background:transparent;border:2px solid #0b0b0c;color:#0b0b0c;padding:7px 14px;cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;" style-hover="background:#0b0b0c;color:#ffffff">Approve</button>
+                  </sc-if>
+                  <sc-if value="{{r.approved}}" hint-placeholder-val="{{false}}">
+                    <span style="display:inline-flex;transform:skewX(-14deg);background:#0b0b0c;padding:5px 12px;"><span style="transform:skewX(14deg);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#e27b46;">Approved</span></span>
+                  </sc-if>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isFixtures}}" hint-placeholder-val="{{false}}">
+      <h2 style="margin:0 0 24px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">Team <span style="color:#e27b46;">Fixtures.</span></h2>
+      <div style="border:2px solid #0b0b0c;background:#0b0b0c;color:#ffffff;">
+        <sc-for list="{{fixtures}}" as="fx" hint-placeholder-count="4">
+          <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.16);">
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:1;text-transform:uppercase;">{{fx.opponent}}</span>
+            <span style="display:inline-flex;transform:skewX(-14deg);background:{{fx.tagBg}};padding:5px 12px;"><span style="transform:skewX(14deg);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:{{fx.tagInk}};white-space:nowrap;">{{fx.when}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  state = {
+    tab: 'info', desc: '', editing: false, draft: '', allotment: 40, issued: 12, selected: [], warn: '',
+    requests: [
+      { id: 1, name: 'Ananya Rao', email: 'ananya.rao@gmail.com', phone: '98490 11223', count: 2, message: 'Matchday 1, for me and my sister.', approved: false },
+      { id: 2, name: 'Karthik Menon', email: 'karthik.m@outlook.com', phone: '90001 45678', count: 4, message: 'Family coming for the opening match. Would love seats together.', approved: false },
+      { id: 3, name: 'Priya Sharma', email: 'priya.sharma@yahoo.com', phone: '99633 77881', count: 1, message: 'Friend of Player Three.', approved: false },
+      { id: 4, name: 'Rahul Varma', email: 'rahul.varma@gmail.com', phone: '97010 22334', count: 3, message: 'Matchday 2 please.', approved: false },
+      { id: 5, name: 'Sneha Iyer', email: 'sneha.iyer@gmail.com', phone: '93910 55667', count: 2, message: 'Any matchday works.', approved: false },
+      { id: 6, name: 'Vikram Das', email: 'vikram.das@icloud.com', phone: '96660 88990', count: 2, message: 'Coming with a colleague for the weekend games.', approved: true },
+    ],
+  };
+  approveIds = ids => this.setState(s => {
+    const need = s.requests.filter(r => ids.includes(r.id) && !r.approved).reduce((a, r) => a + r.count, 0);
+    if (need > s.allotment - s.issued) return { warn: `Only ${s.allotment - s.issued} passes left. Deselect some requests.` };
+    return { issued: s.issued + need, warn: '', selected: s.selected.filter(id => !ids.includes(id)),
+      requests: s.requests.map(r => ids.includes(r.id) ? { ...r, approved: true } : r) };
+  });
+  renderVals() {
+    const { tab, desc, editing, draft, requests, selected, allotment, issued, warn } = this.state;
+    const pending = requests.filter(r => !r.approved);
+    const allSelected = pending.length > 0 && pending.every(r => selected.includes(r.id));
+    const passesLeft = allotment - issued;
+    const labels = [['info','Team Info'],['players','Players'],['passes','Passes'],['assets','Design Assets'],['fixtures','Fixtures']];
+    const roles = ['Captain','Men\u2019s Singles','Women\u2019s Singles','Men\u2019s Doubles','Women\u2019s Doubles','Mixed Doubles','Impact Sub','Squad'];
+    const names = ['One','Two','Three','Four','Five','Six','Seven','Eight'];
+    return {
+      tabs: labels.map(([id, label]) => ({ label, bg: tab === id ? '#0b0b0c' : '#ffffff', ink: tab === id ? '#e27b46' : '#0b0b0c', select: () => this.setState({ tab: id }), hasBadge: id === 'passes' && pending.length > 0, badge: pending.length })),
+      isPasses: tab === 'passes', passesLeft, allotment, issued,
+      pendingCount: pending.length, pendingPasses: pending.reduce((a, r) => a + r.count, 0),
+      allSelected, warn, hasWarn: !!warn,
+      selectionLabel: selected.length ? `${selected.length} selected` : 'Select all pending',
+      toggleAll: () => this.setState({ selected: allSelected ? [] : pending.map(r => r.id), warn: '' }),
+      approveSelected: () => selected.length && this.approveIds(selected),
+      approveDisabled: !selected.length,
+      approveBg: selected.length ? '#e27b46' : '#5f5b52',
+      approveCursor: selected.length ? 'pointer' : 'not-allowed',
+      requests: [...pending, ...requests.filter(r => r.approved)].map(r => {
+        const checked = selected.includes(r.id);
+        return { ...r, pending: !r.approved, checked,
+          bg: checked ? '#fbeee6' : '#ffffff', opacity: r.approved ? .6 : 1,
+          toggle: () => this.setState(s => ({ warn: '', selected: checked ? s.selected.filter(i => i !== r.id) : [...s.selected, r.id] })),
+          approve: () => this.approveIds([r.id]) };
+      }),
+      isInfo: tab === 'info', isPlayers: tab === 'players', isAssets: tab === 'assets', isFixtures: tab === 'fixtures',
+      facts: [
+        { label: 'Team Name', value: 'The Mavericks' },
+        { label: 'Team Admin', value: 'Siddharth Reddy' },
+        { label: 'Contact', value: '9949372222' },
+        { label: 'Email', value: 'siddharth@318digital.com' },
+      ],
+      editing, notEditing: !editing, draft,
+      descText: desc || 'No description available. Click Edit to add one.',
+      descInk: desc ? '#0b0b0c' : '#5f5b52',
+      startEdit: () => this.setState({ editing: true, draft: desc }),
+      cancelEdit: () => this.setState({ editing: false }),
+      saveEdit: () => this.setState(s => ({ editing: false, desc: s.draft.trim() })),
+      onDraft: e => this.setState({ draft: e.target.value }),
+      players: names.map((n, i) => ({
+        num: String(i + 1).padStart(2, '0'), name: 'Player ' + n, slotId: 'admin-player-' + (i + 1),
+        gender: [0,1,3,6].includes(i) ? 'Male' : 'Female',
+        singles: ['4.2','3.8','4.0','3.5','3.9','3.6','4.1','3.4'][i],
+        doubles: ['4.5','4.0','4.1','3.7','4.2','3.9','4.3','3.6'][i],
+      })),
+      assets: [
+        { id: 'asset-logo', label: 'Team Logo', hint: 'Logo', ratio: '1/1' },
+        { id: 'asset-jersey', label: 'Jersey', hint: 'Jersey', ratio: '1/1' },
+        { id: 'asset-banner', label: 'Banner', hint: 'Banner', ratio: '1/1' },
+      ],
+      fixtures: ['Team Two','Team Three','Team Four','Team Five'].map((o, i) => ({
+        opponent: 'vs ' + o, when: 'Matchday ' + (i + 1),
+        tagBg: i === 0 ? '#e27b46' : 'rgba(255,255,255,.12)', tagInk: i === 0 ? '#0b0b0c' : '#ffffff',
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

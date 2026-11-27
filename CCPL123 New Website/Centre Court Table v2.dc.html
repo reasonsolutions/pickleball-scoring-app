@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;}
+    a:hover{color:#0b0b0c;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="table" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Table Header" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(56px,7vw,96px) 6vw calc(5vw + clamp(56px,7vw,96px));overflow:hidden;">
+  <div style="position:absolute;right:-1vw;bottom:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,32vw,520px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.16);">S2</div>
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div data-reveal="1" style="position:relative;max-width:1400px;margin:0 auto;display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:28px 48px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <span style="display:inline-flex;width:fit-content;flex:none;align-self:flex-start;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">CCPL Hyderabad / Season 2</span></span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.8);">{{playedLabel}}</span>
+      </div>
+      <h1 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,10vw,160px);line-height:.84;letter-spacing:-.01em;">Team <span style="color:#e27b46;">Rankings.</span></h1>
+    </div>
+    <p style="margin:0;max-width:{{introMaxWidth}};font-size:16px;font-weight:500;line-height:1.6;color:#e8e8e8;border-left:4px solid #e27b46;padding-left:16px;">Two points per battle won. Ties are split on games difference, then points difference. Tap any column to re-sort the table.</p>
+  </div>
+</section>
+
+<section data-screen-label="Standings" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;margin-top:-5vw;padding:calc(5vw + clamp(40px,5vw,64px)) 6vw calc(5vw + clamp(64px,8vw,110px));clip-path:polygon(0 5vw,100% 0,100% 100%,0 100%);">
+  <div style="max-width:1400px;margin:0 auto;">
+
+    <div data-reveal="1" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 24px;margin-bottom:24px;">
+      <div style="display:flex;align-items:stretch;border:2px solid #0b0b0c;">
+        <a href="#" style="display:flex;align-items:center;padding:12px 22px;background:#0b0b0c;color:#ffffff;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;">Standings</a>
+        <a href="Centre Court Fixtures v2.dc.html" style="display:flex;align-items:center;padding:12px 22px;color:#0b0b0c;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;transition:background .2s ease" style-hover="background:#e27b46;color:#0b0b0c">Fixtures</a>
+      </div>
+      <span style="font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5f5b52;">Sorted by <strong style="color:#0b0b0c;">{{sortLabel}}</strong></span>
+    </div>
+
+    <sc-if value="{{isDesktop}}" hint-placeholder-val="{{true}}">
+      <div style="background:#ffffff;border:2px solid #0b0b0c;overflow-x:auto;">
+        <div style="min-width:1180px;">
+          <div style="display:grid;grid-template-columns:{{tableCols}};align-items:stretch;background:#0b0b0c;color:#ffffff;min-height:56px;">
+            <div style="display:flex;align-items:center;padding:0 0 0 28px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#e27b46;">Pos · Team</div>
+            <sc-for list="{{headers}}" as="h" hint-placeholder-count="9">
+              <button type="button" onClick="{{h.sort}}" title="{{h.title}}" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 8px;border:0;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;line-height:1.3;text-align:center;background:{{h.bg}};color:{{h.color}};transition:background .2s ease,color .2s ease" style-hover="background:#232324;color:#ffffff">
+                <span>{{h.label}}</span><span>{{h.arrow}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+            <div data-reveal="row" style="position:relative;display:grid;grid-template-columns:{{tableCols}};align-items:stretch;min-height:84px;border-top:1px solid #e4e1d8;background:{{r.rowBg}};color:{{r.ink}};transition:background .2s ease" style-hover="background:{{r.hoverBg}}">
+              <span style="position:absolute;left:0;top:0;bottom:0;width:8px;background:{{r.edge}};"></span>
+              <div style="display:flex;align-items:center;gap:16px;padding:12px 16px 12px 28px;min-width:0;">
+                <span style="width:44px;flex:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:46px;line-height:1;color:{{r.rankColor}};">{{r.rankShort}}</span>
+                <image-slot id="{{r.slot}}" shape="circle" placeholder="Logo" style="width:48px;height:48px;flex-shrink:0;"></image-slot>
+                <div style="min-width:0;">
+                  <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:28px;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{r.team}}</div>
+                  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:6px;color:{{r.subInk}};">{{r.tag}}</div>
+                </div>
+              </div>
+              <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="9">
+                <div style="display:flex;align-items:center;justify-content:center;padding:10px 6px;font-family:'Zuume Cut',sans-serif;font-style:italic;font-weight:{{c.weight}};font-size:{{c.size}};color:{{c.color}};background:{{c.bg}};">{{c.value}}</div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isMobile}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin:0 -6vw;padding-left:6vw;padding-right:6vw;">
+        <sc-for list="{{chips}}" as="ch" hint-placeholder-count="4">
+          <button type="button" onClick="{{ch.sort}}" style="flex-shrink:0;display:inline-flex;transform:skewX(-14deg);min-height:44px;align-items:center;padding:0 18px;border:2px solid #0b0b0c;cursor:pointer;background:{{ch.bg}};color:{{ch.color}};">
+            <span style="transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:18px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;">{{ch.label}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="background:#ffffff;border:2px solid #0b0b0c;">
+        <div style="display:grid;grid-template-columns:40px minmax(0,1fr) 34px 34px 60px;align-items:center;gap:0 6px;background:#0b0b0c;color:#ffffff;height:42px;padding-left:14px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">
+          <span style="color:#e27b46;">Pos</span><span>Team</span><span style="text-align:center;">W</span><span style="text-align:center;">L</span><span style="height:100%;display:flex;align-items:center;justify-content:center;background:#e27b46;color:#0b0b0c;">Pts</span>
+        </div>
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+          <div data-reveal="row" style="position:relative;border-top:1px solid {{r.divider}};background:{{r.rowBg}};color:{{r.ink}};">
+            <span style="position:absolute;left:0;top:0;bottom:0;width:5px;background:{{r.edge}};"></span>
+            <button type="button" onClick="{{r.toggle}}" style="width:100%;display:grid;grid-template-columns:40px minmax(0,1fr) 34px 34px 60px;align-items:center;gap:0 6px;padding:0 0 0 14px;min-height:68px;background:none;border:0;cursor:pointer;text-align:left;color:inherit;font-family:'Montserrat',sans-serif;">
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:32px;line-height:1;color:{{r.rankColor}};">{{r.rankShort}}</span>
+              <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;line-height:1.02;text-transform:uppercase;">{{r.team}}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex:none;transition:transform .3s ease;transform:rotate({{r.chev}});"><path d="M6 9l6 6 6-6"></path></svg>
+              </span>
+              <span style="text-align:center;font-family:'Zuume Cut',sans-serif;font-weight:700;font-style:italic;font-size:22px;">{{r.bw}}</span>
+              <span style="text-align:center;font-family:'Zuume Cut',sans-serif;font-weight:700;font-style:italic;font-size:22px;">{{r.bl}}</span>
+              <span style="height:100%;min-height:68px;display:flex;align-items:center;justify-content:center;background:{{r.ptsBg}};font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:34px;color:#0b0b0c;">{{r.points}}</span>
+            </button>
+            <div style="display:grid;transition:grid-template-rows .35s ease;grid-template-rows:{{r.openRows}};">
+              <div style="overflow:hidden;">
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid {{r.divider}};margin-left:5px;">
+                  <sc-for list="{{r.detail}}" as="d" hint-placeholder-count="6">
+                    <div style="padding:10px 14px;">
+                      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:{{r.subInk}};">{{d.label}}</div>
+                      <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:24px;color:{{d.color}};">{{d.value}}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 24px;margin-top:18px;">
+      <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5f5b52;">Table updates within an hour of the final whistle.</span>
+      <a href="Centre Court Fixtures v2.dc.html" style="display:inline-flex;align-items:center;gap:8px;color:#0b0b0c;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-bottom:3px solid #e27b46;padding-bottom:2px;" style-hover="color:#b3261a">See the fixtures
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1100},&quot;highlightTop&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:4,&quot;min&quot;:0,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;},&quot;invertLeader&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { isMobile: typeof window !== 'undefined' && window.innerWidth < 900, sort: 'points', open: null };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 900;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }), () => this.observe());
+  };
+  componentDidMount() { window.addEventListener('resize', this.updateSize); this.observe(); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); this._io && this._io.disconnect(); }
+
+  observe() {
+    this._io && this._io.disconnect();
+    this._io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.style.opacity = '1'; e.target.style.transform = 'none'; this._io.unobserve(e.target);
+    }), { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+    let row = 0;
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      if (el.dataset.seen) return;
+      el.dataset.seen = '1';
+      const isRow = el.dataset.reveal === 'row';
+      const d = isRow ? (row++ % 8) * 0.06 : 0;
+      el.style.opacity = '0';
+      el.style.transform = isRow ? 'translateX(-40px)' : 'translateY(32px)';
+      el.style.transition = `opacity .7s ease ${d}s, transform .8s cubic-bezier(.2,.7,.2,1) ${d}s, background .2s ease`;
+      this._io.observe(el);
+    });
+  }
+
+  slot(name) { return 'table-logo-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  fixtures() {
+    const gen = (n, homeWins) => Array.from({ length: n }, (_, i) => i < homeWins ? [15, 12] : [11, 15]);
+    return [
+      { home: 'All Stars', away: 'Credicon Mavericks', matches: [[7,15],[11,15],[15,10],[12,15],[16,18],[15,13]] },
+      { home: 'Nandi Chargers', away: 'Teramor Titans', matches: gen(7, 4) },
+      { home: 'Dasos Dynamos', away: 'The Raptors', matches: gen(7, 4) },
+      { home: 'Keerthi Warriors', away: 'Starry Smashers', matches: gen(6, 1) },
+      { home: 'Dasos Dynamos', away: 'Teramor Titans', matches: gen(6, 2) },
+      { home: 'Starry Smashers', away: 'All Stars', matches: gen(6, 2) },
+    ];
+  }
+
+  standings() {
+    const teams = {};
+    const get = name => (teams[name] = teams[name] || { team: name, bw: 0, bl: 0, gw: 0, gl: 0, pw: 0, pl: 0 });
+    this.fixtures().forEach(f => {
+      const h = get(f.home), a = get(f.away);
+      let hg = 0, ag = 0;
+      f.matches.forEach(([hs, as_]) => { h.pw += hs; h.pl += as_; a.pw += as_; a.pl += hs; if (hs > as_) hg++; else ag++; });
+      h.gw += hg; h.gl += ag; a.gw += ag; a.gl += hg;
+      if (hg > ag) { h.bw++; a.bl++; } else { a.bw++; h.bl++; }
+    });
+    return Object.values(teams).map(t => Object.assign(t, { points: t.bw * 2, gd: t.gw - t.gl, pd: t.pw - t.pl }));
+  }
+
+  cols() {
+    return [
+      { key: 'bw', label: 'Battle Wins', tone: 'good' },
+      { key: 'bl', label: 'Battle Losses', tone: 'bad' },
+      { key: 'gw', label: 'Game Wins' },
+      { key: 'gl', label: 'Game Losses' },
+      { key: 'pw', label: 'Points Won' },
+      { key: 'pl', label: 'Points Lost' },
+      { key: 'gd', label: 'Games Diff', tone: 'diff' },
+      { key: 'pd', label: 'Points Diff', tone: 'diff' },
+      { key: 'points', label: 'Points', tone: 'accent' },
+    ];
+  }
+
+  renderVals() {
+    const highlightTop = this.props.highlightTop ?? 4;
+    const invertLeader = this.props.invertLeader ?? true;
+    const { isMobile, sort } = this.state;
+    const cols = this.cols();
+    const rank = (a, b) => (b[sort] - a[sort]) || (b.points - a.points) || (b.gd - a.gd) || (b.pd - a.pd) || a.team.localeCompare(b.team);
+    const table = this.standings().sort(rank);
+    const signed = n => (n > 0 ? '+' + n : String(n));
+
+    const headers = cols.map(c => {
+      const on = sort === c.key;
+      const isPts = c.tone === 'accent';
+      return {
+        label: c.label, arrow: on ? '↓' : '', title: 'Sort by ' + c.label,
+        color: isPts ? '#0b0b0c' : on ? '#ffffff' : 'rgba(255,255,255,0.78)',
+        bg: isPts ? '#e27b46' : on ? '#232324' : 'transparent',
+        sort: () => this.setState({ sort: c.key }),
+      };
+    });
+
+    const chips = [
+      { key: 'points', label: 'Points' }, { key: 'bw', label: 'Battle Wins' },
+      { key: 'gd', label: 'Games Diff' }, { key: 'pd', label: 'Points Diff' },
+    ].map(c => ({
+      label: c.label,
+      bg: sort === c.key ? '#0b0b0c' : 'transparent',
+      color: sort === c.key ? '#ffffff' : '#0b0b0c',
+      sort: () => this.setState({ sort: c.key }),
+    }));
+
+    const rows = table.map((t, i) => {
+      const lead = i === 0 && invertLeader;
+      const top = i < highlightTop;
+      const isOpen = this.state.open === t.team;
+      const diffColor = n => (n > 0 ? (lead ? '#7fdba0' : '#1f7a45') : n < 0 ? (lead ? '#ff8a78' : '#b3261a') : (lead ? '#bdbdbd' : '#5f5b52'));
+      const ink = lead ? '#ffffff' : '#0b0b0c';
+      return {
+        team: t.team, slot: this.slot(t.team),
+        rankShort: String(i + 1),
+        rankColor: lead ? '#e27b46' : top ? '#0b0b0c' : '#b8b3a6',
+        edge: top ? '#e27b46' : '#e4e1d8',
+        rowBg: lead ? '#0b0b0c' : '#ffffff',
+        hoverBg: lead ? '#1a1a1b' : '#fbf1ee',
+        ink, subInk: lead ? '#bdbdbd' : '#5f5b52',
+        divider: lead ? '#232324' : '#e4e1d8',
+        tag: i === 0 ? 'Table Leader' : `${t.bw}W · ${t.bl}L`,
+        ptsBg: lead ? '#e27b46' : '#f6e3de',
+        points: t.points, bw: t.bw, bl: t.bl,
+        chev: isOpen ? '180deg' : '0deg',
+        openRows: isOpen ? '1fr' : '0fr',
+        toggle: () => this.setState(s => ({ open: s.open === t.team ? null : t.team })),
+        detail: [
+          { label: 'Game wins', value: t.gw, color: ink },
+          { label: 'Game losses', value: t.gl, color: ink },
+          { label: 'Games diff', value: signed(t.gd), color: diffColor(t.gd) },
+          { label: 'Points won', value: t.pw, color: ink },
+          { label: 'Points lost', value: t.pl, color: ink },
+          { label: 'Points diff', value: signed(t.pd), color: diffColor(t.pd) },
+        ],
+        cells: cols.map(c => {
+          const v = t[c.key];
+          const on = sort === c.key;
+          if (c.tone === 'accent') return { value: String(v), color: '#0b0b0c', size: '44px', weight: '900', bg: lead ? '#e27b46' : '#f6e3de' };
+          let color = ink;
+          if (c.tone === 'good') color = lead ? '#7fdba0' : '#1f7a45';
+          if (c.tone === 'bad') color = lead ? '#ff8a78' : '#b3261a';
+          if (c.tone === 'diff') color = diffColor(v);
+          return {
+            value: c.tone === 'diff' ? signed(v) : String(v), color,
+            size: '26px', weight: on ? '900' : '700',
+            bg: on ? (lead ? '#1a1a1b' : '#f7f5f0') : 'transparent',
+          };
+        }),
+      };
+    });
+
+    return {
+      headers, rows, chips, isMobile, isDesktop: !isMobile,
+      sortLabel: cols.find(c => c.key === sort).label,
+      playedLabel: 'Round Robin / ' + this.fixtures().length + ' battles played',
+      tableCols: 'minmax(340px,2.2fr) repeat(8,minmax(88px,1fr)) minmax(110px,1.1fr)',
+      headerGridCols: isMobile ? '1fr' : 'minmax(0,1fr) 360px',
+      introMaxWidth: isMobile ? '100%' : '360px',
+    };
+  }
+}
+</script>
+</body>
+</html>

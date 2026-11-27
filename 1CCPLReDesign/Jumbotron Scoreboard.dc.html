@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Schibsted+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#05021a;font-family:'Schibsted Grotesk',sans-serif}
+a{color:#fff}a:hover{color:#ff2d78}
+@keyframes drift1{0%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}50%{transform:translate(6%,4%) rotate(-6deg) scale(1.15)}100%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}}
+@keyframes drift2{0%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}50%{transform:translate(-6%,-4%) rotate(20deg) scale(0.95)}100%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.9}50%{transform:translate(-4%,6%) scale(1.25);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.9}}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,45,120,.7)}50%{opacity:.6;box-shadow:0 0 0 10px rgba(255,45,120,0)}}
+@keyframes servepulse{0%,100%{box-shadow:0 0 0 0 rgba(255,210,58,.75),0 0 18px rgba(255,210,58,.8)}50%{box-shadow:0 0 0 14px rgba(255,210,58,0),0 0 18px rgba(255,210,58,.8)}}
+@keyframes sheen{0%{transform:translateX(-140%) skewX(-20deg)}100%{transform:translateX(240%) skewX(-20deg)}}
+</style>
+</helmet>
+<div style="position:fixed;inset:0;overflow:hidden;background:#05021a;display:flex;align-items:center;justify-content:center">
+<div data-screen-label="Jumbotron" style="position:relative;flex:none;width:1920px;height:1080px;transform:scale({{ fitScale }});transform-origin:center center;overflow:hidden;background:#07021f;color:#fff;font-family:'Schibsted Grotesk',sans-serif">
+  {{ backdrop }}
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(7,2,31,0) 0%,rgba(7,2,31,.55) 70%,rgba(7,2,31,.9) 100%)"></div>
+  <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px);mix-blend-mode:overlay;pointer-events:none"></div>
+
+  <div style="position:relative;display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);height:100%;width:100%;padding:48px 72px 56px;box-sizing:border-box;gap:36px">
+
+    <!-- Header: event pill + live -->
+    <div style="display:flex;align-items:center;justify-content:center">
+      <img src="assets/terminus-ccpl-logo.png" alt="Terminus CCPL HYD" style="height:120px;width:auto;display:block;filter:drop-shadow(0 0 24px rgba(255,80,120,.35))">
+    </div>
+
+    <!-- Main scoreboard -->
+    <div style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:28px;padding:0 16px;min-width:0;border-radius:32px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.14);box-shadow:0 40px 120px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(14px)">
+      <div style="position:absolute;inset:0;border-radius:32px;overflow:hidden;pointer-events:none"><div style="position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,#ff2d78,#7b2cff 50%,#ff9a2e)"></div></div>
+
+      <!-- Team A -->
+      <div style="display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:28px;padding-left:16px;min-width:0">
+        <div style="position:relative;width:220px;height:220px;border-radius:28px;padding:4px;background:linear-gradient(135deg,#ff2d78,#7b2cff);box-shadow:0 0 50px rgba(255,45,120,.35)">
+          <div style="width:100%;height:100%;border-radius:24px;overflow:hidden;background:#0b0530">
+            <image-slot id="logo-a" shape="rect" fit="contain" placeholder="Logo"></image-slot>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font:500 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.6)">Matches won</div>
+          <div style="font:900 30px/1 'Unbounded',sans-serif;letter-spacing:-.05em;background:linear-gradient(180deg,#fff 30%,#ffb3cd);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(255,45,120,.55))">{{ teamA.matches }}</div>
+          <div style="font:900 36px/1.05 'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-.01em;text-wrap:balance;min-width:0">{{ teamA.name }}</div>
+        </div>
+      </div>
+
+      <!-- Center game score -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 44px;border-radius:24px;flex:none;background:linear-gradient(180deg,rgba(9,3,40,.9),rgba(20,6,60,.9));border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 0 60px rgba(123,44,255,.35),0 0 80px rgba(123,44,255,.25)">
+        <div style="position:relative;overflow:hidden;padding:12px 32px;margin-bottom:10px;border-radius:999px;background:linear-gradient(90deg,#ff2d78 0%,#ff6a3d 55%,#ffb347 100%);font:700 24px/1 'Unbounded',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#1a0633;white-space:nowrap;box-shadow:0 0 40px rgba(255,80,120,.45),inset 0 1px 0 rgba(255,255,255,.5)">
+          {{ eventName }}
+          <span style="position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sheen 3.2s ease-in-out infinite"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:28px;font:900 190px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="height:44px;display:flex;align-items:center;justify-content:center;opacity:{{ serveA }};transition:opacity .3s"><span style="display:block;width:26px;height:26px;border-radius:50%;background:#ffd23a;animation:servepulse 1.6s ease-in-out infinite"></span></div><span style="min-width:1.1ch;text-align:center;text-shadow:0 0 40px rgba(255,255,255,.35)">{{ game.a }}</span></div>
+          <span style="width:56px;height:14px;margin-top:50px;border-radius:7px;background:linear-gradient(90deg,#ff2d78,#ff9a2e);box-shadow:0 0 30px rgba(255,80,120,.8)"></span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="height:44px;display:flex;align-items:center;justify-content:center;opacity:{{ serveB }};transition:opacity .3s"><span style="display:block;width:26px;height:26px;border-radius:50%;background:#ffd23a;animation:servepulse 1.6s ease-in-out infinite"></span></div><span style="min-width:1.1ch;text-align:center;text-shadow:0 0 40px rgba(255,255,255,.35)">{{ game.b }}</span></div>
+        </div>
+      </div>
+
+      <!-- Team B -->
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:28px;padding-right:16px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:14px;text-align:right;align-items:flex-end">
+          <div style="font:500 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.6)">Matches won</div>
+          <div style="font:900 30px/1 'Unbounded',sans-serif;letter-spacing:-.05em;background:linear-gradient(180deg,#fff 30%,#ffd2a6);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(255,154,46,.5))">{{ teamB.matches }}</div>
+          <div style="font:900 36px/1.05 'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-.01em;text-wrap:balance;min-width:0">{{ teamB.name }}</div>
+        </div>
+        <div style="position:relative;width:220px;height:220px;border-radius:28px;padding:4px;background:linear-gradient(135deg,#ff9a2e,#ff2d78);box-shadow:0 0 50px rgba(255,154,46,.35)">
+          <div style="width:100%;height:100%;border-radius:24px;overflow:hidden;background:#0b0530">
+            <image-slot id="logo-b" shape="rect" fit="contain" placeholder="Logo"></image-slot>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match cards -->
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px;min-width:0">
+      <sc-for list="{{ matches }}" as="m" hint-placeholder-count="5">
+        <div style="position:relative;display:flex;flex-direction:column;gap:18px;padding:22px 26px 26px;border-radius:22px;min-width:0;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.2);backdrop-filter:blur(10px);overflow:hidden">
+          <div style="position:absolute;inset:0;background:{{ m.glow }};pointer-events:none"></div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div style="font:700 22px/1.1 'Unbounded',sans-serif;letter-spacing:.02em;text-transform:uppercase;min-width:0;text-wrap:balance;background:linear-gradient(90deg,#ffb3cd,#ffd2a6);-webkit-background-clip:text;background-clip:text;color:transparent">{{ m.label }}</div>
+            <div style="flex:none;font:800 16px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.2em;text-transform:uppercase;padding:8px 12px;border-radius:999px;background:{{ m.badgeBg }};color:{{ m.badgeColor }}">{{ m.status }}</div>
+          </div>
+          <div style="position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;background:{{ m.aBg }};border:1px solid {{ m.aBorder }}">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.9);text-wrap:balance">{{ m.teamA }}</div>
+              <div style="font:500 19px/1.25 'Schibsted Grotesk',sans-serif;color:rgba(255,255,255,.72);text-wrap:balance">{{ m.playerA }}</div>
+            </div>
+            <div style="font:900 48px/1 'Unbounded',sans-serif;letter-spacing:-.04em;min-width:2.2ch;text-align:right;color:{{ m.aColor }};font-variant-numeric:tabular-nums">{{ m.scoreA }}</div>
+          </div>
+          <div style="position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;background:{{ m.bBg }};border:1px solid {{ m.bBorder }}">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.9);text-wrap:balance">{{ m.teamB }}</div>
+              <div style="font:500 19px/1.25 'Schibsted Grotesk',sans-serif;color:rgba(255,255,255,.72);text-wrap:balance">{{ m.playerB }}</div>
+            </div>
+            <div style="font:900 48px/1 'Unbounded',sans-serif;letter-spacing:-.04em;min-width:2.2ch;text-align:right;color:{{ m.bColor }};font-variant-numeric:tabular-nums">{{ m.scoreB }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;magma&quot;,&quot;ember&quot;,&quot;ice&quot;],&quot;default&quot;:&quot;magma&quot;,&quot;tsType&quot;:&quot;'magma'|'ember'|'ice'&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;glowIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0.3,&quot;max&quot;:1.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;highlightWinners&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    this._fit = () => this.setState({ fitScale: Math.min(window.innerWidth / 1920, window.innerHeight / 1080) });
+    this._fit();
+    window.addEventListener('resize', this._fit);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._fit); }
+  state = {
+    fitScale: 1,
+    eventName: 'Game Breaker',
+    teamA: { name: 'The Mavericks', matches: 5 },
+    teamB: { name: 'Starry Smashers', matches: 1 },
+    game: { a: 0, b: 0, label: 'Game 3 · to 11' },
+    serving: 'a',
+    matches: [
+      { label: "Men's Doubles", a: 11, b: 0, playerA: 'J. Reyes / M. Okafor', playerB: 'D. Kwan / T. Bello' },
+      { label: "Women's Doubles", a: 0, b: 11, playerA: 'A. Novak / R. Singh', playerB: 'L. Moreau / C. Diaz' },
+      { label: "Men's Singles", a: 11, b: 4, playerA: 'K. Whitfield', playerB: 'S. Petrov' },
+      { label: "Women's Singles", a: 11, b: 6, playerA: 'E. Tanaka', playerB: 'M. Alvarez' },
+      { label: "Men's Doubles (2)", a: 11, b: 3, playerA: 'B. Achebe / N. Ford', playerB: 'V. Costa / H. Lindqvist' },
+    ],
+  };
+  renderVals() {
+    const theme = this.props.theme ?? 'magma';
+    const intensity = this.props.glowIntensity ?? 1;
+    const highlight = this.props.highlightWinners ?? true;
+    const palettes = {
+      magma: ['#ff2d78', '#7b2cff', '#ff9a2e', '#2a0a6e'],
+      ember: ['#ff6a1f', '#c2185b', '#ffc02e', '#3a0a14'],
+      ice: ['#2de2ff', '#6a3dff', '#ff5fd2', '#0a1a4e'],
+    };
+    const [c1, c2, c3, c4] = palettes[theme] || palettes.magma;
+    const blob = (bg, w, h, x, y, anim, blur) => React.createElement('div', {
+      style: { position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: '50%', background: bg, filter: `blur(${blur}px)`, opacity: intensity, animation: anim, willChange: 'transform', mixBlendMode: 'screen' }
+    });
+    const backdrop = React.createElement('div', { key: 'bd', style: { position: 'absolute', inset: 0, overflow: 'hidden', background: `radial-gradient(ellipse at 50% 100%, ${c4} 0%, #07021f 70%)` } },
+      blob(`radial-gradient(ellipse at center, ${c1} 0%, transparent 65%)`, 1400, 700, -200, -150, 'drift1 14s ease-in-out infinite', 70),
+      blob(`radial-gradient(ellipse at center, ${c2} 0%, transparent 65%)`, 1500, 800, 700, 350, 'drift2 18s ease-in-out infinite', 80),
+      blob(`radial-gradient(ellipse at center, ${c3} 0%, transparent 60%)`, 700, 350, 1200, -100, 'drift3 11s ease-in-out infinite', 60),
+      blob(`radial-gradient(ellipse at center, ${c1} 0%, transparent 60%)`, 900, 400, 300, 750, 'drift3 16s ease-in-out infinite reverse', 70),
+    );
+    const { teamA, teamB } = this.state;
+    const matches = this.state.matches.map((m) => {
+      const done = m.a >= 11 || m.b >= 11;
+      const aWin = done && m.a > m.b, bWin = done && m.b > m.a;
+      const win = 'rgba(255,255,255,.14)', winBorder = 'rgba(255,255,255,.35)', lose = 'rgba(0,0,0,.25)', loseBorder = 'rgba(255,255,255,.06)';
+      return {
+        ...m, scoreA: m.a, scoreB: m.b, teamA: teamA.name, teamB: teamB.name,
+        status: done ? 'Final' : 'Live',
+        badgeBg: done ? 'rgba(255,255,255,.12)' : c1, badgeColor: done ? 'rgba(255,255,255,.8)' : '#fff',
+        glow: done ? 'none' : `radial-gradient(ellipse at 50% 0%, ${c1}55, transparent 60%)`,
+        aBg: highlight && aWin ? win : highlight && bWin ? lose : 'rgba(255,255,255,.05)',
+        bBg: highlight && bWin ? win : highlight && aWin ? lose : 'rgba(255,255,255,.05)',
+        aBorder: highlight && aWin ? winBorder : loseBorder, bBorder: highlight && bWin ? winBorder : loseBorder,
+        aColor: highlight && bWin ? 'rgba(255,255,255,.4)' : '#fff', bColor: highlight && aWin ? 'rgba(255,255,255,.4)' : '#fff',
+      };
+    });
+    return { ...this.state, matches, backdrop, serveA: this.state.serving === 'a' ? 1 : 0, serveB: this.state.serving === 'b' ? 1 : 0 };
+  }
+}
+</script>
+</body>
+</html>

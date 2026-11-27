@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-regular.ttf') format('truetype');font-weight:400;font-style:normal;}
+    body{margin:0;background:#0a0f1e;}
+    a{color:{{accentColor}};}
+    a:hover{color:{{accentColorLight}};}
+    ::selection{background:{{accentColor}};color:#0a0f1e;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes cc-fade-up{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+    .cc-in{opacity:0;animation:cc-fade-up .9s cubic-bezier(.16,1,.3,1) forwards;}
+    .cc-tap{transition:transform .18s ease,opacity .18s ease,box-shadow .25s ease;}
+    .cc-tap:active{transform:scale(.97);opacity:.85;}
+    .cc-tile:hover{transform:translateY(-4px);}
+    .cc-tile{transition:transform .4s cubic-bezier(.16,1,.3,1);}
+    .cc-tile:hover .cc-arrow{transform:translateX(6px);}
+    .cc-arrow{transition:transform .3s ease;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav" current="overview" accent-color="{{accentColor}}" hint-size="100%,146px"></dc-import>
+
+<section style="position:relative;background:#0a0f1e;color:#fff;font-family:'Montserrat',sans-serif;padding:{{sectionPadding}};overflow:hidden;box-sizing:border-box;">
+
+  <div class="cc-in" style="position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:{{topMetaMargin}};animation-delay:.05s;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:{{accentColor}};animation:cc-pulse 2s ease-in-out infinite;"></div>
+      <span style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.55);">Centre Court Dream / 2026</span>
+    </div>
+    <span style="padding:6px 14px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.7);">Registration Open</span>
+  </div>
+
+  <div style="position:relative;display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:20px;margin-bottom:{{headerMargin}};">
+    <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(56px,8.5vw,140px);line-height:0.86;letter-spacing:0.005em;margin:0;text-transform:uppercase;max-width:1000px;">
+      Own The<br>Centre.
+    </h1>
+    <p class="cc-in" style="margin:0;max-width:{{quoteMaxWidth}};font-size:13px;line-height:1.7;font-style:italic;color:rgba(255,255,255,0.4);text-align:{{quoteAlign}};animation-delay:.45s;">
+      &ldquo;Not every court is equal. This one remembers.&rdquo;
+    </p>
+  </div>
+
+  <p class="cc-in" style="position:relative;max-width:520px;font-size:17px;line-height:1.6;color:rgba(255,255,255,0.6);margin:0 0 {{introMargin}};animation-delay:.35s;">
+    The stage was always there. Now you are. Register your place and step into the tournament built for the ones who came to be seen.
+  </p>
+
+  <div style="position:relative;display:grid;grid-template-columns:{{mainGridCols}};gap:{{mainGridGap}};">
+
+    <a href="Centre Court Player Signup.dc.html" class="cc-tile cc-tap cc-in" style="position:relative;display:block;height:{{tileHeight}};overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,0.08);text-decoration:none;color:#fff;cursor:pointer;animation-delay:.5s;">
+      <div style="position:absolute;inset:0;">
+        <image-slot id="signup-hero" shape="rect" placeholder="Drop a player action photo" src="uploads/test1.png" credit="" style="width:100%;height:100%;"></image-slot>
+      </div>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,15,30,0.1) 0%,rgba(10,15,30,0.2) 45%,rgba(10,15,30,0.75) 72%,#0a0f1e 100%);pointer-events:none;"></div>
+      <div style="position:absolute;top:0;left:0;right:0;padding:26px 28px 0;display:flex;align-items:center;justify-content:space-between;pointer-events:none;">
+        <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.85);white-space:nowrap;">Step 01 &mdash; Enter</span>
+      </div>
+      <div style="position:absolute;left:28px;right:28px;bottom:28px;pointer-events:none;">
+        <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:linear-gradient(135deg,{{accentColor}},{{accentColorLight}});font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;box-shadow:0 8px 24px {{accentGlow}};margin-bottom:18px;white-space:nowrap;">Player Registration</span>
+        <h2 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(36px,3.6vw,54px);line-height:0.92;margin:0 0 14px;text-transform:uppercase;">
+          Sign Up To<br>Compete
+        </h2>
+        <span class="cc-arrow" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">Claim your spot <span style="font-size:16px;">&rarr;</span></span>
+      </div>
+    </a>
+
+    <div class="cc-in" style="position:relative;border-radius:18px;background:#101830;border:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;height:{{rulesHeight}};animation-delay:.62s;">
+
+      <div style="padding:{{rulesPadTop}} {{rulesPadX}} 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+          <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Step 02 &mdash; Know</span>
+          <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:{{accentColorLight}};">The Rules</span>
+        </div>
+        <h2 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(34px,3.4vw,48px);line-height:0.95;margin:0 0 22px;text-transform:uppercase;">
+          Tournament<br>Rules
+        </h2>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;padding:0 {{rulesPadX}} 24px;overflow:{{rulesOverflow}};">
+        <sc-for list="{{rules}}" as="rule" hint-placeholder-count="6">
+          <div style="border-top:1px solid rgba(255,255,255,0.08);">
+            <button type="button" onClick="{{rule.toggle}}" class="cc-tap" style="width:100%;background:none;border:none;cursor:pointer;padding:16px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;text-align:left;">
+              <span style="display:flex;align-items:baseline;gap:14px;">
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:14px;color:{{accentColorLight}};">{{rule.num}}</span>
+                <span style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:0.03em;">{{rule.title}}</span>
+              </span>
+              <span style="font-size:18px;color:rgba(255,255,255,0.5);flex-shrink:0;">{{rule.icon}}</span>
+            </button>
+            <sc-if value="{{rule.open}}" hint-placeholder-val="{{false}}">
+              <p style="margin:0 0 18px;padding-left:34px;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.55);max-width:420px;">{{rule.body}}</p>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:0 {{rulesPadX}} {{rulesPadX}};">
+        <a href="Centre Court Player Rules.dc.html" class="cc-tap" style="display:flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;background:linear-gradient(135deg,{{accentColor}},{{accentColorLight}});padding:16px 24px;text-decoration:none;box-shadow:0 10px 28px {{accentGlow}};">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#0a0f1e;">Read Player Rules</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="cc-in" style="position:relative;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:{{footerMargin}};animation-delay:.8s;">
+    <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Not everyone plays on Centre Court.</span>
+    <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.3);">Earned. Watched. Yours.</span>
+  </div>
+</section>
+
+<section style="position:relative;background:#0a0f1e;color:#fff;font-family:'Montserrat',sans-serif;padding:{{newsSectionPadding}};box-sizing:border-box;">
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <h2 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(26px,3.2vw,46px);line-height:0.95;margin:0;text-transform:uppercase;">Latest From The Court</h2>
+    <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.35);">Season 2026</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{newsGridCols}};gap:{{mainGridGap}};align-items:start;">
+
+    <div style="display:flex;flex-direction:column;gap:{{mainGridGap}};">
+
+      <a href="Centre Court Article.dc.html" class="cc-tile cc-tap" style="position:relative;display:block;height:{{featureHeight}};overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,0.08);text-decoration:none;color:#fff;">
+        <div style="position:absolute;inset:0;">
+          <image-slot id="news-feature" shape="rect" placeholder="Drop the headline match photo" style="width:100%;height:100%;"></image-slot>
+        </div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,15,30,0) 40%,rgba(10,15,30,0.8) 78%,#0a0f1e 100%);pointer-events:none;"></div>
+        <div style="position:absolute;left:28px;right:28px;bottom:26px;pointer-events:none;">
+          <span style="display:block;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:{{accentColorLight}};margin-bottom:10px;">Community</span>
+          <h3 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(26px,2.6vw,40px);line-height:0.98;margin:0;text-transform:uppercase;max-width:760px;">Centre Court Dream returns for a second season</h3>
+        </div>
+      </a>
+
+      <div style="display:grid;grid-template-columns:{{smallCardCols}};gap:{{mainGridGap}};">
+        <sc-for list="{{stories}}" as="story" hint-placeholder-count="3">
+          <a href="{{story.href}}" class="cc-tile cc-tap" style="position:relative;display:block;height:{{smallCardHeight}};overflow:hidden;border-radius:14px;border:1px solid rgba(255,255,255,0.08);text-decoration:none;color:#fff;">
+            <div style="position:absolute;inset:0;">
+              <image-slot id="{{story.slotId}}" shape="rect" placeholder="Drop a match photo" style="width:100%;height:100%;"></image-slot>
+            </div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,15,30,0) 35%,rgba(10,15,30,0.85) 80%,#0a0f1e 100%);pointer-events:none;"></div>
+            <div style="position:absolute;left:18px;right:18px;bottom:18px;pointer-events:none;">
+              <span style="display:block;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:{{accentColorLight}};margin-bottom:8px;">{{story.kicker}}</span>
+              <h4 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:19px;line-height:1;margin:0;text-transform:uppercase;">{{story.title}}</h4>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:{{mainGridGap}};">
+
+      <div style="border-radius:18px;background:#101830;border:1px solid rgba(255,255,255,0.08);padding:{{cdPad}};">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:{{accentColor}};animation:cc-pulse 2s ease-in-out infinite;"></div>
+          <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Player Auction</span>
+        </div>
+        <h3 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(26px,2.4vw,34px);line-height:0.95;margin:0 0 22px;text-transform:uppercase;">Days To Go Until The Auction</h3>
+
+        <div style="display:flex;align-items:flex-end;gap:14px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,0.1);">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(64px,15vw,112px);line-height:0.8;color:{{accentColor}};">{{cdDays}}</span>
+          <span style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.55);padding-bottom:10px;">Days</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px;">
+          <div style="border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);padding:14px 10px;text-align:center;">
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;">{{cdHours}}</div>
+            <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:6px;">Hrs</div>
+          </div>
+          <div style="border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);padding:14px 10px;text-align:center;">
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;">{{cdMins}}</div>
+            <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:6px;">Min</div>
+          </div>
+          <div style="border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);padding:14px 10px;text-align:center;">
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;">{{cdSecs}}</div>
+            <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:6px;">Sec</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.45);">
+          <span>5 September 2026</span>
+          <span>Live Draft</span>
+        </div>
+
+        <a href="Centre Court Player Signup.dc.html" class="cc-tap" style="display:flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;background:linear-gradient(135deg,{{accentColor}},{{accentColorLight}});padding:15px 24px;text-decoration:none;margin-top:20px;box-shadow:0 10px 28px {{accentGlow}};">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:#0a0f1e;">Register Before The Auction</span>
+        </a>
+      </div>
+
+      <div style="border-radius:18px;overflow:hidden;background:#101830;border:1px solid rgba(255,255,255,0.08);">
+        <div style="padding:18px 24px;background:rgba(255,255,255,0.04);">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:22px;letter-spacing:0.02em;text-transform:uppercase;color:{{accentColorLight}};">Season 1 Champions</span>
+        </div>
+        <div style="position:relative;height:{{championHeight}};">
+          <image-slot id="news-champion" shape="rect" placeholder="Drop the champion team photo" style="width:100%;height:100%;"></image-slot>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,15,30,0.15) 0%,rgba(10,15,30,0.15) 55%,rgba(10,15,30,0.85) 100%);pointer-events:none;"></div>
+          <div style="position:absolute;left:24px;right:24px;bottom:22px;pointer-events:none;">
+            <h4 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:28px;line-height:1;margin:0;text-transform:uppercase;">To Be Crowned</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ff7a33&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ff7a33&quot;,&quot;#ffb37a&quot;,&quot;#ff5a3c&quot;]}}">
+class Component extends DCLogic {
+  state = {
+    openRule: 0,
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+    isNarrow: typeof window !== 'undefined' && window.innerWidth < 1150,
+  };
+
+  toggleRule = (i) => {
+    this.setState(s => ({ openRule: s.openRule === i ? -1 : i }));
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    const isNarrow = window.innerWidth < 1150;
+    this.setState(s => (s.isMobile === isMobile && s.isNarrow === isNarrow ? null : { isMobile, isNarrow }));
+  };
+
+  componentDidMount() {
+    window.addEventListener('resize', this.updateSize);
+    this._tick = setInterval(() => this.forceUpdate(), 1000);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateSize);
+    clearInterval(this._tick);
+  }
+
+  countdown() {
+    const target = new Date('2026-09-05T00:00:00').getTime();
+    const diff = Math.max(0, target - Date.now());
+    const s = Math.floor(diff / 1000);
+    const pad = n => String(n).padStart(2, '0');
+    return {
+      cdDays: String(Math.floor(s / 86400)),
+      cdHours: pad(Math.floor(s / 3600) % 24),
+      cdMins: pad(Math.floor(s / 60) % 60),
+      cdSecs: pad(s % 60),
+    };
+  }
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#ff7a33';
+    const accentColorLight = '#ffb37a';
+    const accentGlow = 'rgba(255,122,51,0.35)';
+    const isMobile = this.state.isMobile;
+    const isNarrow = this.state.isNarrow;
+    const rulesData = [
+      { title: 'Eligibility', body: 'Open to all registered players in their declared age category. Valid ID required at check-in; no exceptions on match day.' },
+      { title: 'Format', body: 'Single-elimination bracket seeded by ranking. Best of three sets, tiebreak at 6-6. Finals are best of five.' },
+      { title: 'Scoring', body: 'Standard scoring applies across all rounds. Disputed calls are reviewed by the on-court official only.' },
+      { title: 'Equipment', body: 'Players supply their own racquets and footwear. Tournament balls are provided and must be used for all matches.' },
+      { title: 'Conduct', body: 'Unsportsmanlike conduct results in point penalties, then disqualification. Respect the court, the crowd, and the opponent.' },
+      { title: 'Check-in', body: 'Players must check in 45 minutes before their scheduled match time. Late arrival forfeits the match.' },
+    ];
+    const rules = rulesData.map((r, i) => {
+      const open = this.state.openRule === i;
+      return {
+        num: String(i + 1).padStart(2, '0'),
+        title: r.title,
+        body: r.body,
+        open,
+        icon: open ? '\u2212' : '+',
+        toggle: () => this.toggleRule(i),
+      };
+    });
+    const stories = [
+      { slotId: 'news-s1', kicker: 'Community', title: 'Trials draw record entries in week one', href: 'Centre Court Article.dc.html' },
+      { slotId: 'news-s2', kicker: 'League', title: 'Eight franchises confirmed for the auction', href: 'Centre Court Article.dc.html' },
+      { slotId: 'news-s3', kicker: 'Format', title: 'How the seeded bracket works this season', href: 'Centre Court Article.dc.html' },
+    ];
+    return {
+      accentColor, accentColorLight, accentGlow, rules, stories,
+      ...this.countdown(),
+      newsSectionPadding: isMobile ? '8px 6vw 56px' : '16px 6vw 88px',
+      newsGridCols: isNarrow ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(320px,380px)',
+      cdPad: isMobile ? '22px 20px' : '28px 26px',
+      featureHeight: isMobile ? '280px' : '460px',
+      smallCardCols: isMobile ? 'minmax(0,1fr)' : 'repeat(3,minmax(0,1fr))',
+      smallCardHeight: isMobile ? '190px' : '240px',
+      championHeight: isMobile ? '142px' : '182px',
+      sectionPadding: isMobile ? '32px 6vw 48px' : '56px 6vw 72px',
+      topMetaMargin: isMobile ? '36px' : '52px',
+      headerGridCols: isMobile ? '1fr' : '1fr auto',
+      headerMargin: isMobile ? '28px' : '64px',
+      quoteMaxWidth: isMobile ? '100%' : '220px',
+      quoteAlign: isMobile ? 'left' : 'right',
+      introMargin: isMobile ? '36px' : '56px',
+      mainGridCols: isMobile ? '1fr' : '1fr 1fr',
+      mainGridGap: isMobile ? '20px' : '28px',
+      tileHeight: isMobile ? '440px' : '640px',
+      rulesHeight: isMobile ? 'auto' : '640px',
+      rulesPadTop: isMobile ? '24px' : '32px',
+      rulesPadX: isMobile ? '20px' : '32px',
+      rulesOverflow: isMobile ? 'visible' : 'hidden',
+      footerMargin: isMobile ? '40px' : '56px',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

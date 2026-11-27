@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:#ee3a24;}
+    a:hover{color:#ffffff;}
+    ::selection{background:#ee3a24;color:#0b0b0c;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes cc-fade-up{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes cc-slide-in{from{opacity:0;transform:translateX(-14px);}to{opacity:1;transform:translateX(0);}}
+    @keyframes cc-ring{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.4);opacity:0}}
+    .cc-in{opacity:0;animation:cc-fade-up .8s cubic-bezier(.16,1,.3,1) forwards;}
+    .cc-row{animation:cc-slide-in .45s cubic-bezier(.16,1,.3,1) both;}
+    .cc-tap{transition:transform .18s ease,opacity .18s ease,background .25s ease,border-color .25s ease,color .25s ease;}
+    .cc-tap:active{transform:scale(.97);}
+    .cc-team-btn:hover{border-color:rgba(255,255,255,0.55) !important;}
+    .cc-stream:hover .cc-play{transform:scale(1.08);background:#ee3a24 !important;}
+    .cc-play{transition:transform .3s ease,background .3s ease;}
+    @keyframes cc-glow{0%,100%{box-shadow:0 0 0 1px rgba(238,58,36,0.3),0 0 20px rgba(238,58,36,0.14);}50%{box-shadow:0 0 0 1px rgba(238,58,36,0.7),0 0 44px rgba(238,58,36,0.38);}}
+    .cc-glow{position:relative;opacity:0;animation:cc-fade-up .8s cubic-bezier(.16,1,.3,1) forwards,cc-glow 2.8s ease-in-out .8s infinite;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav" current="overview" hint-size="100%,146px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;padding:{{sectionPadding}};box-sizing:border-box;overflow:hidden;">
+
+  <div class="cc-in" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:{{topMetaMargin}};animation-delay:.05s;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="position:relative;display:flex;align-items:center;justify-content:center;width:10px;height:10px;">
+        <span style="position:absolute;inset:0;border-radius:50%;background:#ee3a24;animation:cc-ring 1.8s ease-out infinite;"></span>
+        <span style="position:relative;width:8px;height:8px;border-radius:50%;background:#ee3a24;"></span>
+      </span>
+      <span style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Live Auction / CCPL Hyderabad Season 2</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="padding:6px 14px;border:1px solid rgba(255,255,255,0.16);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Lot {{lotNo}} of {{lotTotal}}</span>
+      <span style="padding:6px 14px;border:1px solid rgba(255,255,255,0.16);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);">{{watching}} watching</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:20px;margin-bottom:{{headerMargin}};">
+    <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(52px,8vw,132px);line-height:0.86;margin:0;text-transform:uppercase;">
+      On The<br>Block.
+    </h1>
+    <p class="cc-in" style="margin:0;max-width:{{introMaxWidth}};font-size:16px;line-height:1.65;color:rgba(255,255,255,0.6);animation-delay:.3s;">
+      Every bid, as it lands. Call the closing price and the badge before the hammer drops.
+    </p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{mainGridCols}};gap:{{gridGap}};align-items:start;">
+
+    <div style="display:flex;flex-direction:column;gap:{{gridGap}};min-width:0;">
+
+      <div class="cc-in" style="position:relative;border:1px solid rgba(255,255,255,0.16);background:#0e0e0f;animation-delay:.35s;">
+        <div style="display:grid;grid-template-columns:{{lotGridCols}};">
+          <div style="position:relative;height:{{lotPhotoHeight}};min-width:0;overflow:hidden;background:#141415;">
+            <image-slot id="{{player.slotId}}" shape="rect" placeholder="Drop the player photo" style="width:100%;height:100%;"></image-slot>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,12,0) 55%,rgba(11,11,12,0.9) 100%);pointer-events:none;"></div>
+            <span style="position:absolute;top:16px;left:16px;padding:6px 12px;background:#ee3a24;font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#fff;">{{lotState}}</span>
+            <span style="position:absolute;bottom:16px;left:16px;font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:44px;line-height:1;color:rgba(255,255,255,0.28);">{{lotNoPadded}}</span>
+          </div>
+
+          <div style="padding:{{lotPad}};display:flex;flex-direction:column;min-width:0;">
+            <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);">{{player.category}}</span>
+            <h2 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(38px,4.4vw,62px);line-height:0.9;margin:12px 0 0;text-transform:uppercase;">{{player.name}}</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+              <sc-for list="{{player.tags}}" as="tag" hint-placeholder-count="3">
+                <span style="padding:6px 12px;border:1px solid rgba(255,255,255,0.16);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.65);">{{tag}}</span>
+              </sc-for>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.12);margin-top:24px;">
+              <sc-for list="{{player.stats}}" as="stat" hint-placeholder-count="3">
+                <div style="background:#0e0e0f;padding:14px 12px;">
+                  <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:28px;line-height:1;">{{stat.value}}</div>
+                  <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:7px;">{{stat.label}}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="flex:1;min-height:22px;"></div>
+
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:22px;border-top:1px solid rgba(255,255,255,0.12);">
+              <div>
+                <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);">{{bidLabel}}</div>
+                <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(40px,5vw,64px);line-height:0.92;color:#ee3a24;margin-top:8px;">{{bidText}}</div>
+                <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-top:8px;">{{leaderText}}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Base price</div>
+                <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:32px;line-height:1;margin-top:8px;color:rgba(255,255,255,0.75);">{{baseText}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{sold}}" hint-placeholder-val="{{false}}">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 24px;background:#ee3a24;">
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:22px;letter-spacing:0.06em;text-transform:uppercase;color:#fff;">{{soldHeadline}}</span>
+            <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.85);">{{soldSub}}</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div class="cc-in" style="border:1px solid rgba(255,255,255,0.16);background:#0e0e0f;animation-delay:.45s;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.12);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:6px;height:6px;border-radius:50%;background:#ee3a24;animation:cc-pulse 1.6s ease-in-out infinite;"></div>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:20px;letter-spacing:0.04em;text-transform:uppercase;">Live Bid Feed</span>
+          </div>
+          <span style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);">{{feedCount}} bids this lot</span>
+        </div>
+        <div style="max-height:{{feedHeight}};overflow-y:auto;">
+          <sc-for list="{{feed}}" as="bid" hint-placeholder-count="5">
+            <div class="cc-row" style="display:grid;grid-template-columns:{{feedRowCols}};align-items:center;gap:14px;padding:15px 24px;border-bottom:1px solid rgba(255,255,255,0.07);">
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:15px;color:{{bid.markColor}};">{{bid.mark}}</span>
+              <span style="font-size:13px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:{{bid.teamColor}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{bid.team}}</span>
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:22px;color:#fff;text-align:right;">{{bid.amount}}</span>
+              <span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);text-align:right;white-space:nowrap;">{{bid.ago}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="cc-in" style="border:1px solid rgba(255,255,255,0.16);background:#0e0e0f;animation-delay:.55s;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.12);">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:20px;letter-spacing:0.04em;text-transform:uppercase;">Prediction Leaderboard</span>
+          <span style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);">Auction night</span>
+        </div>
+        <sc-for list="{{leaders}}" as="row" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:{{leaderRowCols}};align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,0.07);background:{{row.bg}};">
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:15px;color:{{row.rankColor}};">{{row.rank}}</span>
+            <span style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{row.name}}</span>
+            <span style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);text-align:right;white-space:nowrap;">{{row.hits}}</span>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:20px;color:#fff;text-align:right;">{{row.points}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:{{gridGap}};min-width:0;">
+
+      <a href="{{streamHref}}" class="cc-stream cc-tap cc-in" style="position:relative;display:block;height:{{streamHeight}};border:1px solid rgba(255,255,255,0.16);text-decoration:none;color:#fff;overflow:hidden;animation-delay:.4s;">
+        <image-slot id="auction-stream-still" shape="rect" placeholder="Drop a stream still" style="width:100%;height:100%;"></image-slot>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,12,0.35) 0%,rgba(11,11,12,0.9) 100%);"></div>
+        <span style="position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:8px;padding:6px 12px;background:#ee3a24;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:cc-pulse 1.4s ease-in-out infinite;"></span>Live
+        </span>
+        <div class="cc-play" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+          <span style="margin-left:4px;border-left:16px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;"></span>
+        </div>
+        <div style="position:absolute;left:20px;right:20px;bottom:18px;">
+          <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;text-transform:uppercase;">Watch The Auction</div>
+          <div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-top:8px;">Open the live stream &rarr;</div>
+        </div>
+      </a>
+
+      <div class="cc-glow" style="border:1px solid rgba(238,58,36,0.45);background:#0e0e0f;padding:{{panelPad}};overflow:hidden;animation-delay:.5s;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;">
+          <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Your call</span>
+          <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#ee3a24;">{{predStatus}}</span>
+        </div>
+        <h3 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:30px;line-height:0.95;margin:0 0 6px;text-transform:uppercase;">Predict The Hammer</h3>
+        <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.5);">{{predBlurb}}</p>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:22px;border:1px solid rgba(255,255,255,0.14);background:#0b0b0c;">
+          <span style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);">{{predClockLabel}}</span>
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:30px;line-height:1;color:{{clockColor}};">{{predClockText}}</span>
+        </div>
+
+        <sc-if value="{{showForm}}" hint-placeholder-val="{{true}}">
+          <div>
+            <div style="opacity:{{priceOpacity}};transition:opacity .25s ease;">
+            <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:10px;">{{priceLabel}}</div>
+            <div style="display:flex;align-items:stretch;border:1px solid rgba(255,255,255,0.2);background:#0b0b0c;">
+              <button type="button" onClick="{{decAmount}}" class="cc-tap" style="width:48px;background:none;border:none;border-right:1px solid rgba(255,255,255,0.14);color:#fff;font-size:22px;cursor:pointer;">&minus;</button>
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:14px 8px;font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:34px;line-height:1;color:#fff;">{{predAmountText}}</div>
+              <button type="button" onClick="{{incAmount}}" class="cc-tap" style="width:48px;background:none;border:none;border-left:1px solid rgba(255,255,255,0.14);color:#fff;font-size:22px;cursor:pointer;">+</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-top:8px;">
+              <span>Steps of {{stepText}}</span>
+              <span>Live {{bidText}}</span>
+            </div>
+            </div>
+
+            <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin:24px 0 10px;">Winning franchise</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+              <sc-for list="{{teamChoices}}" as="t" hint-placeholder-count="8">
+                <button type="button" onClick="{{t.select}}" class="cc-team-btn cc-tap" style="grid-column:{{t.span}};min-height:46px;padding:12px 10px;border:1px solid {{t.border}};background:{{t.bg}};color:{{t.color}};font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{t.name}}</button>
+              </sc-for>
+            </div>
+
+            <button type="button" onClick="{{submitPrediction}}" class="cc-tap" style="width:100%;margin-top:22px;padding:17px 20px;border:none;background:{{submitBg}};color:{{submitColor}};font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:15px;letter-spacing:0.1em;text-transform:uppercase;cursor:{{submitCursor}};">{{submitLabel}}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{locked}}" hint-placeholder-val="{{false}}">
+          <div>
+            <div style="border:1px solid rgba(255,255,255,0.16);background:#0b0b0c;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.1);">
+                <span style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.45);">You called</span>
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:30px;line-height:1;color:#ee3a24;">{{lockedAmount}}</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;">
+                <span style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.45);">{{lockedTeamLabel}}</span>
+                <span style="font-size:14px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#fff;">{{lockedTeam}}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.45);">
+              <span>{{lockedDelta}}</span>
+              <button type="button" onClick="{{editPrediction}}" class="cc-tap" style="background:none;border:none;padding:0;font-family:'Montserrat',sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#ee3a24;cursor:pointer;text-decoration:underline;">{{editLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showResult}}" hint-placeholder-val="{{false}}">
+          <div style="border:1px solid {{resultBorder}};background:{{resultBg}};padding:20px;">
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;text-transform:uppercase;color:{{resultColor}};">{{resultTitle}}</div>
+            <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.7);">{{resultBody}}</p>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <span style="padding:7px 12px;border:1px solid rgba(255,255,255,0.2);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.7);">{{resultPoints}}</span>
+              <span style="padding:7px 12px;border:1px solid rgba(255,255,255,0.2);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.7);">Next lot in {{nextIn}}</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div class="cc-in" style="border:1px solid rgba(255,255,255,0.16);background:#0e0e0f;animation-delay:.6s;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.12);">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:20px;letter-spacing:0.04em;text-transform:uppercase;">Up Next</span>
+          <span style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);">Queue</span>
+        </div>
+        <sc-for list="{{queue}}" as="q" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 22px;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:15px;color:rgba(255,255,255,0.3);">{{q.num}}</span>
+              <div style="min-width:0;">
+                <div style="font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{q.name}}</div>
+                <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-top:5px;">{{q.category}}</div>
+              </div>
+            </div>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:17px;color:rgba(255,255,255,0.6);white-space:nowrap;">{{q.base}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div class="cc-in" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:{{footerMargin}};animation-delay:.8s;">
+    <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.35);">Predictions lock the moment the hammer falls.</span>
+    <a href="Centre Court Teams.dc.html" style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.55);text-decoration:underline;">See all eight franchises</a>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1100},&quot;streamHref&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;#&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  teams = ['Team One','Team Two','Team Three','Team Four','Team Five','Team Six','Team Seven','Team Eight'];
+
+  players = [
+    { name: 'Player One', slotId: 'auction-player-01', category: 'Marquee / Singles', base: 100000,
+      tags: ['Right hand', 'Baseline', 'Seed 02'],
+      stats: [{value:'18-3',label:'W-L S1'},{value:'71%',label:'1st serve'},{value:'4',label:'Titles'}] },
+    { name: 'Player Two', slotId: 'auction-player-02', category: 'Marquee / Doubles', base: 75000,
+      tags: ['Left hand', 'Net play', 'Seed 05'],
+      stats: [{value:'15-6',label:'W-L S1'},{value:'64%',label:'1st serve'},{value:'2',label:'Titles'}] },
+    { name: 'Player Three', slotId: 'auction-player-03', category: 'Open / Singles', base: 50000,
+      tags: ['Right hand', 'All court', 'Unseeded'],
+      stats: [{value:'12-8',label:'W-L S1'},{value:'59%',label:'1st serve'},{value:'1',label:'Titles'}] },
+    { name: 'Player Four', slotId: 'auction-player-04', category: 'Open / Singles', base: 50000,
+      tags: ['Right hand', 'Big serve', 'Seed 09'],
+      stats: [{value:'10-9',label:'W-L S1'},{value:'76%',label:'1st serve'},{value:'0',label:'Titles'}] },
+  ];
+
+  step = 25000;
+
+  state = {
+    idx: 0,
+    bid: 0,
+    leader: null,
+    feed: [],
+    secs: 24,
+    sold: false,
+    soldIn: 8,
+    predAmount: null,
+    predTeam: null,
+    locked: false,
+    result: null,
+    watching: 1284,
+    now: Date.now(),
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+    isNarrow: typeof window !== 'undefined' && window.innerWidth < 1150,
+  };
+
+  componentDidMount() {
+    const p = this.players[0];
+    this.setState({ bid: p.base, predAmount: p.base + this.step * 4 });
+    window.addEventListener('resize', this.updateSize);
+    this._tick = setInterval(this.tick, 1000);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateSize);
+    clearInterval(this._tick);
+  }
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    const isNarrow = window.innerWidth < 1150;
+    this.setState(s => (s.isMobile === isMobile && s.isNarrow === isNarrow ? null : { isMobile, isNarrow }));
+  };
+
+  tick = () => {
+    this.setState(s => {
+      const now = Date.now();
+      const watching = Math.max(900, s.watching + Math.round((Math.random() - 0.45) * 14));
+      if (s.sold) {
+        if (s.soldIn <= 1) return this.nextLot(s);
+        return { soldIn: s.soldIn - 1, now, watching };
+      }
+      const bidChance = s.feed.length === 0 ? 0.8 : 0.34;
+      if (s.secs > 3 && Math.random() < bidChance) {
+        const team = this.teams[Math.floor(Math.random() * this.teams.length)];
+        const jump = this.step * (Math.random() < 0.75 ? 1 : 2);
+        const bid = (s.feed.length === 0 ? this.players[s.idx].base : s.bid) + jump;
+        const feed = [{ team, amount: bid, at: now }].concat(s.feed).slice(0, 12);
+        return { bid, leader: team, feed, secs: 18, now, watching };
+      }
+      if (s.secs <= 1) return { sold: true, soldIn: 8, secs: 0, now, watching };
+      return { secs: s.secs - 1, now, watching };
+    });
+  };
+
+  nextLot(s) {
+    const idx = (s.idx + 1) % this.players.length;
+    return {
+      idx, bid: this.players[idx].base, leader: null, feed: [], secs: 24,
+      sold: false, soldIn: 8, locked: false, result: null,
+      predAmount: this.players[idx].base + this.step * 4, predTeam: null,
+      now: Date.now(),
+    };
+  }
+
+  money(n) { return '\u20B9' + Number(n).toLocaleString('en-IN'); }
+
+  ago(t, now) {
+    const s = Math.max(0, Math.round((now - t) / 1000));
+    return s < 5 ? 'Just now' : s + 's ago';
+  }
+
+  incAmount = () => this.setState(s => ({ predAmount: s.predAmount + this.step }));
+  decAmount = () => this.setState(s => ({ predAmount: Math.max(this.players[s.idx].base, s.predAmount - this.step) }));
+  selectTeam = (t) => this.setState({ predTeam: t });
+  submitPrediction = () => this.setState(s => (s.predTeam ? { locked: true } : null));
+  editPrediction = () => this.setState(s => (s.sold ? null : { locked: false }));
+
+  renderVals() {
+    const s = this.state;
+    const p = this.players[s.idx];
+    const isMobile = s.isMobile, isNarrow = s.isNarrow;
+    const hasBid = s.feed.length > 0;
+
+    const teamChoices = this.teams.concat(['Unsold']).map(name => {
+      const on = s.predTeam === name;
+      const isUnsold = name === 'Unsold';
+      return {
+        name: isUnsold ? 'Unsold \u2014 5 pts' : name,
+        select: () => this.selectTeam(name),
+        span: isUnsold ? 'span 2' : 'auto',
+        bg: on ? '#ee3a24' : '#0b0b0c',
+        border: on ? '#ee3a24' : isUnsold ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.18)',
+        color: on ? '#fff' : 'rgba(255,255,255,0.72)',
+      };
+    });
+
+    const feed = s.feed.map((b, i) => ({
+      team: b.team,
+      amount: this.money(b.amount),
+      ago: this.ago(b.at, s.now),
+      mark: i === 0 ? '\u25B2' : String(s.feed.length - i).padStart(2, '0'),
+      markColor: i === 0 ? '#ee3a24' : 'rgba(255,255,255,0.3)',
+      teamColor: i === 0 ? '#fff' : 'rgba(255,255,255,0.6)',
+    }));
+
+    const leaderRows = [
+      { name: 'R. Venkat', hits: '9 of 12', points: '860' },
+      { name: 'Anaya S.', hits: '8 of 12', points: '815' },
+      { name: 'You', hits: '7 of 12', points: '770', you: true },
+      { name: 'K. Bose', hits: '7 of 12', points: '742' },
+      { name: 'Mehul D.', hits: '6 of 12', points: '690' },
+    ].map((r, i) => ({
+      ...r,
+      rank: String(i + 1).padStart(2, '0'),
+      rankColor: i === 0 ? '#ee3a24' : 'rgba(255,255,255,0.3)',
+      bg: r.you ? 'rgba(238,58,36,0.08)' : 'transparent',
+    }));
+
+    const queue = this.players
+      .map((pl, i) => ({ pl, i }))
+      .filter(x => x.i !== s.idx)
+      .slice(0, 3)
+      .map(x => ({ num: String(x.i + 1).padStart(2, '0'), name: x.pl.name, category: x.pl.category, base: this.money(x.pl.base) }));
+
+    let result = null;
+    if (s.sold && s.locked && !s.leader) {
+      const hit = s.predTeam === 'Unsold';
+      result = {
+        title: hit ? 'Called it.' : 'Missed.',
+        body: hit
+          ? p.name + ' drew no bids and returns to the pool, as you called.'
+          : p.name + ' drew no bids and returns to the pool. You called ' + s.predTeam + '.',
+        points: hit ? '+5 pts' : '+0 pts',
+        border: hit ? '#ee3a24' : 'rgba(255,255,255,0.18)',
+        bg: hit ? 'rgba(238,58,36,0.1)' : '#0b0b0c',
+        color: hit ? '#ee3a24' : '#fff',
+      };
+    } else if (s.sold && s.locked && s.leader && s.predTeam === 'Unsold') {
+      result = {
+        title: 'Missed.',
+        body: s.leader + ' took the lot at ' + this.money(s.bid) + '. You called it unsold.',
+        points: '+0 pts',
+        border: 'rgba(255,255,255,0.18)',
+        bg: '#0b0b0c',
+        color: '#fff',
+      };
+    } else if (s.sold && s.locked && s.leader) {
+      const teamHit = s.predTeam === s.leader;
+      const diff = Math.abs(s.predAmount - s.bid);
+      const close = diff <= this.step * 2;
+      result = {
+        title: teamHit && close ? 'Called it.' : teamHit ? 'Right badge.' : close ? 'Right price.' : 'Missed.',
+        body: (teamHit ? s.leader + ' took the lot, as you called. ' : s.leader + ' took the lot instead of ' + s.predTeam + '. ')
+          + 'Hammer at ' + this.money(s.bid) + ', you called ' + this.money(s.predAmount) + ' \u2014 ' + this.money(diff) + ' out.',
+        points: '+' + ((teamHit ? 60 : 0) + (close ? 40 : diff <= this.step * 4 ? 15 : 0)) + ' pts',
+        border: teamHit ? '#ee3a24' : 'rgba(255,255,255,0.18)',
+        bg: teamHit ? 'rgba(238,58,36,0.1)' : '#0b0b0c',
+        color: teamHit ? '#ee3a24' : '#fff',
+      };
+    }
+
+    const showResult = !!result;
+    const locked = s.locked && !showResult;
+    const showForm = !s.locked && !showResult;
+
+    const mm = Math.floor(s.secs / 60), ss = s.secs % 60;
+
+    return {
+      player: p,
+      lotNo: String(s.idx + 1),
+      lotNoPadded: String(s.idx + 1).padStart(2, '0'),
+      lotTotal: String(this.players.length),
+      lotState: s.sold ? 'Sold' : hasBid ? 'Bidding' : 'Opening',
+      watching: s.watching.toLocaleString('en-IN'),
+      bidLabel: s.sold ? 'Hammer price' : hasBid ? 'Current bid' : 'Base price',
+      bidText: this.money(s.bid),
+      baseText: this.money(p.base),
+      leaderText: s.leader ? 'Leading \u2014 ' + s.leader : 'No bids yet',
+      clockText: s.sold ? '\u2014' : mm + ':' + String(ss).padStart(2, '0'),
+      clockColor: !s.sold && s.secs <= 5 ? '#ee3a24' : '#fff',
+      sold: s.sold,
+      soldHeadline: s.leader ? p.name + ' \u2014 Sold to ' + s.leader : p.name + ' \u2014 Unsold',
+      soldSub: s.leader ? 'Hammer ' + this.money(s.bid) + ' / next lot in ' + s.soldIn + 's' : 'Returns to the pool / next lot in ' + s.soldIn + 's',
+      nextIn: s.soldIn + 's',
+      feed,
+      feedCount: String(s.feed.length),
+      leaders: leaderRows,
+      queue,
+      teamChoices,
+      predAmountText: this.money(s.predAmount || p.base),
+      stepText: this.money(this.step),
+      predStatus: showResult ? 'Result' : s.locked ? 'Locked' : s.sold ? 'Closed' : 'Open',
+      predBlurb: showResult
+        ? 'Lot settled. Points go straight to the leaderboard.'
+        : s.locked
+          ? 'Your call is in. You can change it until the hammer falls.'
+          : 'Set a closing price and pick the franchise. Exact badge scores 60, price within ' + this.money(this.step * 2) + ' scores 40. Calling it unsold scores 5.',
+      showForm, locked, showResult,
+      predClockLabel: s.sold ? 'Next lot in' : 'Predictions close in',
+      predClockText: s.sold ? s.soldIn + 's' : mm + ':' + String(ss).padStart(2, '0'),
+      submitBg: s.predTeam ? '#ee3a24' : 'rgba(255,255,255,0.1)',
+      submitColor: s.predTeam ? '#fff' : 'rgba(255,255,255,0.4)',
+      submitCursor: s.predTeam ? 'pointer' : 'not-allowed',
+      submitLabel: s.predTeam ? 'Lock in prediction' : 'Pick a franchise',
+      submitPrediction: this.submitPrediction,
+      editPrediction: this.editPrediction,
+      incAmount: this.incAmount,
+      decAmount: this.decAmount,
+      priceOpacity: s.predTeam === 'Unsold' ? 0.35 : 1,
+      priceLabel: s.predTeam === 'Unsold' ? 'Closing price \u2014 not counted' : 'Closing price',
+      lockedAmountLabel: s.predTeam === 'Unsold' ? 'You called' : 'You called',
+      lockedAmount: s.predTeam === 'Unsold' ? 'No sale' : this.money(s.predAmount || p.base),
+      lockedTeamLabel: s.predTeam === 'Unsold' ? 'Outcome' : 'To',
+      lockedTeam: s.predTeam === 'Unsold' ? 'Back to the pool' : (s.predTeam || '\u2014'),
+      lockedDelta: s.predTeam === 'Unsold'
+        ? '5 pts if the lot draws no bids'
+        : s.leader
+          ? (s.predAmount > s.bid ? this.money(s.predAmount - s.bid) + ' above the live bid' : this.money(s.bid - s.predAmount) + ' below the live bid')
+          : 'Bidding has not opened',
+      editLabel: s.sold ? 'Locked' : 'Change',
+      resultTitle: result ? result.title : '',
+      resultBody: result ? result.body : '',
+      resultPoints: result ? result.points : '',
+      resultBorder: result ? result.border : 'rgba(255,255,255,0.18)',
+      resultBg: result ? result.bg : '#0b0b0c',
+      resultColor: result ? result.color : '#fff',
+      streamHref: this.props.streamHref ?? '#',
+      sectionPadding: isMobile ? '32px 6vw 56px' : '56px 6vw 88px',
+      topMetaMargin: isMobile ? '32px' : '48px',
+      headerGridCols: isMobile ? '1fr' : '1fr 340px',
+      headerMargin: isMobile ? '32px' : '56px',
+      introMaxWidth: isMobile ? '100%' : '340px',
+      mainGridCols: isNarrow ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(340px,400px)',
+      gridGap: isMobile ? '18px' : '24px',
+      lotGridCols: isMobile ? '1fr' : 'minmax(0,300px) minmax(0,1fr)',
+      lotPhotoHeight: isMobile ? '260px' : '100%',
+      lotPad: isMobile ? '24px 20px' : '30px 32px',
+      feedHeight: isMobile ? '320px' : '392px',
+      feedRowCols: isMobile ? '24px minmax(0,1fr) auto auto' : '28px minmax(0,1fr) auto 72px',
+      leaderRowCols: isMobile ? '24px minmax(0,1fr) auto auto' : '28px minmax(0,1fr) auto 64px',
+      streamHeight: isMobile ? '200px' : '240px',
+      panelPad: isMobile ? '22px 20px' : '28px 26px',
+      footerMargin: isMobile ? '40px' : '56px',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

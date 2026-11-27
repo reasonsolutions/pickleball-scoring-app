@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;}
+    a:hover{color:#0b0b0c;}
+    input::placeholder,textarea::placeholder{color:#8a857a;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="passes" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Passes Header" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(56px,7vw,96px) 6vw calc(5vw + clamp(56px,7vw,96px));overflow:hidden;">
+  <div style="position:absolute;right:-1vw;bottom:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,32vw,520px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.14);">PASS</div>
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div style="position:relative;max-width:1400px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:28px 48px;">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <span style="display:inline-flex;width:fit-content;flex:none;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">CCPL Hyderabad / Season 2</span></span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.8);white-space:nowrap;">Match Passes</span>
+      </div>
+      <h1 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,10vw,160px);line-height:.84;letter-spacing:-.01em;">Request a <span style="color:#e27b46;">Pass.</span></h1>
+    </div>
+    <p style="position:relative;margin:0;max-width:420px;font-size:16px;font-weight:500;line-height:1.6;color:#e8e8e8;border-left:4px solid #e27b46;padding-left:16px;background:rgba(11,11,12,.6);text-wrap:pretty;">Pick a team that has invited you. You'll receive your pass once the team admin approves your request.</p>
+  </div>
+</section>
+
+<section data-screen-label="Pass Form" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;margin-top:-5vw;padding:calc(5vw + clamp(40px,5vw,64px)) 6vw calc(5vw + clamp(64px,8vw,110px));clip-path:polygon(0 5vw,100% 0,100% 100%,0 100%);">
+  <div style="max-width:820px;margin:0 auto;">
+
+    <sc-if value="{{submitted}}" hint-placeholder-val="{{false}}">
+      <div style="position:relative;overflow:hidden;border:2px solid #0b0b0c;background:#0b0b0c;color:#ffffff;padding:clamp(32px,5vw,56px);display:flex;flex-direction:column;align-items:flex-start;gap:16px;">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:8px;background:#e27b46;"></span>
+        <span style="display:inline-flex;transform:skewX(-14deg);background:#e27b46;padding:6px 14px;"><span style="transform:skewX(14deg);font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;">Request Sent</span></span>
+        <p style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(44px,6vw,72px);line-height:.88;text-transform:uppercase;">Thanks, <span style="color:#e27b46;">{{firstName}}.</span></p>
+        <p style="margin:0;font-size:15px;font-weight:500;line-height:1.6;color:#e8e8e8;max-width:46ch;">Your request has gone to the {{form.team}} admin. They'll reach you at {{form.email}} or {{form.phone}}.</p>
+        <button type="button" onClick="{{reset}}" style="margin-top:10px;display:inline-flex;transform:skewX(-14deg);background:#ffffff;color:#0b0b0c;border:0;padding:12px 22px;cursor:pointer;transition:background .2s ease;" style-hover="background:#e27b46">
+          <span style="transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:19px;letter-spacing:.05em;text-transform:uppercase;">Send another request</span>
+        </button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{notSubmitted}}" hint-placeholder-val="{{true}}">
+      <form onSubmit="{{handleSubmit}}" style="border:2px solid #0b0b0c;background:#ffffff;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px clamp(20px,3vw,32px);background:#0b0b0c;color:#ffffff;">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:1;letter-spacing:.04em;text-transform:uppercase;">Pass Request</span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;">All fields required</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:26px;padding:clamp(24px,4vw,40px) clamp(20px,3vw,32px);">
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">
+            Full Name
+            <input required="" name="name" placeholder="Your name" value="{{form.name}}" onChange="{{onField}}" style="background:#f2f0ea;border:2px solid #0b0b0c;color:#0b0b0c;font-family:'Montserrat',sans-serif;font-weight:600;font-size:16px;padding:14px 16px;outline:none;border-radius:0;letter-spacing:normal;text-transform:none;" style-focus="border-color:#e27b46;background:#ffffff"/>
+          </label>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px 20px;">
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">
+              Phone Number
+              <input required="" type="tel" name="phone" placeholder="+91 90000 00000" value="{{form.phone}}" onChange="{{onField}}" style="background:#f2f0ea;border:2px solid #0b0b0c;color:#0b0b0c;font-family:'Montserrat',sans-serif;font-weight:600;font-size:16px;padding:14px 16px;outline:none;border-radius:0;letter-spacing:normal;text-transform:none;" style-focus="border-color:#e27b46;background:#ffffff"/>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">
+              Email
+              <input required="" type="email" name="email" placeholder="you@email.com" value="{{form.email}}" onChange="{{onField}}" style="background:#f2f0ea;border:2px solid #0b0b0c;color:#0b0b0c;font-family:'Montserrat',sans-serif;font-weight:600;font-size:16px;padding:14px 16px;outline:none;border-radius:0;letter-spacing:normal;text-transform:none;" style-focus="border-color:#e27b46;background:#ffffff"/>
+            </label>
+          </div>
+
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">
+            Team
+            <select required="" name="team" value="{{form.team}}" onChange="{{onField}}" style="appearance:none;-webkit-appearance:none;background:#f2f0ea url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%230b0b0c' stroke-width='3'/%3E%3C/svg%3E&quot;) no-repeat right 16px center;border:2px solid #0b0b0c;color:{{teamColor}};font-family:'Montserrat',sans-serif;font-weight:600;font-size:16px;padding:14px 44px 14px 16px;outline:none;cursor:pointer;border-radius:0;letter-spacing:normal;text-transform:none;" style-focus="border-color:#e27b46">
+              <option value="" disabled="">Select a team</option>
+              <sc-for list="{{teams}}" as="t" hint-placeholder-count="8">
+                <option value="{{t}}">{{t}}</option>
+              </sc-for>
+            </select>
+          </label>
+
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">
+            Message to Team Admin
+            <textarea required="" name="message" rows="5" placeholder="Which match, how many passes, anything the admin should know" value="{{form.message}}" onChange="{{onField}}" style="background:#f2f0ea;border:2px solid #0b0b0c;color:#0b0b0c;font-family:'Montserrat',sans-serif;font-weight:500;font-size:15px;line-height:1.5;padding:14px 16px;outline:none;resize:vertical;border-radius:0;letter-spacing:normal;text-transform:none;" style-focus="border-color:#e27b46;background:#ffffff"></textarea>
+          </label>
+
+          <sc-if value="{{hasError}}" hint-placeholder-val="{{false}}">
+            <p style="margin:0;font-size:13px;font-weight:700;color:#b3361b;">{{error}}</p>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;padding:18px clamp(20px,3vw,32px);border-top:2px solid #0b0b0c;background:#f2f0ea;">
+          <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5f5b52;">Passes are subject to team availability.</span>
+          <button type="submit" style="display:inline-flex;transform:skewX(-14deg);background:#0b0b0c;color:#ffffff;border:0;padding:14px 28px;cursor:pointer;transition:background .2s ease,color .2s ease;" style-hover="background:#e27b46;color:#0b0b0c">
+            <span style="display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.05em;text-transform:uppercase;">Submit request
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+            </span>
+          </button>
+        </div>
+      </form>
+    </sc-if>
+
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  empty = { name: '', phone: '', email: '', team: '', message: '' };
+  state = { form: { ...this.empty }, submitted: false, error: '' };
+  onField = (e) => { const { name, value } = e.target; this.setState(s => ({ form: { ...s.form, [name]: value }, error: '' })); };
+  handleSubmit = (e) => {
+    e.preventDefault();
+    if (Object.values(this.state.form).some(v => !v.trim())) return this.setState({ error: 'Please fill in every field.' });
+    this.setState({ submitted: true });
+  };
+  reset = () => this.setState({ form: { ...this.empty }, submitted: false, error: '' });
+  renderVals() {
+    const { form, submitted, error } = this.state;
+    return {
+      form, submitted, notSubmitted: !submitted, error, hasError: !!error,
+      firstName: form.name.trim().split(' ')[0],
+      teams: ['Team One','Team Two','Team Three','Team Four','Team Five','Team Six','Team Seven','Team Eight'],
+      teamColor: form.team ? '#0b0b0c' : '#8a857a',
+      onField: this.onField, handleSubmit: this.handleSubmit, reset: this.reset,
+    };
+  }
+}
+</script>
+</body>
+</html>

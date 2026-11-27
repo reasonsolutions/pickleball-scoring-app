@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:{{accentColor}};}
+    a:hover{color:#ffffff;}
+    input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.35);}
+    ::selection{background:{{accentColor}};color:#0b0b0c;}
+    .cc-milestone:disabled{cursor:default;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="signup" hint-size="100%,158px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;min-height:100vh;box-sizing:border-box;padding:32px 6vw 96px;">
+
+  <div style="max-width:1280px;margin:0 auto 28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Season 2 &middot; Official Player Registration</span>
+      <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Reg window: 14&ndash;22 Aug 2026 &nbsp;|&nbsp; Auction: 5 Sep 2026</span>
+    </div>
+    <div style="position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.18);height:200px;">
+      <div style="position:absolute;inset:0;">
+        <image-slot id="signup-form-hero" shape="rect" placeholder="Drop a player action photo" src="uploads/test1.png"></image-slot>
+      </div>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.15),rgba(11,11,12,0.8) 75%,#0b0b0c 100%);pointer-events:none;"></div>
+      <div style="position:absolute;top:14px;left:14px;width:16px;height:16px;border-top:2px solid #fff;border-left:2px solid #fff;"></div>
+      <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid #fff;border-right:2px solid #fff;"></div>
+      <div style="position:absolute;left:28px;right:28px;bottom:22px;">
+        <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:normal;font-size:clamp(32px,4vw,48px);line-height:0.9;margin:0;text-transform:uppercase;">Claim Your Place.</h1>
+      </div>
+    </div>
+    <p style="max-width:760px;margin:16px 0 0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);">Submission of this form does not automatically confirm eligibility. All registrations are subject to verification and approval by the CCPL League Committee.</p>
+  </div>
+
+  <sc-if value="{{notSubmitted}}" hint-placeholder-val="{{true}}">
+    <div style="max-width:1280px;margin:0 auto 36px;overflow-x:auto;">
+      <div style="position:relative;min-width:760px;">
+        <div style="position:absolute;top:13px;left:0;right:0;height:2px;background:rgba(255,255,255,0.15);"></div>
+        <div style="position:absolute;top:13px;left:0;height:2px;background:{{accentColor}};width:{{progressWidth}};transition:width .3s ease;"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;">
+          <sc-for list="{{milestones}}" as="ms" hint-placeholder-count="12">
+            <button type="button" class="cc-milestone" onClick="{{ms.onClick}}" disabled="{{ms.disabled}}" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;padding:0;flex:0 0 auto;width:60px;cursor:{{ms.cursor}};">
+              <span style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:{{ms.bg}};color:{{ms.color}};border:2px solid {{ms.borderColor}};flex-shrink:0;box-sizing:border-box;">{{ms.display}}</span>
+              <span style="font-size:8.5px;letter-spacing:0.05em;text-transform:uppercase;color:{{ms.labelColor}};text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;">{{ms.label}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{submitted}}" hint-placeholder-val="{{false}}">
+    <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:14px;border:1px solid rgba(255,255,255,0.18);padding:56px;">
+      <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:{{accentColor}};">Registration Received</span>
+      <p style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:normal;font-size:44px;line-height:1;margin:0;text-transform:uppercase;">You're On<br>The List.</p>
+      <p style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.55);max-width:420px;">Check your email for confirmation. The League Committee will verify your eligibility and residency documentation before the Auction on 5 September 2026.</p>
+      <a href="Centre Court Signup v2.dc.html" style="margin-top:12px;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;text-decoration:underline;">Back to overview</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{notSubmitted}}" hint-placeholder-val="{{true}}">
+    <form onSubmit="{{handleSubmit}}" style="max-width:760px;margin:0 auto;border:1px solid rgba(255,255,255,0.18);padding:40px 5vw;display:flex;flex-direction:column;gap:22px;box-sizing:border-box;">
+
+      <div>
+        <span style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:{{accentColor}};">Section {{stepNumDisplay}} / 12</span>
+        <h2 style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:26px;margin:6px 0 2px;text-transform:uppercase;letter-spacing:0.01em;">{{currentTitle}}</h2>
+        <sc-if value="{{currentSub}}" hint-placeholder-val="{{false}}">
+          <p style="margin:0;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,0.45);">{{currentSub}}</p>
+        </sc-if>
+      </div>
+
+      <!-- STEP 1: PLAYER INFORMATION -->
+      <sc-if value="{{isStep0}}" hint-placeholder-val="{{true}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Full Name
+            <input required="" name="fullName" placeholder="Michael Kohli" value="{{form.fullName}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Name as you would like it displayed by CCPL
+            <input name="displayName" placeholder="M. Kohli" value="{{form.displayName}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;">Date of Birth</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input name="dobDay" placeholder="DD" maxlength="2" value="{{form.dobDay}}" onChange="{{onField}}" style="width:52px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;text-align:center;"/>
+              <span style="color:rgba(255,255,255,0.3);">/</span>
+              <input name="dobMonth" placeholder="MM" maxlength="2" value="{{form.dobMonth}}" onChange="{{onField}}" style="width:52px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;text-align:center;"/>
+              <span style="color:rgba(255,255,255,0.3);">/</span>
+              <input name="dobYear" placeholder="YYYY" maxlength="4" value="{{form.dobYear}}" onChange="{{onField}}" style="width:70px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;text-align:center;"/>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Gender</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{genderOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;">
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+              WhatsApp Number
+              <input required="" type="tel" name="whatsapp" placeholder="+91 90000 00000" value="{{form.whatsapp}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+              Email Address
+              <input required="" type="email" name="email" placeholder="you@email.com" value="{{form.email}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+            </label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            City of Current Residence
+            <input required="" name="city" placeholder="Hyderabad" value="{{form.city}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Current Residential Address
+            <textarea name="currentAddress" rows="2" placeholder="Flat / street / area / pincode" value="{{form.currentAddress}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Permanent Address
+            <textarea name="permanentAddress" rows="2" placeholder="Flat / street / area / pincode" value="{{form.permanentAddress}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+        </div>
+      </sc-if>
+
+      <!-- STEP 2: PLAYER IDENTITY -->
+      <sc-if value="{{isStep1}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Government ID Type</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{idTypeOptions}}" as="opt" hint-placeholder-count="5">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{isGovIdOther}}" hint-placeholder-val="{{false}}">
+            <input name="govIdOther" placeholder="Specify ID type" value="{{form.govIdOther}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </sc-if>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Government ID Number
+            <input name="govIdNumber" placeholder="ID number" value="{{form.govIdNumber}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.3);padding:26px;cursor:pointer;text-align:center;">
+            <span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Upload Government ID &mdash; {{govIdFileLabel}}</span>
+            <input type="file" name="govIdFile" onChange="{{onFile}}" style="display:none;"/>
+          </label>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">The League may independently verify player identity and eligibility at any stage of the competition.</p>
+        </div>
+      </sc-if>
+
+      <!-- STEP 3: CCPL ELIGIBILITY -->
+      <sc-if value="{{isStep2}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);">How are you eligible to register for CCPL Hyderabad Season 2? Select ONE primary route.</p>
+          <div>
+            <sc-for list="{{eligibilityOptions}}" as="opt" hint-placeholder-count="3">
+              <button type="button" onClick="{{opt.onClick}}" style="display:block;width:100%;text-align:left;padding:18px 20px;margin-bottom:10px;background:{{opt.bg}};border:1px solid {{opt.borderColor}};cursor:pointer;">
+                <span style="display:block;font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;color:{{opt.color}};text-transform:uppercase;letter-spacing:0.03em;margin-bottom:4px;">{{opt.label}}</span>
+                <span style="display:block;font-size:13px;line-height:1.5;color:{{opt.descColor}};">{{opt.desc}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">The League regulations provide eligibility through prior participation or qualifying Hyderabad residency. Simply registering for CCPL Club League Season 1 without being selected does not independently establish eligibility.</p>
+        </div>
+      </sc-if>
+
+      <!-- STEP 4: RESIDENCY VERIFICATION -->
+      <sc-if value="{{isStep3}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <p style="margin:0;font-size:12.5px;color:rgba(255,255,255,0.45);font-style:italic;">Complete this section ONLY if registering through Hyderabad Residency.</p>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Are you currently ordinarily residing in Hyderabad?</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{residingOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;">Since when have you been residing in Hyderabad?</span>
+            <div style="display:flex;gap:12px;">
+              <input name="residingSinceMonth" placeholder="Month" value="{{form.residingSinceMonth}}" onChange="{{onField}}" style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+              <input name="residingSinceYear" placeholder="Year" value="{{form.residingSinceYear}}" onChange="{{onField}}" style="flex:1;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Basis of Hyderabad Residency</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{basisOptions}}" as="opt" hint-placeholder-count="6">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{isBasisOther}}" hint-placeholder-val="{{false}}">
+            <input name="residencyBasisOther" placeholder="Specify basis" value="{{form.residencyBasisOther}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </sc-if>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:6px;">Residency Document</span>
+            <p style="margin:0 0 10px;font-size:12.5px;color:rgba(255,255,255,0.4);">Select one or more documents establishing your Hyderabad residency.</p>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{residencyDocList}}" as="d" hint-placeholder-count="9">
+                <label style="display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+                  <input type="checkbox" checked="{{d.checked}}" onChange="{{d.toggle}}" style="width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+                  <span style="font-size:13px;color:rgba(255,255,255,0.65);">{{d.label}}</span>
+                </label>
+              </sc-for>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.3);padding:26px;cursor:pointer;text-align:center;">
+            <span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Upload Residency Proof &mdash; {{residencyFileLabel}}</span>
+            <input type="file" name="residencyFile" onChange="{{onFile}}" style="display:none;"/>
+          </label>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">The League Committee may request additional documentation and retains final authority over residency verification.</p>
+        </div>
+      </sc-if>
+
+      <!-- STEP 5: PICKLEBALL PROFILE -->
+      <sc-if value="{{isStep4}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;">Current DUPR Rating</span>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;">
+              <input name="duprDoubles" placeholder="Doubles" value="{{form.duprDoubles}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+              <input name="duprSingles" placeholder="Singles" value="{{form.duprSingles}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            DUPR Profile / Player ID
+            <input name="duprProfile" placeholder="DUPR ID or profile link" value="{{form.duprProfile}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Primary Playing Discipline</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{disciplineOptions}}" as="opt" hint-placeholder-count="5">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Playing Preference</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{preferenceOptions}}" as="opt" hint-placeholder-count="3">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Years Playing Pickleball
+            <input name="yearsPlaying" type="number" min="0" placeholder="e.g. 3" value="{{form.yearsPlaying}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Clubs / Academies Currently Associated With
+            <input name="clubs" placeholder="Club or academy name" value="{{form.clubs}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Previous Pickleball Leagues / Tournaments
+            <textarea name="previousLeagues" rows="2" value="{{form.previousLeagues}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Major Achievements
+            <textarea name="achievements" rows="2" value="{{form.achievements}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+        </div>
+      </sc-if>
+
+      <!-- STEP 6: PLAYER PROFILE -->
+      <sc-if value="{{isStep5}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Player Bio &mdash; a short description of yourself as a pickleball player
+            <textarea name="bio" rows="3" value="{{form.bio}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Player Strengths
+            <textarea name="strengths" rows="2" value="{{form.strengths}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Playing Style
+            <textarea name="playingStyle" rows="2" value="{{form.playingStyle}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            What would you bring to a CCPL franchise?
+            <textarea name="contribution" rows="2" value="{{form.contribution}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+        </div>
+      </sc-if>
+
+      <!-- STEP 7: AVAILABILITY & COMMITMENT -->
+      <sc-if value="{{isStep6}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.45);">CCPL Season 2 comprises seven League Stage Matchdays, followed by Playoffs and the Championship Final. A player will not be permitted to participate in a Matchday they have declared themself unavailable for.</p>
+
+          <div>
+            <span style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{{accentColor}};margin-bottom:4px;">7.1 League Stage Availability</span>
+            <p style="margin:0 0 10px;font-size:12.5px;color:rgba(255,255,255,0.4);">Select EVERY Matchday you are confirmed and committed to.</p>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{matchdayList}}" as="d" hint-placeholder-count="7">
+                <label style="display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+                  <input type="checkbox" checked="{{d.checked}}" onChange="{{d.toggle}}" style="width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+                  <span style="font-size:13px;color:rgba(255,255,255,0.65);">{{d.label}}</span>
+                </label>
+              </sc-for>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            I confirm that I am available for ___ out of 7 League Stage Matchdays
+            <input name="matchdaysConfirmed" type="number" min="0" max="7" placeholder="{{matchdaysCheckedCount}}" value="{{form.matchdaysConfirmed}}" onChange="{{onField}}" style="width:80px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+
+          <div>
+            <span style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{{accentColor}};margin-bottom:4px;">7.2 Playoff &amp; Final Availability</span>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{postseasonList}}" as="d" hint-placeholder-count="2">
+                <label style="display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+                  <input type="checkbox" checked="{{d.checked}}" onChange="{{d.toggle}}" style="width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+                  <span style="font-size:13px;color:rgba(255,255,255,0.65);">{{d.label}}</span>
+                </label>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Postseason Availability</span>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{postseasonAvailOptions}}" as="opt" hint-placeholder-count="4">
+                <button type="button" onClick="{{opt.onClick}}" style="text-align:left;padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:13px;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">Selection for a franchise does not guarantee participation in any particular match. Final playing selection remains with the franchise in accordance with the CCPL Competition Regulations.</p>
+
+          <div>
+            <span style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{{accentColor}};margin-bottom:4px;">7.3 Availability Declaration</span>
+            <p style="margin:0 0 10px;font-size:12.5px;color:rgba(255,255,255,0.45);">I confirm that the Matchdays selected above represent my genuine and confirmed availability. I understand and agree that:</p>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{availabilityDeclList}}" as="d" hint-placeholder-count="9">
+                <label style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+                  <input type="checkbox" checked="{{d.checked}}" onChange="{{d.toggle}}" style="margin-top:3px;width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+                  <span style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.65);">{{d.label}}</span>
+                </label>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 8: MANDATORY TEAM PRACTICE -->
+      <sc-if value="{{isStep7}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <span style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{{accentColor}};margin-bottom:4px;">7A.1 Mandatory Practice</span>
+            <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.45);">From 17 September 2026, every contracted CCPL player shall be required to make themselves available for two (2) mandatory team practice sessions per week, to give franchises time to build team combinations and prepare for the season.</p>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Player Commitment &mdash; I confirm that I am available and willing to participate in two mandatory team practice sessions every week from 17 September 2026 onwards.</span>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{practiceCommitOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="text-align:left;padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:13px;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Practice Availability &mdash; days generally available</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <sc-for list="{{practiceDayList}}" as="d" hint-placeholder-count="7">
+                <button type="button" onClick="{{d.toggle}}" style="padding:10px 14px;background:{{d.bg}};color:{{d.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;">{{d.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Preferred Practice Time</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{practiceTimeOptions}}" as="opt" hint-placeholder-count="3">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Any known restrictions on practice availability
+            <textarea name="practiceRestrictions" rows="2" value="{{form.practiceRestrictions}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+          </label>
+          <div>
+            <span style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:{{accentColor}};margin-bottom:4px;">7A.2 Practice Commitment Declaration</span>
+            <p style="margin:0 0 10px;font-size:12.5px;color:rgba(255,255,255,0.45);">By selecting YES, I confirm that:</p>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{practiceDeclList}}" as="d" hint-placeholder-count="6">
+                <label style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+                  <input type="checkbox" checked="{{d.checked}}" onChange="{{d.toggle}}" style="margin-top:3px;width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+                  <span style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.65);">{{d.label}}</span>
+                </label>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 9: AUCTION & TEAM PREFERENCE -->
+      <sc-if value="{{isStep8}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <p style="margin:0 0 10px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.55);">I understand that, unless selected through the Pre-Auction process, I may be included in the CCPL Season 2 Player Auction Pool.</p>
+            <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+              <input type="checkbox" checked="{{form.auctionUnderstand}}" onChange="{{toggleAuctionUnderstand}}" style="margin-top:3px;width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+              <span style="font-size:13px;color:rgba(255,255,255,0.65);">I understand and accept.</span>
+            </label>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Pre-Auction Selection &mdash; if a franchise wishes to select me before the Auction</span>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{preAuctionOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="text-align:left;padding:11px 16px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:13px;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+            <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:rgba(255,255,255,0.4);font-style:italic;">Pre-Auction Selection is subject to the separate League process. A player must accept the official request through the League platform for the selection to become valid.</p>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Is there a particular CCPL franchise you would prefer to represent?</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{franchisePrefOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{isFranchisePrefYes}}" hint-placeholder-val="{{false}}">
+            <input name="franchisePrefOther" placeholder="Which franchise?" value="{{form.franchisePrefOther}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </sc-if>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Would you be willing to represent any of the eight CCPL franchises?</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{franchiseWillingOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">Note: Preferences do not constitute a commitment or guarantee of selection.</p>
+        </div>
+      </sc-if>
+
+      <!-- STEP 10: MEDICAL & FITNESS -->
+      <sc-if value="{{isStep9}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Do you have any current injury, medical condition or physical limitation that may affect your participation in CCPL Season 2?</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{medicalConditionOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{isMedicalConditionYes}}" hint-placeholder-val="{{false}}">
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+              If yes, please provide details
+              <textarea name="medicalDetails" rows="2" value="{{form.medicalDetails}}" onChange="{{onField}}" style="resize:vertical;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;padding:10px 2px;outline:none;"></textarea>
+            </label>
+          </sc-if>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Are you medically fit to participate in competitive pickleball?</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <sc-for list="{{medicallyFitOptions}}" as="opt" hint-placeholder-count="2">
+                <button type="button" onClick="{{opt.onClick}}" style="padding:11px 18px;background:{{opt.bg}};color:{{opt.color}};border:1px solid rgba(255,255,255,0.25);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">{{opt.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;">
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+              Emergency Contact Name
+              <input name="emergencyName" value="{{form.emergencyName}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+              Relationship
+              <input name="emergencyRelationship" value="{{form.emergencyRelationship}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+            </label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+            Emergency Contact Number
+            <input type="tel" name="emergencyNumber" value="{{form.emergencyNumber}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+          </label>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">By registering, the player confirms that they are medically fit to participate.</p>
+        </div>
+      </sc-if>
+
+      <!-- STEP 11: PHOTOGRAPH & MEDIA -->
+      <sc-if value="{{isStep10}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:6px;">Upload Recent Player Photograph</span>
+            <p style="margin:0 0 10px;font-size:12.5px;color:rgba(255,255,255,0.4);">Must be a recent passport-style photo or a clear selfie, face forward, plain background.</p>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="flex:1;height:220px;border:1px solid rgba(255,255,255,0.18);">
+                <image-slot id="signup-player-photo" shape="rect" placeholder="Drop a passport photo or selfie"></image-slot>
+              </div>
+              <div style="width:120px;flex-shrink:0;">
+                <img src="uploads/pasted-1786685310030-0.png" alt="Reference photo example" style="width:100%;height:220px;object-fit:cover;border:1px solid rgba(255,255,255,0.18);display:block;"/>
+                <span style="display:block;margin-top:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.4);text-align:center;">Reference</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span style="display:block;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:10px;">Upload Action / Pickleball Photograph (Optional)</span>
+            <div style="height:220px;border:1px solid rgba(255,255,255,0.18);">
+              <image-slot id="signup-action-photo" shape="rect" placeholder="Drop an action shot"></image-slot>
+            </div>
+          </div>
+          <div>
+            <p style="margin:0 0 10px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.55);">I consent to CCPL using my name, photograph, video footage, statistics, player profile and other relevant likeness for League-related Broadcast, Social Media, Photography, Promotional Content, Advertising / Sponsorship, League Communications, and Digital Platforms.</p>
+            <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;">
+              <input type="checkbox" checked="{{form.mediaConsent}}" onChange="{{toggleMediaConsent}}" style="margin-top:3px;width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+              <span style="font-size:13px;color:rgba(255,255,255,0.65);">I consent.</span>
+            </label>
+          </div>
+          <p style="margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,0.4);font-style:italic;">The CCPL regulations provide for League commercial, promotional, broadcast and image rights as part of player registration.</p>
+        </div>
+      </sc-if>
+
+      <!-- STEP 12: DECLARATION & CONSENT -->
+      <sc-if value="{{isStep11}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <p style="margin:0 0 8px;font-size:13px;color:rgba(255,255,255,0.5);">I hereby declare and confirm that:</p>
+          <sc-for list="{{finalDeclList}}" as="d" hint-placeholder-count="12">
+            <label style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">
+              <input type="checkbox" checked="{{d.checked}}" onChange="{{d.toggle}}" style="margin-top:3px;width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+              <span style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.65);">{{d.label}}</span>
+            </label>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:16px;">
+        <sc-if value="{{canGoBack}}" hint-placeholder-val="{{false}}">
+          <button type="button" onClick="{{back}}" style="padding:16px 22px;background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.7);font-family:'Montserrat',sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">&larr; Back</button>
+        </sc-if>
+        <sc-if value="{{canGoBack}}" hint-placeholder-val="{{false}}"></sc-if>
+        <sc-if value="{{isLastStep}}" hint-placeholder-val="{{false}}">
+          <button type="submit" style="flex:1;padding:19px;background:linear-gradient(180deg,{{accentColor}},{{accentColorDark}});border:none;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">Submit Registration &rarr;</button>
+        </sc-if>
+        <sc-if value="{{isNotLastStep}}" hint-placeholder-val="{{true}}">
+          <button type="button" onClick="{{next}}" style="flex:1;padding:19px;background:linear-gradient(180deg,{{accentColor}},{{accentColorDark}});border:none;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">Next &rarr;</button>
+        </sc-if>
+      </div>
+    </form>
+  </sc-if>
+</section>
+
+<dc-import name="Centre Court Footer v2" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1400},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e27b46&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#e27b46&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]}}">
+class Component extends DCLogic {
+  state = {
+    step: 0,
+    maxStep: 0,
+    submitted: false,
+    form: {
+      fullName: '', displayName: '', dobDay: '', dobMonth: '', dobYear: '', gender: '',
+      whatsapp: '', email: '', city: '', currentAddress: '', permanentAddress: '',
+      govIdType: '', govIdOther: '', govIdNumber: '', govIdFile: '',
+      eligibilityRoute: '',
+      residing: '', residingSinceMonth: '', residingSinceYear: '', residencyBasis: '', residencyBasisOther: '',
+      residencyDocs: {}, residencyFile: '',
+      duprDoubles: '', duprSingles: '', duprProfile: '', discipline: '', preference: '', yearsPlaying: '',
+      clubs: '', previousLeagues: '', achievements: '',
+      bio: '', strengths: '', playingStyle: '', contribution: '',
+      matchdays: {}, matchdaysConfirmed: '', postseasonDates: {}, postseasonAvailability: '', availabilityDecl: {},
+      practiceCommit: '', practiceDays: {}, practiceTime: '', practiceRestrictions: '', practiceDecl: {},
+      auctionUnderstand: false, preAuction: '', franchisePref: '', franchisePrefOther: '', franchiseWilling: '',
+      medicalCondition: '', medicalDetails: '', medicallyFit: '', emergencyName: '', emergencyRelationship: '', emergencyNumber: '',
+      mediaConsent: false,
+      finalDecl: {},
+    },
+  };
+
+  STEP_META = [
+    { label: 'Player Info', title: 'Player Information', sub: null },
+    { label: 'Identity', title: 'Player Identity', sub: null },
+    { label: 'Eligibility', title: 'CCPL Eligibility', sub: null },
+    { label: 'Residency', title: 'Residency Verification', sub: 'Complete this section only if registering through Hyderabad Residency.' },
+    { label: 'Profile', title: 'Pickleball Profile', sub: null },
+    { label: 'Bio', title: 'Player Profile', sub: null },
+    { label: 'Availability', title: 'Availability & Commitment', sub: null },
+    { label: 'Practice', title: 'Mandatory Team Practice', sub: null },
+    { label: 'Auction', title: 'Auction & Team Preference', sub: null },
+    { label: 'Medical', title: 'Medical & Fitness Declaration', sub: null },
+    { label: 'Photo', title: 'Player Photograph & Media', sub: null },
+    { label: 'Declaration', title: 'Player Declaration & Consent', sub: null },
+  ];
+
+  setField = (name, value) => this.setState(s => ({ form: { ...s.form, [name]: value } }));
+  onField = (e) => this.setField(e.target.name, e.target.value);
+  onFile = (e) => this.setField(e.target.name, e.target.files && e.target.files[0] ? e.target.files[0].name : '');
+  toggleGroupKey = (group, key) => this.setState(s => ({ form: { ...s.form, [group]: { ...s.form[group], [key]: !s.form[group][key] } } }));
+  toggleAuctionUnderstand = () => this.setState(s => ({ form: { ...s.form, auctionUnderstand: !s.form.auctionUnderstand } }));
+  toggleMediaConsent = () => this.setState(s => ({ form: { ...s.form, mediaConsent: !s.form.mediaConsent } }));
+
+  goStep = (i) => { if (i <= this.state.maxStep) this.setState({ step: i }); };
+  next = () => this.setState(s => {
+    const step = Math.min(s.step + 1, 11);
+    return { step, maxStep: Math.max(s.maxStep, step) };
+  });
+  back = () => this.setState(s => ({ step: Math.max(s.step - 1, 0) }));
+
+  handleSubmit = (e) => { e.preventDefault(); this.setState({ submitted: true }); };
+
+  makeRadio(field, opts) {
+    const cur = this.state.form[field];
+    const accentColor = this.props.accentColor ?? '#e27b46';
+    return opts.map(o => {
+      const isObj = typeof o === 'object';
+      const value = isObj ? o.value : o;
+      const label = isObj ? o.label : o;
+      const desc = isObj ? o.desc : null;
+      const selected = cur === value;
+      return {
+        value, label, desc,
+        onClick: () => this.setField(field, value),
+        bg: selected ? accentColor : 'transparent',
+        color: selected ? '#fff' : 'rgba(255,255,255,0.6)',
+        descColor: selected ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.4)',
+        borderColor: selected ? accentColor : 'rgba(255,255,255,0.2)',
+      };
+    });
+  }
+
+  makeChecklist(group, items) {
+    const state = this.state.form[group] || {};
+    const accentColor = this.props.accentColor ?? '#e27b46';
+    return items.map((it, i) => {
+      const isObj = typeof it === 'object';
+      const key = isObj ? it.key : String(i);
+      const label = isObj ? it.label : it;
+      const checked = !!state[key];
+      return { key, label, checked, toggle: () => this.toggleGroupKey(group, key), bg: checked ? accentColor : 'transparent', color: checked ? '#fff' : 'rgba(255,255,255,0.6)' };
+    });
+  }
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#e27b46';
+    const accentColorDark = '#7d0f0f';
+    const { step, maxStep, form, submitted } = this.state;
+
+    const milestones = this.STEP_META.map((m, i) => {
+      const isCurrent = i === step;
+      const isDone = i < step;
+      const visited = i <= maxStep;
+      return {
+        label: m.label,
+        display: isDone ? '\u2713' : String(i + 1),
+        bg: isCurrent ? accentColor : isDone ? '#fff' : 'transparent',
+        color: isCurrent ? '#fff' : isDone ? '#0b0b0c' : 'rgba(255,255,255,0.5)',
+        borderColor: isCurrent || isDone ? accentColor : 'rgba(255,255,255,0.3)',
+        labelColor: isCurrent ? '#fff' : 'rgba(255,255,255,0.4)',
+        cursor: visited ? 'pointer' : 'default',
+        disabled: !visited,
+        onClick: () => this.goStep(i),
+      };
+    });
+
+    const matchdayItems = [
+      { key: 'md1', label: 'Matchday 1 — Saturday, 17 October 2026' },
+      { key: 'md2', label: 'Matchday 2 — Saturday, 24 October 2026' },
+      { key: 'md3', label: 'Matchday 3 — Saturday, 31 October 2026' },
+      { key: 'md4', label: 'Matchday 4 — Saturday, 7 November 2026' },
+      { key: 'md5', label: 'Matchday 5 — Saturday, 14 November 2026' },
+      { key: 'md6', label: 'Matchday 6 — Saturday, 21 November 2026' },
+      { key: 'md7', label: 'Matchday 7 — Saturday, 28 November 2026' },
+    ];
+    const postseasonItems = [
+      { key: 'playoffs', label: 'Playoffs — Saturday, 5 December 2026' },
+      { key: 'final', label: 'Championship Final — Saturday, 12 December 2026' },
+    ];
+    const residencyDocItems = ['Aadhaar Card', 'Voter ID', 'Passport', 'Driving Licence', 'Rental Agreement', 'Employment Letter', 'Educational Institution Record', 'Utility Bill', 'Other document accepted by the League'];
+    const practiceDayItems = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const availabilityDeclItems = [
+      'I am making this declaration in good faith and have checked my personal, professional, travel and other commitments before submitting my availability.',
+      'If I have not selected a particular Matchday as available, I will be treated as unavailable for that Matchday.',
+      'Once the registration period closes, my declared availability will be treated as my official availability commitment for the purpose of player selection and franchise planning.',
+      'If my circumstances change after registration, I must immediately inform CCPL and my franchise.',
+      'Any request to participate on a Matchday that I originally declared as unavailable will be subject to the approval of the League and my franchise and shall not be guaranteed.',
+      'I understand that I may be permitted to make myself available for a maximum of one (1) additional Matchday beyond the Matchdays originally declared as available by me.',
+      'Any such additional availability will be entirely at the discretion of the franchise and League and shall not create an obligation on the franchise to select me.',
+      'I understand that repeated or material changes to my declared availability may affect my selection, participation, contractual status or eligibility, as determined by the League Committee.',
+      'I understand that failure to honour my declared availability without reasonable cause may be treated as a failure to fulfil my League obligations and may result in disciplinary action.',
+    ];
+    const practiceDeclItems = [
+      'I understand that two team practice sessions per week are a mandatory commitment from 17 September 2026 onwards.',
+      'I will make reasonable arrangements around my personal and professional commitments to attend the required sessions.',
+      'I understand that practice sessions may be scheduled by my franchise based on team requirements and may not always fall on my preferred days or times.',
+      'I understand that regular non-attendance without reasonable cause may affect my standing within the franchise and may constitute a failure to fulfil my League obligations.',
+      'I understand that this commitment applies throughout the relevant CCPL Season 2 preparation and competition period, subject to League-approved exceptions.',
+      'I understand that providing an inaccurate availability declaration may affect my eligibility for selection and participation.',
+    ];
+    const finalDeclItems = [
+      'All information provided by me in this registration is true, complete and accurate.',
+      'I satisfy the eligibility requirements applicable to CCPL Hyderabad Season 2.',
+      'Any residency or eligibility documentation submitted by me is genuine and valid.',
+      'I understand that the League Committee may independently verify the information submitted by me.',
+      'I understand that submission of this form does not guarantee inclusion in the Official Auction Pool.',
+      'I agree to comply with the CCPL Competition Regulations, Operations Handbook, Code of Conduct and all directives issued by the League Committee.',
+      'I accept the disciplinary jurisdiction of the CCPL League Committee.',
+      'I confirm that I am medically fit to participate in CCPL Season 2.',
+      'I agree to remain available as per my declaration for League matches, team activities, media commitments, sponsor obligations and promotional activities.',
+      'I grant CCPL the commercial, promotional, broadcast and image rights applicable under the League Regulations.',
+      'I understand that providing false, misleading or incomplete information may result in rejection or cancellation of my registration, removal from a franchise squad, suspension or other disciplinary action.',
+      'I understand that the decision of the League Committee regarding my eligibility and residency is final and binding.',
+    ];
+
+    const matchdayList = this.makeChecklist('matchdays', matchdayItems);
+    const matchdaysCheckedCount = matchdayList.filter(d => d.checked).length;
+
+    return {
+      accentColor, accentColorDark,
+      form,
+      onField: this.onField,
+      onFile: this.onFile,
+      handleSubmit: this.handleSubmit,
+      submitted,
+      notSubmitted: !submitted,
+      next: this.next,
+      back: this.back,
+      canGoBack: step > 0,
+      isLastStep: step === 11,
+      isNotLastStep: step !== 11,
+      stepNumDisplay: String(step + 1).padStart(2, '0'),
+      currentTitle: this.STEP_META[step].title,
+      currentSub: this.STEP_META[step].sub,
+      progressWidth: `${(step / 11) * 100}%`,
+      milestones,
+      isStep0: step === 0, isStep1: step === 1, isStep2: step === 2, isStep3: step === 3,
+      isStep4: step === 4, isStep5: step === 5, isStep6: step === 6, isStep7: step === 7,
+      isStep8: step === 8, isStep9: step === 9, isStep10: step === 10, isStep11: step === 11,
+
+      genderOptions: this.makeRadio('gender', ['Male', 'Female']),
+
+      idTypeOptions: this.makeRadio('govIdType', ['Aadhaar', 'Passport', 'Driving Licence', 'Voter ID', 'Other']),
+      isGovIdOther: form.govIdType === 'Other',
+      govIdFileLabel: form.govIdFile || 'click to upload',
+
+      eligibilityOptions: this.makeRadio('eligibilityRoute', [
+        { value: 's1hpl', label: 'CCPL Season 1 / HPL Season 1', desc: 'I played in, registered to participate in, or was picked into a franchise squad for CCPL Season 1 / HPL Season 1.' },
+        { value: 'club', label: 'CCPL Club League Season 1', desc: 'I was picked into a team in CCPL Club League Season 1.' },
+        { value: 'residency', label: 'Hyderabad Residency', desc: 'I do not qualify through prior participation but satisfy the Hyderabad residency requirements.' },
+      ]),
+
+      residingOptions: this.makeRadio('residing', ['Yes', 'No']),
+      basisOptions: this.makeRadio('residencyBasis', ['Permanent Residence', 'Employment', 'Education', 'Rental / Lease', 'Family Residence', 'Other']),
+      isBasisOther: form.residencyBasis === 'Other',
+      residencyDocList: this.makeChecklist('residencyDocs', residencyDocItems),
+      residencyFileLabel: form.residencyFile || 'click to upload',
+
+      disciplineOptions: this.makeRadio('discipline', ["Men's Singles", "Women's Singles", "Men's Doubles", "Women's Doubles", 'Mixed Doubles']),
+      preferenceOptions: this.makeRadio('preference', ['Singles Specialist', 'Doubles Specialist', 'All-Rounder']),
+
+      matchdayList,
+      matchdaysCheckedCount,
+      postseasonList: this.makeChecklist('postseasonDates', postseasonItems),
+      postseasonAvailOptions: this.makeRadio('postseasonAvailability', ['Available for both Playoffs and Final', 'Available for Playoffs only', 'Available for Final only', 'Not available for either']),
+      availabilityDeclList: this.makeChecklist('availabilityDecl', availabilityDeclItems),
+
+      practiceCommitOptions: this.makeRadio('practiceCommit', [
+        { value: 'yes', label: 'YES — I confirm my commitment to two mandatory practice sessions per week.' },
+        { value: 'no', label: 'NO — I cannot commit to two mandatory practice sessions per week.' },
+      ]),
+      practiceDayList: this.makeChecklist('practiceDays', practiceDayItems),
+      practiceTimeOptions: this.makeRadio('practiceTime', ['Morning', 'Afternoon', 'Evening']),
+      practiceDeclList: this.makeChecklist('practiceDecl', practiceDeclItems),
+
+      toggleAuctionUnderstand: this.toggleAuctionUnderstand,
+      preAuctionOptions: this.makeRadio('preAuction', [
+        { value: 'willing', label: 'I am willing to be considered for Pre-Auction Selection.' },
+        { value: 'not', label: 'I do not wish to be considered for Pre-Auction Selection.' },
+      ]),
+      franchisePrefOptions: this.makeRadio('franchisePref', ['No preference', 'Yes']),
+      isFranchisePrefYes: form.franchisePref === 'Yes',
+      franchiseWillingOptions: this.makeRadio('franchiseWilling', ['Yes', 'No']),
+
+      medicalConditionOptions: this.makeRadio('medicalCondition', ['No', 'Yes']),
+      isMedicalConditionYes: form.medicalCondition === 'Yes',
+      medicallyFitOptions: this.makeRadio('medicallyFit', ['Yes', 'No']),
+
+      toggleMediaConsent: this.toggleMediaConsent,
+      finalDeclList: this.makeChecklist('finalDecl', finalDeclItems),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

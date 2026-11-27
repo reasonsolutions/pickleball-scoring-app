@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Creepster&family=Schibsted+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#0a0410;font-family:'Schibsted Grotesk',sans-serif}
+a{color:#fff}a:hover{color:#ff7a1a}
+@keyframes drift1{0%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}50%{transform:translate(6%,4%) rotate(-6deg) scale(1.15)}100%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}}
+@keyframes drift2{0%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}50%{transform:translate(-6%,-4%) rotate(20deg) scale(0.95)}100%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.9}50%{transform:translate(-4%,6%) scale(1.25);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.9}}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,122,26,.7)}50%{opacity:.6;box-shadow:0 0 0 10px rgba(255,122,26,0)}}
+@keyframes servepulse{0%,100%{box-shadow:0 0 0 0 rgba(157,255,58,.75),0 0 18px rgba(157,255,58,.8)}50%{box-shadow:0 0 0 14px rgba(157,255,58,0),0 0 18px rgba(157,255,58,.8)}}
+@keyframes pkwobble{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-4%)}}
+@keyframes pkflicker{0%,100%{opacity:1}8%{opacity:.75}12%{opacity:1}40%{opacity:.88}44%{opacity:.6}48%{opacity:.95}70%{opacity:.82}}
+@keyframes pkblink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes emberrise{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:.9}100%{transform:translateY(-1200px) translateX(60px);opacity:0}}
+@keyframes batfly{0%{transform:translateX(-200px)}100%{transform:translateX(2200px)}}
+@keyframes batbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-40px)}}
+@keyframes batflap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.35)}}
+@keyframes wingL{0%,100%{transform:rotate(-35deg) scaleY(1)}50%{transform:rotate(40deg) scaleY(.55)}}
+@keyframes wingR{0%,100%{transform:rotate(35deg) scaleY(1)}50%{transform:rotate(-40deg) scaleY(.55)}}
+@keyframes batbody{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes fogdrift{0%{transform:translateX(-10%)}50%{transform:translateX(10%)}100%{transform:translateX(-10%)}}
+@keyframes moonglow{0%,100%{box-shadow:0 0 80px 20px rgba(255,214,140,.35),0 0 220px 60px rgba(255,122,26,.18)}50%{box-shadow:0 0 110px 30px rgba(255,214,140,.5),0 0 280px 80px rgba(255,122,26,.25)}}
+@keyframes sheen{0%{transform:translateX(-140%) skewX(-20deg)}100%{transform:translateX(240%) skewX(-20deg)}}
+</style>
+</helmet>
+<div style="position:fixed;inset:0;overflow:hidden;background:#0a0410;display:flex;align-items:center;justify-content:center">
+<div data-screen-label="Jumbotron" style="position:relative;flex:none;width:1920px;height:1080px;transform:scale({{ fitScale }});transform-origin:center center;overflow:hidden;background:#0b0412;color:#fff;font-family:'Schibsted Grotesk',sans-serif">
+  {{ backdrop }}
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(11,4,18,0) 0%,rgba(11,4,18,.55) 70%,rgba(11,4,18,.9) 100%)"></div>
+  <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px);mix-blend-mode:overlay;pointer-events:none"></div>
+
+  <div style="position:relative;display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);height:100%;width:100%;padding:48px 72px 56px;box-sizing:border-box;gap:36px">
+
+    <!-- Header: event pill + live -->
+    <div style="display:flex;align-items:center;justify-content:center">
+      <img src="assets/terminus-ccpl-logo.png" alt="Terminus CCPL HYD" style="height:120px;width:auto;display:block;filter:drop-shadow(0 0 24px rgba(255,122,26,.35))">
+    </div>
+
+    <!-- Main scoreboard -->
+    <div style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:28px;padding:0 16px;min-width:0;border-radius:32px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.14);box-shadow:0 40px 120px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(14px)">
+      <div style="position:absolute;inset:0;border-radius:32px;overflow:hidden;pointer-events:none"><div style="position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,#ff7a1a,#8a2be2 50%,#9dff3a)"></div></div>
+
+      <!-- Team A -->
+      <div style="display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:28px;padding-left:16px;min-width:0">
+        <div style="position:relative;width:220px;height:220px;border-radius:28px;padding:4px;background:linear-gradient(135deg,#ff7a1a,#8a2be2);box-shadow:0 0 50px rgba(255,122,26,.35)">
+          <div style="width:100%;height:100%;border-radius:24px;overflow:hidden;background:#140818">
+            <image-slot id="logo-a" shape="rect" fit="contain" placeholder="Logo"></image-slot>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font:500 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.6)">Matches won</div>
+          <div style="font:900 30px/1 'Unbounded',sans-serif;letter-spacing:-.05em;background:linear-gradient(180deg,#fff 30%,#ffd0a0);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(255,122,26,.55))">{{ teamA.matches }}</div>
+          <div style="font:900 36px/1.05 'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-.01em;text-wrap:balance;min-width:0">{{ teamA.name }}</div>
+        </div>
+      </div>
+
+      <!-- Center game score -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 44px;border-radius:24px;flex:none;background:linear-gradient(180deg,rgba(9,3,40,.9),rgba(20,6,60,.9));border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 0 60px rgba(138,43,226,.35),0 0 80px rgba(138,43,226,.25)">
+        <div style="position:relative;overflow:hidden;padding:12px 32px;margin-bottom:10px;border-radius:999px;background:linear-gradient(90deg,#ff7a1a 0%,#ff6a3d 55%,#ffb347 100%);font:400 40px/1 'Creepster',cursive;letter-spacing:.08em;text-transform:uppercase;color:#1a0610;white-space:nowrap;box-shadow:0 0 40px rgba(255,122,26,.45),inset 0 1px 0 rgba(255,255,255,.5)">
+          {{ eventName }}
+          <span style="position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sheen 3.2s ease-in-out infinite"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:28px;font:900 190px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="height:44px;display:flex;align-items:center;justify-content:center;opacity:{{ serveA }};transition:opacity .3s"><span style="display:block;width:26px;height:26px;border-radius:50%;background:#9dff3a;animation:servepulse 1.6s ease-in-out infinite"></span></div><span style="min-width:1.1ch;text-align:center;text-shadow:0 0 40px rgba(255,255,255,.35)">{{ gameA }}</span></div>
+          <span style="width:56px;height:14px;margin-top:50px;border-radius:7px;background:linear-gradient(90deg,#ff7a1a,#9dff3a);box-shadow:0 0 30px rgba(255,122,26,.8)"></span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="height:44px;display:flex;align-items:center;justify-content:center;opacity:{{ serveB }};transition:opacity .3s"><span style="display:block;width:26px;height:26px;border-radius:50%;background:#9dff3a;animation:servepulse 1.6s ease-in-out infinite"></span></div><span style="min-width:1.1ch;text-align:center;text-shadow:0 0 40px rgba(255,255,255,.35)">{{ gameB }}</span></div>
+        </div>
+      </div>
+
+      <!-- Team B -->
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:28px;padding-right:16px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:14px;text-align:right;align-items:flex-end">
+          <div style="font:500 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.6)">Matches won</div>
+          <div style="font:900 30px/1 'Unbounded',sans-serif;letter-spacing:-.05em;background:linear-gradient(180deg,#fff 30%,#d9ffb0);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(157,255,58,.5))">{{ teamB.matches }}</div>
+          <div style="font:900 36px/1.05 'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-.01em;text-wrap:balance;min-width:0">{{ teamB.name }}</div>
+        </div>
+        <div style="position:relative;width:220px;height:220px;border-radius:28px;padding:4px;background:linear-gradient(135deg,#9dff3a,#ff7a1a);box-shadow:0 0 50px rgba(157,255,58,.35)">
+          <div style="width:100%;height:100%;border-radius:24px;overflow:hidden;background:#140818">
+            <image-slot id="logo-b" shape="rect" fit="contain" placeholder="Logo"></image-slot>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match cards -->
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px;min-width:0">
+      <sc-for list="{{ matches }}" as="m" hint-placeholder-count="5">
+        <div style="position:relative;display:flex;flex-direction:column;gap:18px;padding:22px 26px 26px;border-radius:22px;min-width:0;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.2);backdrop-filter:blur(10px);overflow:hidden">
+          <div style="position:absolute;inset:0;background:{{ m.glow }};pointer-events:none"></div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div style="font:700 22px/1.1 'Unbounded',sans-serif;letter-spacing:.02em;text-transform:uppercase;min-width:0;text-wrap:balance;background:linear-gradient(90deg,#ffd0a0,#d9ffb0);-webkit-background-clip:text;background-clip:text;color:transparent">{{ m.label }}</div>
+            <div style="flex:none;font:800 16px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.2em;text-transform:uppercase;padding:8px 12px;border-radius:999px;background:{{ m.badgeBg }};color:{{ m.badgeColor }}">{{ m.status }}</div>
+          </div>
+          <div style="position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;background:{{ m.aBg }};border:1px solid {{ m.aBorder }}">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.9);text-wrap:balance">{{ m.teamA }}</div>
+              <div style="font:500 19px/1.25 'Schibsted Grotesk',sans-serif;color:rgba(255,255,255,.72);text-wrap:balance">{{ m.playerA }}</div>
+            </div>
+            <div style="font:900 48px/1 'Unbounded',sans-serif;letter-spacing:-.04em;min-width:2.2ch;text-align:right;color:{{ m.aColor }};font-variant-numeric:tabular-nums">{{ m.scoreA }}</div>
+          </div>
+          <div style="position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;background:{{ m.bBg }};border:1px solid {{ m.bBorder }}">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.9);text-wrap:balance">{{ m.teamB }}</div>
+              <div style="font:500 19px/1.25 'Schibsted Grotesk',sans-serif;color:rgba(255,255,255,.72);text-wrap:balance">{{ m.playerB }}</div>
+            </div>
+            <div style="font:900 48px/1 'Unbounded',sans-serif;letter-spacing:-.04em;min-width:2.2ch;text-align:right;color:{{ m.bColor }};font-variant-numeric:tabular-nums">{{ m.scoreB }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pumpkin&quot;,&quot;witch&quot;,&quot;slime&quot;],&quot;default&quot;:&quot;pumpkin&quot;,&quot;tsType&quot;:&quot;'pumpkin'|'witch'|'slime'&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;glowIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0.3,&quot;max&quot;:1.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;pumpkinZeros&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;highlightWinners&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    this._fit = () => this.setState({ fitScale: Math.min(window.innerWidth / 1920, window.innerHeight / 1080) });
+    this._fit();
+    window.addEventListener('resize', this._fit);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._fit); }
+  state = {
+    fitScale: 1,
+    eventName: 'Game Breaker',
+    teamA: { name: 'The Mavericks', matches: 5 },
+    teamB: { name: 'Starry Smashers', matches: 1 },
+    game: { a: 0, b: 0, label: 'Game 3 · to 11' },
+    serving: 'a',
+    matches: [
+      { label: "Men's Doubles", a: 11, b: 0, playerA: 'J. Reyes / M. Okafor', playerB: 'D. Kwan / T. Bello' },
+      { label: "Women's Doubles", a: 0, b: 11, playerA: 'A. Novak / R. Singh', playerB: 'L. Moreau / C. Diaz' },
+      { label: "Men's Singles", a: 11, b: 4, playerA: 'K. Whitfield', playerB: 'S. Petrov' },
+      { label: "Women's Singles", a: 11, b: 6, playerA: 'E. Tanaka', playerB: 'M. Alvarez' },
+      { label: "Men's Doubles (2)", a: 11, b: 3, playerA: 'B. Achebe / N. Ford', playerB: 'V. Costa / H. Lindqvist' },
+    ],
+  };
+  renderVals() {
+    const theme = this.props.theme ?? 'pumpkin';
+    const pumpkinZeros = this.props.pumpkinZeros ?? true;
+    const intensity = this.props.glowIntensity ?? 1;
+    const highlight = this.props.highlightWinners ?? true;
+    const palettes = {
+      pumpkin: ['#ff7a1a', '#8a2be2', '#ffb02e', '#2a0a2e'],
+      witch: ['#8a2be2', '#ff7a1a', '#c04bff', '#1a0630'],
+      slime: ['#9dff3a', '#8a2be2', '#ff7a1a', '#0a2410'],
+    };
+    const [c1, c2, c3, c4] = palettes[theme] || palettes.pumpkin;
+    const blob = (bg, w, h, x, y, anim, blur) => React.createElement('div', {
+      style: { position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: '50%', background: bg, filter: `blur(${blur}px)`, opacity: intensity, animation: anim, willChange: 'transform', mixBlendMode: 'screen' }
+    });
+    const backdrop = React.createElement('div', { key: 'bd', style: { position: 'absolute', inset: 0, overflow: 'hidden', background: `radial-gradient(ellipse at 50% 100%, ${c4} 0%, #0b0412 70%)` } },
+      blob(`radial-gradient(ellipse at center, ${c1} 0%, transparent 65%)`, 1400, 700, -200, -150, 'drift1 14s ease-in-out infinite', 70),
+      blob(`radial-gradient(ellipse at center, ${c2} 0%, transparent 65%)`, 1500, 800, 700, 350, 'drift2 18s ease-in-out infinite', 80),
+      blob(`radial-gradient(ellipse at center, ${c3} 0%, transparent 60%)`, 700, 350, 1200, -100, 'drift3 11s ease-in-out infinite', 60),
+      blob(`radial-gradient(ellipse at center, ${c1} 0%, transparent 60%)`, 900, 400, 300, 750, 'drift3 16s ease-in-out infinite reverse', 70),
+    );
+    const embers = Array.from({ length: 22 }, (_, i) => React.createElement('div', { key: 'e' + i, style: {
+      position: 'absolute', left: ((i * 137) % 1920) + 'px', bottom: '-20px', width: 4 + (i % 3) * 2, height: 4 + (i % 3) * 2, borderRadius: '50%',
+      background: i % 4 === 0 ? c2 : c1, boxShadow: '0 0 12px ' + (i % 4 === 0 ? c2 : c1),
+      animation: 'emberrise ' + (9 + (i % 5) * 2.3) + 's linear ' + (-(i * 1.7)) + 's infinite' } }));
+    const E = React.createElement;
+    const moon = E('div', { key: 'moon', style: { position: 'absolute', left: 1480, top: 40, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle at 38% 35%, #fff8dc 0%, #ffe2a0 45%, #f0b45a 100%)', animation: 'moonglow 6s ease-in-out infinite', opacity: .9 } },
+      ...[[60, 70, 40], [150, 120, 28], [100, 170, 20], [170, 60, 16]].map(([x, y, s], j) => E('div', { key: j, style: { position: 'absolute', left: x, top: y, width: s, height: s, borderRadius: '50%', background: 'rgba(190,120,50,.25)' } })));
+    const batPath = 'M0 14 Q8 2 18 10 Q20 4 23 9 L25 5 L27 9 Q30 4 32 10 Q42 2 50 14 Q42 10 36 16 Q32 12 29 17 L25 14 L21 17 Q18 12 14 16 Q8 10 0 14 Z';
+    const wing = (side, sp) => E('path', { d: side === 'L' ? 'M44 30 Q30 10 4 14 Q10 20 8 26 Q16 24 18 32 Q26 28 30 36 Q36 30 44 34 Z' : 'M56 30 Q70 10 96 14 Q90 20 92 26 Q84 24 82 32 Q74 28 70 36 Q64 30 56 34 Z',
+      fill: '#12081c', stroke: 'rgba(255,150,60,.55)', strokeWidth: 1.2,
+      style: { transformBox: 'fill-box', transformOrigin: side === 'L' ? '100% 60%' : '0% 60%', animation: `wing${side} ${sp}s ease-in-out infinite` } });
+    const bats = [[130, 110, 16, 0, 0], [300, 80, 21, -7, 1], [210, 95, 18, -12, 0], [400, 70, 24, -3, 1], [170, 60, 14, -19, 0], [260, 120, 20, -15, 1]].map(([top, w, dur, delay, rev], j) => {
+      const sp = .22 + (j % 3) * .05;
+      return E('div', { key: 'bat' + j, style: { position: 'absolute', left: 0, top, animation: `batfly ${dur}s linear ${delay}s infinite${rev ? ' reverse' : ''}` } },
+        E('div', { style: { animation: `batbob ${1.6 + j * .35}s ease-in-out infinite` } },
+          E('svg', { viewBox: '0 0 100 50', width: w, height: w * .5, style: { display: 'block', overflow: 'visible', transform: rev ? 'scaleX(-1)' : 'none', filter: 'drop-shadow(0 0 8px rgba(255,122,26,.45))' } },
+            wing('L', sp), wing('R', sp),
+            E('g', { style: { animation: `batbody ${sp}s ease-in-out infinite` } },
+              E('ellipse', { cx: 50, cy: 32, rx: 7, ry: 10, fill: '#12081c', stroke: 'rgba(255,150,60,.55)', strokeWidth: 1.2 }),
+              E('path', { d: 'M44 24 L45 16 L48 22 L52 22 L55 16 L56 24 Z', fill: '#12081c' }),
+              E('circle', { cx: 47.5, cy: 27, r: 1.4, fill: '#ffb02e' }), E('circle', { cx: 52.5, cy: 27, r: 1.4, fill: '#ffb02e' })))));
+    });
+    const ground = E('svg', { key: 'gr', viewBox: '0 0 1920 320', preserveAspectRatio: 'none', style: { position: 'absolute', left: 0, bottom: 0, width: 1920, height: 320 } },
+      E('path', { d: 'M0 200 Q240 140 480 190 T960 170 T1440 190 T1920 160 L1920 320 L0 320 Z', fill: '#1a0a24' }),
+      E('path', { d: 'M0 250 Q300 200 640 240 T1280 230 T1920 245 L1920 320 L0 320 Z', fill: '#07030c' }),
+      E('path', { d: 'M150 250 L150 120 M150 170 L110 130 M110 130 L96 136 M150 150 L190 105 M190 105 L205 96 M190 105 L196 88 M150 200 L118 182', stroke: '#07030c', strokeWidth: 9, strokeLinecap: 'round', fill: 'none' }),
+      E('path', { d: 'M1780 240 L1780 100 M1780 150 L1820 110 M1820 110 L1838 104 M1780 130 L1742 92 M1742 92 L1736 76 M1780 190 L1814 170', stroke: '#07030c', strokeWidth: 9, strokeLinecap: 'round', fill: 'none' }),
+      ...[[380, 236, 36, 50], [470, 232, 28, 40], [1340, 228, 34, 48], [1450, 236, 26, 38], [1580, 232, 32, 44]].map(([x, y, w, hh], j) =>
+        E('path', { key: 't' + j, d: `M${x} ${y} L${x} ${y - hh + w / 2} A${w / 2} ${w / 2} 0 0 1 ${x + w} ${y - hh + w / 2} L${x + w} ${y} Z`, fill: '#07030c' })),
+      ...[[560, 238], [1230, 234]].map(([x, y], j) => E('path', { key: 'c' + j, d: `M${x} ${y} L${x} ${y - 52} M${x - 14} ${y - 38} L${x + 14} ${y - 38}`, stroke: '#07030c', strokeWidth: 8, strokeLinecap: 'square' })));
+    const fog = [0, 1].map((j) => E('div', { key: 'fog' + j, style: { position: 'absolute', left: '-15%', width: '130%', bottom: j ? 40 : -20, height: 220, background: 'radial-gradient(ellipse at 50% 60%, rgba(200,180,230,.16), transparent 70%)', filter: 'blur(30px)', animation: `fogdrift ${26 + j * 10}s ease-in-out ${-j * 8}s infinite` } }));
+    const backdropAll = React.createElement('div', { key: 'bdw', style: { position: 'absolute', inset: 0 } }, backdrop, moon, ...bats, ground, ...fog,
+      React.createElement('div', { key: 'em', style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' } }, embers));
+    let pk = 0;
+    const pumpkin = () => {
+      const id = 'pk' + (pk++), d = -(pk * 0.37) + 's';
+      return React.createElement('svg', { key: id, viewBox: '0 0 100 100', style: { display: 'inline-block', width: '.92em', height: '.92em', verticalAlign: '-.1em', overflow: 'visible', animation: 'pkwobble 2.4s ease-in-out ' + d + ' infinite', transformOrigin: '50% 90%', filter: 'drop-shadow(0 0 .12em rgba(255,122,26,.7))' } },
+        React.createElement('defs', null,
+          React.createElement('radialGradient', { id: id + 'g', cx: '45%', cy: '40%', r: '70%' },
+            React.createElement('stop', { offset: '0%', stopColor: '#ffb347' }), React.createElement('stop', { offset: '65%', stopColor: '#ff7a1a' }), React.createElement('stop', { offset: '100%', stopColor: '#b8420a' }))),
+        React.createElement('path', { d: 'M47 22 C46 14 48 8 54 4 L58 7 C54 10 53 15 54 22 Z', fill: '#5f8a1f' }),
+        ...[[24, 26], [76, 26], [38, 23], [62, 23], [50, 20]].map(([cx, rx], j) => React.createElement('ellipse', { key: j, cx, cy: 60, rx, ry: 38, fill: 'url(#' + id + 'g)', stroke: '#a83a08', strokeWidth: 1.5 })),
+        React.createElement('g', { fill: '#ffe066', style: { animation: 'pkflicker 1.9s steps(1) ' + d + ' infinite', filter: 'drop-shadow(0 0 4px #ffd23a)' } },
+          React.createElement('g', { style: { animation: 'pkblink 4s ease-in-out ' + d + ' infinite', transformOrigin: '50% 44px' } },
+            React.createElement('path', { d: 'M27 50 L41 50 L34 36 Z' }), React.createElement('path', { d: 'M59 50 L73 50 L66 36 Z' })),
+          React.createElement('path', { d: 'M46 61 L54 61 L50 54 Z' }),
+          React.createElement('path', { d: 'M22 66 L30 70 L35 65 L42 72 L50 66 L58 72 L65 65 L70 70 L78 66 Q72 86 50 88 Q28 86 22 66 Z' })));
+    };
+    const show = (v, other) => (pumpkinZeros && v === 0 ? pumpkin() : v);
+    const { teamA, teamB } = this.state;
+    const matches = this.state.matches.map((m) => {
+      const done = m.a >= 11 || m.b >= 11;
+      const aWin = done && m.a > m.b, bWin = done && m.b > m.a;
+      const win = 'rgba(255,255,255,.14)', winBorder = 'rgba(255,255,255,.35)', lose = 'rgba(0,0,0,.25)', loseBorder = 'rgba(255,255,255,.06)';
+      return {
+        ...m, scoreA: show(m.a, m.b), scoreB: show(m.b, m.a), teamA: teamA.name, teamB: teamB.name,
+        status: done ? 'Final' : 'Live',
+        badgeBg: done ? 'rgba(255,255,255,.12)' : c1, badgeColor: done ? 'rgba(255,255,255,.8)' : '#fff',
+        glow: done ? 'none' : `radial-gradient(ellipse at 50% 0%, ${c1}55, transparent 60%)`,
+        aBg: highlight && aWin ? win : highlight && bWin ? lose : 'rgba(255,255,255,.05)',
+        bBg: highlight && bWin ? win : highlight && aWin ? lose : 'rgba(255,255,255,.05)',
+        aBorder: highlight && aWin ? winBorder : loseBorder, bBorder: highlight && bWin ? winBorder : loseBorder,
+        aColor: highlight && bWin ? 'rgba(255,255,255,.4)' : '#fff', bColor: highlight && aWin ? 'rgba(255,255,255,.4)' : '#fff',
+      };
+    });
+    return { ...this.state, matches, backdrop: backdropAll, gameA: show(this.state.game.a, this.state.game.b), gameB: show(this.state.game.b, this.state.game.a), serveA: this.state.serving === 'a' ? 1 : 0, serveB: this.state.serving === 'b' ? 1 : 0 };
+  }
+}
+</script>
+</body>
+</html>

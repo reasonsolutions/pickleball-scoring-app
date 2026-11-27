@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Schibsted+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05021a;font-family:'Schibsted Grotesk',sans-serif}
+a{color:#fff}a:hover{color:#ff9a2e}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,45,120,.7)}50%{opacity:.55;box-shadow:0 0 0 12px rgba(255,45,120,0)}}
+@keyframes sheen{0%{transform:translateX(-140%) skewX(-20deg)}100%{transform:translateX(260%) skewX(-20deg)}}
+@keyframes traydown{0%{transform:translateY(-102%);opacity:0}60%{opacity:1}100%{transform:translateY(0);opacity:1}}
+@keyframes trayscan{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
+@keyframes drsdot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(45,226,255,.6)}50%{opacity:.5;box-shadow:0 0 0 12px rgba(45,226,255,0)}}
+@keyframes servepulse{0%,100%{transform:scale(1);box-shadow:0 0 18px rgba(255,199,46,.9)}50%{transform:scale(1.35);box-shadow:0 0 34px rgba(255,199,46,1)}}
+</style>
+</helmet>
+<div data-screen-label="Stream Overlay" style="position:relative;width:1920px;height:1080px;overflow:hidden;font-family:'Schibsted Grotesk',sans-serif;color:#fff">
+  {{ stageBg }}
+
+  <div style="position:absolute;left:64px;top:56px;width:1040px;display:flex;flex-direction:column;gap:14px">
+
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;padding:12px 28px;border-radius:12px;background:{{ statusBg }};box-shadow:0 0 46px {{ statusGlow }},inset 0 1px 0 rgba(255,255,255,.45)">
+        <span style="width:12px;height:12px;border-radius:50%;background:{{ statusDot }};animation:livepulse 1.6s ease-in-out infinite"></span>
+        <span style="position:relative;font:900 24px/1 'Unbounded',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:{{ statusInk }};white-space:nowrap">{{ statusLabel }}</span>
+        <span style="position:absolute;top:0;bottom:0;left:0;width:32%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sheen 3.4s ease-in-out infinite"></span>
+      </div>
+      <div style="flex:1;height:3px;border-radius:2px;background:linear-gradient(90deg,rgba(255,154,46,.85),rgba(255,45,120,.5),transparent)"></div>
+    </div>
+
+    <sc-if value="{{ showLive }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.16);box-shadow:0 34px 90px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(16px)">
+      <div style="position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#ff9a2e,#ff2d78 55%,#7b2cff)"></div>
+
+      <div style="position:relative;display:grid;grid-template-columns:168px 92px minmax(0,1fr) 148px">
+
+        <div style="display:flex;align-items:center;justify-content:center;padding:14px 12px;background:linear-gradient(180deg,#0b0420,#160835);border-right:1px solid rgba(255,255,255,.12)">
+          <img src="uploads/ILU CCPL HYD.png" alt="Terminus Centre Court Pickleball League HYD" style="width:100%;max-width:142px;height:auto;filter:invert(1) hue-rotate(180deg)">
+        </div>
+
+        <div style="display:grid;grid-template-rows:1fr 1fr;border-right:1px solid rgba(255,255,255,.12)">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-bottom:1px solid rgba(255,255,255,.12)">
+            <div style="font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8)">Won</div>
+            <div style="font:900 40px/1 'Unbounded',sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:#fff">{{ teamA.matches }}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <div style="font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8)">Won</div>
+            <div style="font:900 40px/1 'Unbounded',sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:#fff">{{ teamB.matches }}</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-rows:1fr 1fr;min-width:0">
+          <div style="position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.12);background:{{ rowABg }};min-width:0">
+            <span aria-hidden="true" style="position:absolute;top:50%;right:40px;transform:translateY(-50%);width:180px;height:180px;background:url('uploads/pasted-1789966158186-0.png') center/contain no-repeat;opacity:.24;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 60%);mask-image:linear-gradient(90deg,transparent,#000 60%)"></span>
+            <div style="position:relative;display:flex;flex-direction:column;gap:7px;min-width:0">
+              <div style="font:900 31px/1 'Unbounded',sans-serif;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ teamA.name }}</div>
+              <div style="font:800 23px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ teamA.players }}</div>
+            </div>
+            {{ serveA }}
+          </div>
+          <div style="position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:16px 24px;background:{{ rowBBg }};min-width:0">
+            <span aria-hidden="true" style="position:absolute;top:50%;right:40px;transform:translateY(-50%);width:180px;height:180px;background:url('uploads/pasted-1789966172391-0.png') center/contain no-repeat;opacity:.24;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 60%);mask-image:linear-gradient(90deg,transparent,#000 60%)"></span>
+            <div style="position:relative;display:flex;flex-direction:column;gap:7px;min-width:0">
+              <div style="font:900 31px/1 'Unbounded',sans-serif;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ teamB.name }}</div>
+              <div style="font:800 23px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ teamB.players }}</div>
+            </div>
+            {{ serveB }}
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-rows:1fr 1fr;border-left:1px solid rgba(255,255,255,.14)">
+          <div style="display:flex;align-items:center;justify-content:center;background:{{ scoreABg }};border-bottom:1px solid rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">
+            <span style="font:900 62px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 3px 14px rgba(0,0,0,.45)">{{ game.a }}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;background:{{ scoreBBg }};box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">
+            <span style="font:900 62px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 3px 14px rgba(0,0,0,.45)">{{ game.b }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:relative;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:24px;padding:13px 24px;background:linear-gradient(90deg,rgba(4,1,14,.95),rgba(12,4,34,.9));border-top:1px solid rgba(255,154,46,.65)">
+        <div style="display:flex;align-items:center;gap:16px;min-width:0">
+          <span style="flex:none;font:900 22px/1 'Unbounded',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ff9a2e">{{ tickerTag }}</span>
+          <span style="flex:none;width:1px;height:22px;background:rgba(255,255,255,.22)"></span>
+          <span style="font:800 19px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ tickerText }}</span>
+        </div>
+      </div>
+    </div>
+
+    </sc-if>
+    <sc-if value="{{ showNext }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;border-radius:22px;overflow:hidden;background:linear-gradient(90deg,rgba(255,106,61,.16),rgba(12,4,34,.92) 32%,rgba(12,4,34,.92) 68%,rgba(123,44,255,.18));border:1px solid rgba(255,255,255,.16);box-shadow:0 34px 90px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.28);backdrop-filter:blur(16px)">
+      <div style="position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#ff9a2e,#ff2d78 55%,#7b2cff);z-index:1"></div>
+      <div style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) 220px minmax(0,1fr);height:250px;overflow:hidden">
+        <span aria-hidden="true" style="position:absolute;top:-6%;bottom:-6%;left:-40px;width:420px;background:url('uploads/pasted-1789966158186-0.png') left center/contain no-repeat;opacity:.3;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,#000 25%,transparent 95%);mask-image:linear-gradient(90deg,#000 25%,transparent 95%)"></span>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px;min-width:0;padding:0 0 0 44px;text-align:left">
+          <div style="max-width:100%;font:900 34px/1.05 'Unbounded',sans-serif;letter-spacing:-.035em;text-transform:uppercase;text-wrap:balance;text-shadow:0 4px 24px rgba(0,0,0,.6)">{{ teamA.name }}</div>
+          <div style="width:56px;height:3px;border-radius:2px;background:linear-gradient(90deg,#ff9a2e,#ff2d78)"></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:9px">
+            <sc-for list="{{ teamAPlayers }}" as="p" hint-placeholder-count="2">
+              <div style="font:800 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 18px rgba(0,0,0,.8)">{{ p }}</div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+          <span style="position:absolute;top:28px;bottom:28px;left:50%;width:1px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.2),transparent)"></span>
+          <div style="position:relative;padding:8px 14px;border-radius:8px;background:rgba(5,2,26,.9);border:1px solid rgba(255,154,46,.6);font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#ff9a2e;white-space:nowrap">{{ next.type }}</div>
+          <div style="position:relative;padding:0 14px;background:rgba(12,4,34,.92);font:900 64px/1 'Unbounded',sans-serif;letter-spacing:-.05em;color:#fff;text-shadow:0 0 36px rgba(255,45,120,.7),0 4px 18px rgba(0,0,0,.5)">VS</div>
+        </div>
+        <span aria-hidden="true" style="position:absolute;top:-6%;bottom:-6%;right:-40px;width:420px;background:url('uploads/pasted-1789966172391-0.png') right center/contain no-repeat;opacity:.3;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(270deg,#000 25%,transparent 95%);mask-image:linear-gradient(270deg,#000 25%,transparent 95%)"></span>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:16px;min-width:0;padding:0 44px 0 0;text-align:right">
+          <div style="max-width:100%;font:900 34px/1.05 'Unbounded',sans-serif;letter-spacing:-.035em;text-transform:uppercase;text-wrap:balance;text-shadow:0 4px 24px rgba(0,0,0,.6)">{{ teamB.name }}</div>
+          <div style="width:56px;height:3px;border-radius:2px;background:linear-gradient(270deg,#ff9a2e,#ff2d78)"></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:9px">
+            <sc-for list="{{ teamBPlayers }}" as="p" hint-placeholder-count="2">
+              <div style="font:800 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 18px rgba(0,0,0,.8)">{{ p }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;gap:16px;padding:13px 24px;background:linear-gradient(90deg,rgba(4,1,14,.95),rgba(12,4,34,.9));border-top:1px solid rgba(255,154,46,.65)">
+        <img src="uploads/ILU CCPL HYD.png" alt="Terminus Centre Court Pickleball League HYD" style="height:30px;width:auto;filter:invert(1) hue-rotate(180deg)">
+        <span style="width:1px;height:22px;background:rgba(255,255,255,.22)"></span>
+        <span style="font:800 19px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);white-space:nowrap">{{ next.note }}</span>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ drsOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:-14px;padding-top:14px;overflow:hidden">
+        <div style="position:relative;display:flex;align-items:center;gap:18px;padding:16px 26px;border-radius:18px;overflow:hidden;background:linear-gradient(90deg,rgba(6,14,38,.96),rgba(12,6,44,.94));border:1px solid rgba(45,226,255,.45);box-shadow:0 26px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18),0 0 50px rgba(45,226,255,.22);animation:traydown .55s cubic-bezier(.22,1.1,.36,1) both">
+          <div style="position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,#2de2ff,#3a6dff 55%,#7b2cff)"></div>
+          <span style="flex:none;width:14px;height:14px;border-radius:50%;background:#2de2ff;animation:drsdot 1.5s ease-in-out infinite"></span>
+          <span style="flex:none;font:900 24px/1 'Unbounded',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#fff;white-space:nowrap">Decision Review Pending</span>
+          <span style="flex:1;min-width:0"></span>
+          <span style="flex:none;font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#9fe8ff;white-space:nowrap">{{ drsNote }}</span>
+          <span style="position:absolute;top:0;bottom:0;left:0;width:22%;background:linear-gradient(90deg,transparent,rgba(45,226,255,.28),transparent);animation:trayscan 2.4s linear infinite;pointer-events:none"></span>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080},&quot;activeMatch&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;State&quot;},&quot;status&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;warmup&quot;,&quot;gamepoint&quot;,&quot;final&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;'live'|'warmup'|'gamepoint'|'final'&quot;,&quot;section&quot;:&quot;State&quot;},&quot;serve&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;a&quot;,&quot;b&quot;],&quot;default&quot;:&quot;a&quot;,&quot;tsType&quot;:&quot;'a'|'b'&quot;,&quot;section&quot;:&quot;State&quot;},&quot;drsActive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;State&quot;},&quot;previewBackground&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Output&quot;}}">
+class Component extends DCLogic {
+  state = {
+    teamA: { name: 'The Mavericks', players: 'A. Rahman / V. Iyer', matches: 5 },
+    teamB: { name: 'Starry Smashers', players: 'N. Deshmukh / P. Rao', matches: 1 },
+    game: { a: 11, b: 4 },
+    tickerTag: 'Dink It',
+    tickerText: "Men's Doubles · Game 3 to 11",
+    drsNote: 'Kitchen line · Referee review',
+    next: { type: "Men's Doubles", note: 'Next match · Court 1' },
+  };
+  renderVals() {
+    const status = this.props.status ?? 'live';
+    const serve = this.props.serve ?? 'a';
+    const preview = this.props.previewBackground ?? true;
+    const statuses = {
+      live: { label: 'Live', bg: 'linear-gradient(90deg,#ff2d78,#ff6a3d 60%,#ff9a2e)', ink: '#1a0633', dot: '#1a0633', glow: 'rgba(255,80,120,.5)' },
+      warmup: { label: 'About to start', bg: 'linear-gradient(90deg,#7b2cff,#3a6dff 65%,#2de2ff)', ink: '#07021f', dot: '#07021f', glow: 'rgba(90,90,255,.5)' },
+      gamepoint: { label: 'Game point', bg: 'linear-gradient(90deg,#ffc72e,#ff9a2e 60%,#ff6a3d)', ink: '#2b1300', dot: '#2b1300', glow: 'rgba(255,180,60,.55)' },
+      final: { label: 'Final', bg: 'linear-gradient(90deg,rgba(255,255,255,.22),rgba(255,255,255,.1))', ink: '#fff', dot: '#ff9a2e', glow: 'rgba(0,0,0,.4)' },
+    };
+    const active = this.props.activeMatch ?? true;
+    const s = active ? (statuses[status] || statuses.live) : { label: 'Up Next', bg: statuses.warmup.bg, ink: '#07021f', dot: '#07021f', glow: statuses.warmup.glow };
+    const serveDot = (on) => React.createElement('span', {
+      style: {
+        flex: 'none', width: 18, height: 18, borderRadius: '50%',
+        background: on ? '#ffc72e' : 'rgba(255,255,255,.09)',
+        boxShadow: on ? '0 0 18px rgba(255,199,46,.9)' : 'inset 0 0 0 1px rgba(255,255,255,.14)',
+        animation: on ? 'servepulse 1.8s ease-in-out infinite' : 'none',
+      }
+    });
+    const stageBg = preview
+      ? React.createElement('div', { key: 'bg', style: { position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 10%, #1d3a5c 0%, #0a1526 55%, #050a12 100%)' } },
+          React.createElement('div', { style: { position: 'absolute', inset: 0, backgroundImage: 'repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 6px)' } }))
+      : null;
+    const live = status !== 'final';
+    return {
+      ...this.state,
+      statusLabel: s.label, statusBg: s.bg, statusInk: s.ink, statusDot: s.dot, statusGlow: s.glow,
+      drsOpen: active && (this.props.drsActive ?? false),
+      showLive: active, showNext: !active,
+      teamAPlayers: this.state.teamA.players.split(' / '), teamBPlayers: this.state.teamB.players.split(' / '),
+      serveA: serveDot(live && serve === 'a'), serveB: serveDot(live && serve === 'b'),
+      rowABg: serve === 'a' && live ? 'rgba(255,154,46,.1)' : 'transparent',
+      rowBBg: serve === 'b' && live ? 'rgba(255,154,46,.1)' : 'transparent',
+      scoreABg: 'linear-gradient(180deg,#ff8a1f,#ef6a12)',
+      scoreBBg: 'linear-gradient(180deg,#e9691a,#c9500d)',
+      stageBg,
+    };
+  }
+}
+</script>
+</body>
+</html>

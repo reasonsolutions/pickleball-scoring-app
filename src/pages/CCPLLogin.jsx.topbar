@@ -1,0 +1,851 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '../utils/firebase';
+import CryptoJS from 'crypto-js';
+import CCPLNavbar from '../components/CCPLNavbar';
+import CCPLFooter from '../components/CCPLFooter';
+import CCPLTopBar from '../components/CCPLTopBar';
+
+const CCPLLogin = () => {
+  const navigate = useNavigate();
+  const [role, setRole] = useState('player');
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [form, setForm] = useState({
+    identifier: '',
+    password: '',
+    remember: false
+  });
+  const [error, setError] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
+
+  const accentColor = '#ee3a24';
+  const accentColorDark = '#7d0f0f';
+  const isPlayer = role === 'player';
+
+  useEffect(() => {
+    const updateSize = () => {
+      setIsMobile(window.innerWidth < 860);
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const selectRole = (newRole) => {
+    setRole(newRole);
+    setError('');
+    setForm({ identifier: '', password: '', remember: false });
+  };
+
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const toggleRemember = () => {
+    setForm(prev => ({ ...prev, remember: !prev.remember }));
+  };
+
+  const handleForgotPasswordClick = (e) => {
+    e.preventDefault();
+    setShowForgotPassword(true);
+    setResetEmail('');
+    setResetMessage('');
+    setResetError('');
+  };
+
+  const handleCloseForgotPassword = () => {
+    setShowForgotPassword(false);
+    setResetEmail('');
+    setResetMessage('');
+    setResetError('');
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    
+    if (!resetEmail.trim() || !resetEmail.includes('@')) {
+      setResetError('Please enter a valid email address.');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError('');
+    setResetMessage('');
+
+    try {
+      // Call the cloud function to send password reset email
+      const response = await fetch('https://us-central1-pickleball-app-9ccf7.cloudfunctions.net/ccplResetPassword', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: resetEmail.trim().toLowerCase()
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        setResetMessage('Password reset email sent! Check your inbox.');
+        setResetEmail('');
+        
+        // Close modal after 3 seconds
+        setTimeout(() => {
+          handleCloseForgotPassword();
+        }, 3000);
+      } else {
+        setResetError(data.message || 'Failed to send reset email. Please try again.');
+      }
+    } catch (err) {
+      console.error('Password reset error:', err);
+      setResetError('Failed to send reset email. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { identifier, password } = form;
+    
+    if (!identifier.trim() || !password.trim()) {
+      setError('Enter your credentials to continue.');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Query ccpl-users collection
+      const usersRef = collection(db, 'ccpl-users');
+      
+      // Check if identifier is email or phone number
+      const isEmail = identifier.includes('@');
+      
+      let q;
+      if (isEmail) {
+        // Query by email
+        q = query(
+          usersRef,
+          where('email', '==', identifier.trim().toLowerCase())
+        );
+      } else {
+        // Query by phone number
+        q = query(
+          usersRef,
+          where('phoneNumber', '==', identifier.trim())
+        );
+      }
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        setError('No account found with this email or phone number.');
+        setLoading(false);
+        return;
+      }
+      
+      // Get the first matching user
+      const userDoc = querySnapshot.docs[0];
+      const userData = userDoc.data();
+      
+      // Check if user type matches the selected role
+      if (isPlayer && userData.type !== 'player') {
+        setError('This account is not registered as a player.');
+        setLoading(false);
+        return;
+      }
+      
+      if (!isPlayer && userData.type !== 'team admin') {
+        setError('This account is not registered as a team admin.');
+        setLoading(false);
+        return;
+      }
+      
+      // Hash the entered password and verify
+      const hashedPassword = CryptoJS.SHA256(password).toString();
+      if (userData.password !== hashedPassword) {
+        setError('Incorrect password. Please try again.');
+        setLoading(false);
+        return;
+      }
+      
+      // Check if player has completed registration (payment verification)
+      if (isPlayer) {
+        // Fetch registration data from subcollection to check payment
+        const registrationRef = doc(db, 'ccpl-users', userDoc.id, 'registration', 'player-registration');
+        const registrationSnap = await getDoc(registrationRef);
+        
+        if (!registrationSnap.exists()) {
+          setError('Registration data not found. Please complete your registration.');
+          setLoading(false);
+          return;
+        }
+        
+        const registrationData = registrationSnap.data();
+        
+        if (!registrationData.paymentInfo || !registrationData.paymentInfo.paymentId || registrationData.paymentInfo.paymentId === 'N/A') {
+          setError('Registration incomplete. Please complete your payment to access your profile.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // For team admin, check if teamId exists
+      if (!isPlayer) {
+        if (!userData.teamId) {
+          setError('Team ID not found. Please contact support.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Store user data in localStorage if remember me is checked
+      if (form.remember) {
+        localStorage.setItem('ccpl-user', JSON.stringify({
+          id: userDoc.id,
+          ...userData
+        }));
+      } else {
+        sessionStorage.setItem('ccpl-user', JSON.stringify({
+          id: userDoc.id,
+          ...userData
+        }));
+      }
+      
+      // Success - show logged in state
+      setLoggedIn(true);
+      setLoading(false);
+      
+      // Redirect after successful login
+      setTimeout(() => {
+        if (isPlayer) {
+          navigate(`/ccpl-profile/${userDoc.id}`);
+        } else {
+          navigate(`/ccpl-teamprofile/${userData.teamId}`);
+        }
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An error occurred during login. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleLogOut = (e) => {
+    e.preventDefault();
+    setLoggedIn(false);
+    setForm({ identifier: '', password: '', remember: false });
+  };
+
+  const roleSubtitle = isPlayer
+    ? 'Sign in to manage your registration, availability and auction status.'
+    : 'Sign in to manage your franchise roster, budget and team operations.';
+
+  const identifierLabel = isPlayer ? 'Email or WhatsApp Number' : 'Email Address';
+  const identifierPlaceholder = isPlayer ? 'you@email.com or +91 90000 00000' : 'admin@franchise.com';
+  const submitLabel = isPlayer ? 'Sign In as Player' : 'Sign In as Team Admin';
+  const signupPrompt = isPlayer ? "Not registered yet?" : "Don't have an admin account?";
+  const signupLinkLabel = isPlayer ? 'Register as a player' : 'Contact the League Office';
+  const signupHref = isPlayer ? '/ccpl-signup' : '#';
+  const loggedInMessage = isPlayer
+    ? 'Redirecting you to your player dashboard.'
+    : 'Redirecting you to your team admin dashboard.';
+
+  const leagues = [
+    { label: 'CCPL S2', href: '/ccpl-home', active: true },
+    { label: 'CCPL S1', href: '/ccpl-s1', active: false },
+    { label: 'CCPL Clubs', href: '/hpl-clubs', active: false },
+  ];
+
+  return (
+    <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+        
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/fonts/zuume-cut-black.ttf') format('truetype');
+          font-weight: 900;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/fonts/zuume-cut-black-italic.ttf') format('truetype');
+          font-weight: 900;
+          font-style: italic;
+        }
+        
+        body {
+          margin: 0;
+          background: #0b0b0c;
+        }
+        
+        a {
+          color: ${accentColor};
+        }
+        
+        a:hover {
+          color: #ffffff;
+        }
+        
+        input::placeholder {
+          color: rgba(255, 255, 255, 0.35);
+        }
+        
+        ::selection {
+          background: ${accentColor};
+          color: #0b0b0c;
+        }
+        
+        .zuume-heading {
+          font-family: 'Zuume Cut', sans-serif;
+          font-weight: 900;
+          font-style: italic;
+        }
+        
+        .zuume-normal {
+          font-family: 'Zuume Cut', sans-serif;
+          font-weight: 900;
+          font-style: normal;
+        }
+        
+        /* Hide scrollbar for top bar while maintaining scroll functionality */
+        .ccpl-top-bar::-webkit-scrollbar {
+          display: none;
+        }
+        .ccpl-top-bar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        .cc-league-tab {
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        
+        .cc-league-tab:hover {
+          background: rgba(255, 255, 255, 0.85) !important;
+        }
+        
+        .cc-social {
+          transition: background 0.2s ease;
+        }
+        
+        .cc-social:hover {
+          background: #232324 !important;
+        }
+      `}</style>
+
+      {/* Top Bar */}
+      <div className="ccpl-top-bar" style={{ display: 'flex', alignItems: 'stretch', background: accentColor, boxSizing: 'border-box', height: '50px', overflowX: 'auto', overflowY: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
+          {leagues.map((lg, idx) => (
+            <a
+              key={idx}
+              href={lg.href}
+              className="cc-league-tab"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: isMobile ? '0 16px' : '0 26px',
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                fontSize: isMobile ? '12px' : '14px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                background: lg.active ? '#0b0b0c' : '#f1f1ee',
+                color: lg.active ? '#fff' : '#0b0b0c',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {lg.label}
+            </a>
+          ))}
+        </div>
+        <div style={{ flex: 1, minWidth: '0' }}></div>
+        <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
+          <a href="#" className="cc-social" aria-label="Instagram" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '50px', background: '#0b0b0c', color: '#fff', textDecoration: 'none' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="2" width="20" height="20" rx="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </a>
+          <a href="#" className="cc-social" aria-label="YouTube" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '50px', background: '#0b0b0c', color: '#fff', textDecoration: 'none' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21.6 7.2c-.25-1-1-1.75-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4c-1 .25-1.75 1-2 2C2 8.9 2 12 2 12s0 3.1.4 4.8c.25 1 1 1.75 2 2 1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4c1-.25 1.75-1 2-2 .4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.2V8.8l6 3.2-6 3.2z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <CCPLNavbar activePage="login" />
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }} onClick={handleCloseForgotPassword}>
+          <div style={{
+            background: '#1a1a1c',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '40px 32px',
+            position: 'relative'
+          }} onClick={(e) => e.stopPropagation()}>
+            {/* Close Button */}
+            <button
+              onClick={handleCloseForgotPassword}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: '24px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                lineHeight: '1'
+              }}
+            >
+              ×
+            </button>
+
+            <h2 className="zuume-normal" style={{
+              fontSize: '32px',
+              lineHeight: '1',
+              margin: '0 0 12px',
+              textTransform: 'uppercase',
+              color: '#fff'
+            }}>
+              Reset Password
+            </h2>
+            
+            <p style={{
+              margin: '0 0 28px',
+              fontSize: '13.5px',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.55)'
+            }}>
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            <form onSubmit={handlePasswordReset} style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
+              <label style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                fontSize: '11px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255, 255, 255, 0.5)'
+              }}>
+                Email Address
+                <input
+                  required
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="you@email.com"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.25)',
+                    color: '#fff',
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontSize: '16px',
+                    padding: '10px 2px',
+                    outline: 'none'
+                  }}
+                />
+              </label>
+
+              {resetError && (
+                <p style={{
+                  margin: '0',
+                  fontSize: '12.5px',
+                  color: accentColor
+                }}>
+                  {resetError}
+                </p>
+              )}
+
+              {resetMessage && (
+                <p style={{
+                  margin: '0',
+                  fontSize: '12.5px',
+                  color: '#4ade80'
+                }}>
+                  {resetMessage}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={resetLoading}
+                style={{
+                  padding: '19px',
+                  background: resetLoading ? '#666' : `linear-gradient(180deg, ${accentColor}, ${accentColorDark})`,
+                  border: 'none',
+                  color: '#fff',
+                  fontFamily: "'Montserrat', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  cursor: resetLoading ? 'not-allowed' : 'pointer',
+                  opacity: resetLoading ? 0.7 : 1
+                }}
+              >
+                {resetLoading ? 'Sending...' : 'Send Reset Link →'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <section style={{
+        position: 'relative',
+        background: '#0b0b0c',
+        color: '#fff',
+        fontFamily: "'Montserrat', sans-serif",
+        minHeight: 'calc(100vh - 196px)',
+        boxSizing: 'border-box',
+        padding: '64px 6vw 96px',
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
+        <div style={{ maxWidth: '460px', width: '100%' }}>
+          
+          {/* Header Badge */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginBottom: '28px'
+          }}>
+            <div style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: accentColor
+            }}></div>
+            <span style={{
+              fontSize: '11px',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'rgba(255, 255, 255, 0.5)'
+            }}>Season 2 · Account Sign In</span>
+          </div>
+
+          {/* Role Tabs */}
+          <div style={{
+            display: 'flex',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            marginBottom: '32px'
+          }}>
+            <button
+              type="button"
+              onClick={() => selectRole('player')}
+              style={{
+                flex: 1,
+                padding: '14px 8px',
+                background: isPlayer ? accentColor : 'transparent',
+                color: isPlayer ? '#fff' : 'rgba(255, 255, 255, 0.55)',
+                border: 'none',
+                borderRight: '1px solid rgba(255, 255, 255, 0.18)',
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                fontSize: '12px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: 'pointer'
+              }}
+            >
+              Player
+            </button>
+            <button
+              type="button"
+              onClick={() => selectRole('owner')}
+              style={{
+                flex: 1,
+                padding: '14px 8px',
+                background: !isPlayer ? accentColor : 'transparent',
+                color: !isPlayer ? '#fff' : 'rgba(255, 255, 255, 0.55)',
+                border: 'none',
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                fontSize: '12px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: 'pointer'
+              }}
+            >
+              Team Admin
+            </button>
+          </div>
+
+          {/* Title */}
+          <h1 className="zuume-heading" style={{
+            fontSize: 'clamp(38px, 5vw, 56px)',
+            lineHeight: '0.9',
+            margin: '0 0 10px',
+            textTransform: 'uppercase'
+          }}>
+            Welcome Back.
+          </h1>
+          <p style={{
+            margin: '0 0 32px',
+            fontSize: '14px',
+            lineHeight: '1.6',
+            color: 'rgba(255, 255, 255, 0.5)',
+            maxWidth: '380px'
+          }}>
+            {roleSubtitle}
+          </p>
+
+          {/* Logged In State */}
+          {loggedIn && (
+            <div style={{
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              padding: '40px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }}>
+              <span style={{
+                fontSize: '12px',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: accentColor
+              }}>
+                Signed In
+              </span>
+              <p className="zuume-normal" style={{
+                fontSize: '32px',
+                lineHeight: '1',
+                margin: '0',
+                textTransform: 'uppercase'
+              }}>
+                You're In.
+              </p>
+              <p style={{
+                fontSize: '13.5px',
+                lineHeight: '1.6',
+                color: 'rgba(255, 255, 255, 0.55)',
+                margin: '0'
+              }}>
+                {loggedInMessage}
+              </p>
+              <a
+                href="#"
+                onClick={handleLogOut}
+                style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'underline'
+                }}
+              >
+                Sign in as someone else
+              </a>
+            </div>
+          )}
+
+          {/* Login Form */}
+          {!loggedIn && (
+            <>
+              <form onSubmit={handleSubmit} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '22px'
+              }}>
+                {/* Identifier Field */}
+                <label style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '11px',
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  {identifierLabel}
+                  <input
+                    required
+                    name="identifier"
+                    placeholder={identifierPlaceholder}
+                    value={form.identifier}
+                    onChange={handleFieldChange}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.25)',
+                      color: '#fff',
+                      fontFamily: "'Montserrat', sans-serif",
+                      fontSize: '16px',
+                      padding: '10px 2px',
+                      outline: 'none'
+                    }}
+                  />
+                </label>
+
+                {/* Password Field */}
+                <label style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  fontSize: '11px',
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }}>
+                  Password
+                  <input
+                    required
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleFieldChange}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.25)',
+                      color: '#fff',
+                      fontFamily: "'Montserrat', sans-serif",
+                      fontSize: '16px',
+                      padding: '10px 2px',
+                      outline: 'none'
+                    }}
+                  />
+                </label>
+
+                {/* Remember Me & Forgot Password */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '10px'
+                }}>
+                  <label style={{
+                    display: 'flex',
+                    gap: '10px',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={form.remember}
+                      onChange={toggleRemember}
+                      style={{
+                        width: '15px',
+                        height: '15px',
+                        accentColor: accentColor,
+                        flexShrink: 0,
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <span style={{
+                      fontSize: '13px',
+                      color: 'rgba(255, 255, 255, 0.6)'
+                    }}>
+                      Remember me
+                    </span>
+                  </label>
+                  <a href="#" onClick={handleForgotPasswordClick} style={{
+                    fontSize: '12px',
+                    letterSpacing: '0.04em',
+                    textDecoration: 'underline'
+                  }}>
+                    Forgot password?
+                  </a>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <p style={{
+                    margin: '0',
+                    fontSize: '12.5px',
+                    color: accentColor
+                  }}>
+                    {error}
+                  </p>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    padding: '19px',
+                    background: loading ? '#666' : `linear-gradient(180deg, ${accentColor}, ${accentColorDark})`,
+                    border: 'none',
+                    color: '#fff',
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.7 : 1
+                  }}
+                >
+                  {loading ? 'Signing In...' : `${submitLabel} →`}
+                </button>
+              </form>
+
+              {/* Signup Link */}
+              <p style={{
+                margin: '28px 0 0',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                color: 'rgba(255, 255, 255, 0.45)'
+              }}>
+                {signupPrompt}{' '}
+                <a href={signupHref} style={{ textDecoration: 'underline' }}>
+                  {signupLinkLabel}
+                </a>
+              </p>
+            </>
+          )}
+        </div>
+      </section>
+      <CCPLFooter />
+    </div>
+  );
+};
+
+export default CCPLLogin;

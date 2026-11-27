@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+body{margin:0;background:#141416;color:#fff;font-family:'Schibsted Grotesk',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#F2B48F}a:hover{color:#E47E48}
+input[type=range]{accent-color:#E47E48}
+button:disabled{opacity:.45;cursor:default}
+</style>
+</helmet>
+<div data-screen-label="Motion Kit" style="min-height:100vh;background:#141416;color:#fff">
+  <header style="max-width:1440px;margin:0 auto;padding:48px 40px 28px;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:28px 40px;align-items:flex-end;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:820px;min-width:0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="assets/cc-mark.png" alt="CCPL" style="height:26px;width:auto">
+        <div style="font:700 13px/1.3 'JetBrains Mono',monospace;letter-spacing:.2em;color:#E47E48;min-width:0">CCPL · SEASON 2 · SAFETY BRIEFING</div>
+      </div>
+      <h1 style="margin:0;font:800 64px/.92 'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance">CCPL Battle Briefing: Motion Graphics Kit</h1>
+      <p style="margin:0;font:400 17px/1.5 'Schibsted Grotesk',sans-serif;color:rgba(255,255,255,.68);max-width:640px;text-wrap:pretty">Corner overlays for the 60-second airline-safety parody. Each clip exports as a full 1080×1920 frame at 30fps on a transparent background, so it drops straight on top of the captain's footage.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ specs }}" as="s" hint-placeholder-count="5">
+          <div style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.08em;padding:8px 10px;border:1px solid rgba(255,255,255,.16);border-radius:8px;white-space:nowrap;color:rgba(255,255,255,.75)">{{ s }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:stretch;min-width:260px">
+      <button onClick="{{ onAll }}" disabled="{{ allDisabled }}" style="cursor:pointer;border:0;border-radius:12px;padding:18px 26px;background:#E47E48;color:#141416;font:800 24px/1 'Barlow Condensed',sans-serif;letter-spacing:.04em;text-transform:uppercase" style-hover="background:#F2B48F">{{ allLabel }}</button>
+      <div style="height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden">
+        <div style="height:100%;width:{{ allPct }}%;background:#E47E48"></div>
+      </div>
+      <div style="font:500 12px/1.4 'JetBrains Mono',monospace;color:rgba(255,255,255,.5)">By section: PNG sequence + green-screen video + still per clip, plus manifest.csv</div>
+      <button onClick="{{ onAllGreen }}" disabled="{{ allDisabled }}" style="cursor:pointer;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:12px 14px;background:transparent;color:#fff;font:700 14px/1.2 'Schibsted Grotesk',sans-serif;text-align:left" style-hover="border-color:#fff">
+        <span style="flex:none;width:12px;height:12px;border-radius:3px;background:#00FF00"></span>
+        <span>{{ greenLabel }}</span>
+      </button>
+      <button onClick="{{ onCtx }}" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:12px 14px;background:transparent;color:#fff;font:700 14px/1 'Schibsted Grotesk',sans-serif" style-hover="border-color:#fff">
+        <span>Preview in context</span>
+        <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;padding:5px 8px;border-radius:6px;background:{{ ctxPillBg }};color:{{ ctxPillFg }}">{{ ctxLabel }}</span>
+      </button>
+    </div>
+  </header>
+
+  <sc-if value="{{ err }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1440px;margin:0 auto;padding:0 40px;box-sizing:border-box;font:500 14px/1.4 'JetBrains Mono',monospace;color:#ff8a80">{{ err }}</div>
+  </sc-if>
+
+  <main style="max-width:1440px;margin:0 auto;padding:12px 40px 80px;box-sizing:border-box;display:flex;flex-direction:column;gap:44px">
+    <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="5">
+      <section style="display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;align-items:baseline;gap:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.12)">
+          <div style="font:800 44px/1 'Barlow Condensed',sans-serif;color:#E47E48">{{ sec.n }}</div>
+          <h2 style="margin:0;flex:1;min-width:0;font:800 34px/1 'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.02em">{{ sec.title }}</h2>
+          <div style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;color:rgba(255,255,255,.5);white-space:nowrap">{{ sec.countLabel }}</div>
+        </div>
+        <sc-if value="{{ sec.note }}" hint-placeholder-val="{{ false }}">
+          <div style="font:500 13px/1.5 'JetBrains Mono',monospace;letter-spacing:.04em;color:rgba(255,255,255,.6)">{{ sec.note }}</div>
+        </sc-if>
+        <sc-if value="{{ sec.empty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px;border:1px dashed rgba(255,255,255,.16);border-radius:14px;font:500 13px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:rgba(255,255,255,.4)">NO CLIPS YET</div>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">
+          <sc-for list="{{ sec.clips }}" as="c" hint-placeholder-count="4">
+            <article style="display:flex;flex-direction:column;gap:14px;padding:14px;background:#1D1D20;border:1px solid rgba(255,255,255,.09);border-radius:18px;min-width:0">
+              <div style="position:relative;aspect-ratio:{{ c.aspect }};border-radius:{{ pvRadius }};outline:{{ pvOutline }};overflow:hidden;background:{{ previewBg }}">
+                <sc-if value="{{ ctxOn }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;left:50%;top:30%;width:26%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#8B8B92"></div>
+                  <div style="position:absolute;left:23%;right:23%;top:45.5%;bottom:-4%;border-radius:40% 40% 0 0;background:#8B8B92;display:flex;align-items:flex-start;justify-content:center;padding-top:14%;box-sizing:border-box;font:700 10px/1 'JetBrains Mono',monospace;letter-spacing:.16em;color:#3A3A40">CAPTAIN</div>
+                  <div style="position:absolute;left:36%;width:28%;top:1.2%;height:1.9%;border-radius:999px;background:#050505"></div>
+                </sc-if>
+                <canvas ref="{{ c.canvasRef }}" width="540" height="960" style="position:absolute;display:block;width:{{ c.cw }};left:{{ c.cl }};top:{{ c.ct }}"></canvas>
+                <sc-if value="{{ guides }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;left:0;right:0;top:{{ c.gSafe }};border-top:1px dashed rgba(255,60,120,.8);pointer-events:none"></div>
+                  <div style="position:absolute;left:{{ c.b0.l }};top:{{ c.b0.t }};width:{{ c.b0.w }};height:{{ c.b0.h }};outline:1px dashed rgba(0,200,255,.9);pointer-events:none"></div>
+                  <div style="position:absolute;left:{{ c.b1.l }};top:{{ c.b1.t }};width:{{ c.b1.w }};height:{{ c.b1.h }};outline:1px dashed rgba(0,200,255,.9);pointer-events:none"></div>
+                </sc-if>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <button onClick="{{ c.onPlay }}" style="flex:none;cursor:pointer;border:0;border-radius:10px;padding:0 16px;height:44px;min-width:92px;background:#fff;color:#141416;font:800 18px/1 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase" style-hover="background:#F2B48F">{{ c.playLabel }}</button>
+                <input type="range" min="0" max="{{ c.maxFrame }}" step="1" value="{{ c.frame }}" onChange="{{ c.onScrub }}" style="flex:1;min-width:0;height:44px;margin:0">
+                <div style="flex:none;font:500 12px/1 'JetBrains Mono',monospace;color:rgba(255,255,255,.6);min-width:62px;text-align:right">{{ c.frameLabel }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <div style="font:800 40px/.9 'Barlow Condensed',sans-serif;color:#E47E48">{{ c.id }}</div>
+                  <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;padding:6px 8px;border-radius:6px;background:#fff;color:#141416">{{ c.cornerLabel }}</div>
+                  <sc-if value="{{ c.optional }}" hint-placeholder-val="{{ false }}">
+                    <div style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;padding:5px 7px;border-radius:6px;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7)">OPTIONAL</div>
+                  </sc-if>
+                </div>
+                <div style="font:500 12px/1.5 'JetBrains Mono',monospace;letter-spacing:.06em;color:rgba(255,255,255,.6)">{{ c.metaLine }}</div>
+                <div style="font:500 17px/1.4 'Schibsted Grotesk',sans-serif;color:#fff;text-wrap:pretty">“{{ c.line }}”</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:auto">
+                <button onClick="{{ c.onPng }}" disabled="{{ c.busy }}" style="cursor:pointer;border:0;border-radius:10px;padding:13px 14px;background:#E47E48;color:#141416;font:700 14px/1.2 'Schibsted Grotesk',sans-serif;text-align:left" style-hover="background:#F2B48F">PNG sequence (transparent, .zip)</button>
+                <button onClick="{{ c.onVideo }}" disabled="{{ c.busy }}" style="cursor:pointer;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:12px 14px;background:transparent;color:#fff;font:700 14px/1.2 'Schibsted Grotesk',sans-serif;text-align:left" style-hover="border-color:#fff">
+                  <span style="flex:none;width:12px;height:12px;border-radius:3px;background:#00FF00"></span>
+                  <span>Green-screen MP4 (#00FF00)</span>
+                </button>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div style="font:500 11px/1.3 'JetBrains Mono',monospace;color:rgba(255,255,255,.42);min-width:0;overflow-wrap:anywhere">{{ c.fileBase }}</div>
+                  <button onClick="{{ c.onStill }}" disabled="{{ c.busy }}" style="flex:none;cursor:pointer;border:0;background:transparent;padding:8px 0;color:#F2B48F;font:700 13px/1 'Schibsted Grotesk',sans-serif;text-decoration:underline;text-underline-offset:3px" style-hover="color:#fff">Download still PNG</button>
+                </div>
+                <sc-if value="{{ c.busy }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <div style="height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden">
+                      <div style="height:100%;width:{{ c.pct }}%;background:#E47E48"></div>
+                    </div>
+                    <div style="font:500 11px/1 'JetBrains Mono',monospace;color:rgba(255,255,255,.6)">{{ c.busyLabel }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;previewBg&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;checker&quot;,&quot;footage&quot;,&quot;green&quot;],&quot;default&quot;:&quot;checker&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full frame&quot;,&quot;corner zoom&quot;],&quot;default&quot;:&quot;full frame&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { ready: false, err: '', sections: [], t: {}, playing: null, played: {}, busy: {}, all: null };
+  canv = {}; refs = {}; clips = [];
+
+  async componentDidMount() {
+    try {
+      const u = p => new URL(p, document.baseURI).href;
+      const imp = async p => {
+        for (let i = 0; i < 3; i++) {
+          try { return await import(i ? u(p) + (u(p).includes('?') ? '&' : '?') + 'r=' + Date.now() : u(p)); }
+          catch (e) { if (i === 2) throw e; await new Promise(r => setTimeout(r, 400 * (i + 1))); }
+        }
+      };
+      this.K = await imp('./ccpl-kit.js');
+      const M = await imp('./ccpl-clips.js');
+      await this.K.ready();
+      this.clips = M.CLIPS;
+      const t = {}; M.CLIPS.forEach(c => (t[c.id] = this.K.stillTime(c)));
+      this.setState({ ready: true, sections: M.SECTIONS, t }, () => this.clips.forEach(c => this.draw(c.id)));
+    } catch (e) { console.error(e); this.setState({ err: 'Failed to load kit: ' + e.message }); }
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+  clip(id) { return this.clips.find(c => c.id === id); }
+  draw(id) {
+    const cv = this.canv[id], c = this.clip(id);
+    if (!cv || !c || !this.K) return;
+    this.K.renderFrame(cv.getContext('2d'), c, this.state.t[id] ?? 0, { scale: cv.width / this.K.W });
+  }
+  ref(id) { return this.refs[id] || (this.refs[id] = el => { this.canv[id] = el; if (el) this.draw(id); }); }
+  setT(id, t) { this.setState(s => ({ t: { ...s.t, [id]: t } }), () => this.draw(id)); }
+  play(id) {
+    cancelAnimationFrame(this.raf);
+    const c = this.clip(id), t0 = performance.now();
+    this.setState(s => ({ playing: id, played: { ...s.played, [id]: true } }));
+    const step = now => {
+      const t = (now - t0) / 1000;
+      if (t >= c.dur) { this.setState({ playing: null }); this.setT(id, this.K.stillTime(c)); return; }
+      this.setT(id, t); this.raf = requestAnimationFrame(step);
+    };
+    this.raf = requestAnimationFrame(step);
+  }
+  scrub(id, f) {
+    if (this.state.playing) { cancelAnimationFrame(this.raf); this.setState({ playing: null }); }
+    this.setT(id, f / this.K.FPS);
+  }
+  async run(id, kind) {
+    const c = this.clip(id), K = this.K;
+    const setB = v => this.setState(s => ({ busy: { ...s.busy, [id]: v } }));
+    let last = 0;
+    const prog = p => { if (p - last > 0.02 || p >= 1) { last = p; setB({ kind, p }); } };
+    setB({ kind, p: 0 });
+    try {
+      if (kind === 'png') await K.exportPNGZip(c, prog);
+      else if (kind === 'video') await K.exportVideo(c, prog);
+      else await K.exportStill(c);
+    } catch (e) { console.error(e); alert('Export failed: ' + e.message); }
+    setB(null);
+  }
+  async runAll(green) {
+    const K = this.K; let last = 0;
+    this.setState({ all: { p: 0, k: 0, green } });
+    try {
+      const cb = (p, k, ph) => { if (p - last > 0.005 || ph !== this._ph) { last = p; this._ph = ph; this.setState({ all: { p, k, ph, green } }); } };
+      if (green) await K.exportAllGreen(this.clips, cb);
+      else await K.exportAll(this.clips, this.state.sections, cb);
+    } catch (e) { console.error(e); alert('Export failed: ' + e.message); }
+    this.setState({ all: null });
+  }
+  renderVals() {
+    const K = this.K, st = this.state;
+    const ctxOn = !!st.ctxOn, bgMode = ctxOn ? 'context' : (this.props.previewBg ?? 'checker'), zoom = !ctxOn && (this.props.view ?? 'full frame') === 'corner zoom';
+    const previewBg = bgMode === 'context' ? '#36363C' : bgMode === 'green' ? '#00FF00'
+      : bgMode === 'footage' ? 'radial-gradient(120% 70% at 50% 45%, #6b5a4e 0%, #3a3330 45%, #1c1a1a 100%)'
+      : 'repeating-conic-gradient(#d4d4d4 0% 25%, #ababab 0% 50%) 0 0 / 16px 16px';
+    const pct = v => (v * 100).toFixed(3) + '%';
+    const view = c => {
+      const mods = (c.layers || [c]).map(L => { const w = L.w || 400, h = L.h || 400; return K ? K.moduleRect(L.corner, w, h) : { x: 60, y: 160, w, h }; });
+      const both = c.corner === 'TL-TR';
+      const R = zoom ? (both ? { x: 0, y: 100, w: 1080, h: 540 } : { x: c.corner === 'TR' ? 560 : 0, y: 100, w: 520, h: 520 }) : { x: 0, y: 0, w: 1080, h: 1920 };
+      const fps = K ? K.FPS : 30, n = Math.round(c.dur * fps), t = st.t[c.id] ?? 0, f = Math.min(n - 1, Math.round(t * fps));
+      const b = st.busy[c.id];
+      return {
+        id: c.id, line: c.line, optional: !!c.optional,
+        cornerLabel: { TL: 'TOP-LEFT', TR: 'TOP-RIGHT', 'TL-TR': 'LEFT + RIGHT' }[c.corner],
+        metaLine: `${c.tc}  ·  ${c.captain.toUpperCase()}  ·  ${c.dur.toFixed(1)}s / ${n}f`,
+        fileBase: K ? K.baseName(c) : '',
+        frame: f, maxFrame: n - 1, frameLabel: `${String(f).padStart(3, '0')}/${String(n - 1).padStart(3, '0')}`,
+        playLabel: st.playing === c.id ? 'Playing' : st.played[c.id] ? 'Replay' : 'Play',
+        onPlay: () => this.play(c.id), onScrub: e => this.scrub(c.id, +e.target.value),
+        onPng: () => this.run(c.id, 'png'), onVideo: () => this.run(c.id, 'video'), onStill: () => this.run(c.id, 'still'),
+        canvasRef: this.ref(c.id),
+        busy: !!b, pct: b ? Math.round(b.p * 100) : 0,
+        busyLabel: b ? `${b.kind === 'png' ? 'Rendering PNG frames' : b.kind === 'video' ? 'Encoding green-screen video' : 'Rendering still'} · ${Math.round(b.p * 100)}%` : '',
+        cw: pct(1080 / R.w), cl: pct(-R.x / R.w), ct: pct(-R.y / R.h),
+        ...(() => { const bx = mods.map(m => ({ l: pct((m.x - R.x) / R.w), t: pct((m.y - R.y) / R.h), w: pct(m.w / R.w), h: pct(m.h / R.h) })); return { b0: bx[0], b1: bx[1] || { l: '0%', t: '0%', w: '0%', h: '0%' } }; })(), gSafe: pct((140 - R.y) / R.h),
+        aspect: zoom ? (both ? '2 / 1' : '1 / 1') : '9 / 16',
+      };
+    };
+    const sections = st.sections.map(s => {
+      const clips = this.clips.filter(c => c.section === s.n).map(view);
+      return { n: s.n, title: s.title, note: s.note || '', clips, empty: clips.length === 0, countLabel: clips.length ? `${clips.length} CLIP${clips.length > 1 ? 'S' : ''}` : '' };
+    });
+    const a = st.all;
+    return {
+      sections, err: st.err, previewBg, ctxOn, onCtx: () => this.setState(s => ({ ctxOn: !s.ctxOn })),
+      ctxLabel: ctxOn ? 'ON' : 'OFF', ctxPillBg: ctxOn ? '#E47E48' : 'rgba(255,255,255,.12)', ctxPillFg: ctxOn ? '#141416' : 'rgba(255,255,255,.7)',
+      pvRadius: ctxOn ? '9% / 5%' : '12px', pvOutline: ctxOn ? '7px solid #050505' : 'none', guides: !!this.props.guides,
+      specs: ['1080×1920', '30 FPS', '2–3 S PER CLIP', 'TL / TR CORNER · 400PX', 'ALPHA PNG + #00FF00 MP4'],
+      onAll: () => this.runAll(false), onAllGreen: () => this.runAll(true), allDisabled: !st.ready || !!a,
+      greenLabel: a && a.green ? `Green ${Math.min(a.k + 1, this.clips.length)}/${this.clips.length} · ${Math.round(a.p * 100)}%` : 'All green-screen MP4s (one folder)',
+      allLabel: a && !a.green ? `Clip ${Math.min(a.k + 1, this.clips.length)}/${this.clips.length} · ${a.ph || ''} · ${Math.round(a.p * 100)}%` : 'Download ALL (zip)',
+      allPct: a ? Math.round(a.p * 100) : 0,
+    };
+  }
+}
+</script>
+</body>
+</html>

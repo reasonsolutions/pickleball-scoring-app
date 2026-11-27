@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;text-decoration:none;}
+    a:hover{color:#0b0b0c;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="teams" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Team Header" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(40px,5vw,72px) 6vw calc(5vw + clamp(56px,7vw,96px));overflow:hidden;">
+  <div style="position:absolute;right:-1vw;bottom:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,32vw,520px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.14);">{{teamNum}}</div>
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div style="position:relative;max-width:1400px;margin:0 auto;">
+    <a href="Centre Court Teams v2.dc.html" data-reveal="1" style="display:inline-flex;align-items:center;gap:10px;margin-bottom:clamp(28px,4vw,48px);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);transition:color .2s ease;" style-hover="color:#e27b46">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M20 12H5M11 6l-6 6 6 6"></path></svg>
+      All franchises
+    </a>
+    <div data-reveal="1" style="display:grid;grid-template-columns:{{heroCols}};gap:clamp(28px,4vw,56px);align-items:end;">
+      <div style="position:relative;width:{{logoBox}};height:{{logoBox}};background:#ffffff;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <span style="position:absolute;left:0;top:0;bottom:0;width:8px;background:#e27b46;"></span>
+        <image-slot id="{{slotId}}" shape="rect" placeholder="Drop team logo" style="width:100%;height:100%;"></image-slot>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+          <span style="display:inline-flex;width:fit-content;flex:none;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">{{teamTag}}</span></span>
+          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:#e27b46;animation:cc-pulse 2s ease-in-out infinite;"></span>CCPL Hyderabad / Season 2</span>
+        </div>
+        <h1 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,10vw,160px);line-height:.84;letter-spacing:-.01em;">{{teamFirst}} <span style="color:#e27b46;">{{teamLast}}</span></h1>
+      </div>
+    </div>
+    <div data-reveal="1" style="display:grid;grid-template-columns:{{statCols}};margin-top:clamp(36px,5vw,64px);border-top:2px solid rgba(255,255,255,.18);">
+      <sc-for list="{{stats}}" as="stat" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:22px 20px 0 0;">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(40px,4.5vw,64px);line-height:.9;color:#ffffff;">{{stat.value}}</span>
+          <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);">{{stat.label}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Squad" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;margin-top:-5vw;padding:calc(5vw + clamp(40px,5vw,64px)) 6vw calc(5vw + clamp(64px,8vw,110px));clip-path:polygon(0 5vw,100% 0,100% 100%,0 100%);">
+  <div style="max-width:1400px;margin:0 auto;display:grid;grid-template-columns:{{bodyCols}};gap:clamp(36px,4vw,56px);align-items:start;">
+
+    <div>
+      <div data-reveal="1" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+        <h2 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">The <span style="color:#e27b46;">Squad.</span></h2>
+        <span style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">Season 2 roster / 8 players</span>
+      </div>
+      <div style="display:grid;grid-template-columns:{{squadCols}};gap:{{squadGap}};">
+        <sc-for list="{{squad}}" as="player" hint-placeholder-count="8">
+          <div data-reveal="card" onMouseEnter="{{player.enter}}" onMouseLeave="{{player.leave}}" style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:2px solid #0b0b0c;background:{{player.bg}};color:{{player.ink}};transition:background .3s ease,color .3s ease;">
+            <div style="position:relative;aspect-ratio:4/5;background:#e4e1d8;border-bottom:2px solid #0b0b0c;">
+              <image-slot id="{{player.slotId}}" shape="rect" placeholder="Drop player photo" style="width:100%;height:100%;"></image-slot>
+              <span style="position:absolute;top:0;left:0;display:inline-flex;background:#0b0b0c;padding:6px 10px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;line-height:1;color:#e27b46;">{{player.num}}</span>
+            </div>
+            <span style="position:absolute;left:0;bottom:0;height:{{player.infoH}};width:8px;background:#e27b46;transition:transform .35s cubic-bezier(.2,.7,.2,1);transform-origin:bottom;transform:scaleY({{player.edge}});"></span>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px 16px;">
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:.95;text-transform:uppercase;">{{player.name}}</span>
+              <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:{{player.subInk}};transition:color .3s ease;">{{player.role}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div data-reveal="1" style="position:relative;background:#ffffff;border:2px solid #0b0b0c;padding:26px 24px 22px;">
+        <span style="position:absolute;top:0;left:0;width:40%;height:6px;background:#e27b46;"></span>
+        <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:30px;line-height:1;text-transform:uppercase;">Franchise</span>
+        <div style="display:flex;flex-direction:column;margin-top:14px;">
+          <sc-for list="{{facts}}" as="fact" hint-placeholder-count="4">
+            <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid #d8d4ca;padding:12px 0;">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">{{fact.label}}</span>
+              <span style="font-size:14px;font-weight:600;text-align:right;">{{fact.value}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div data-reveal="1" style="position:relative;background:#0b0b0c;color:#ffffff;border:2px solid #0b0b0c;padding:26px 24px 22px;overflow:hidden;">
+        <span style="position:absolute;right:-6px;top:-14px;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:120px;line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(226,123,70,.4);">VS</span>
+        <span style="position:relative;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:30px;line-height:1;text-transform:uppercase;">Upcoming</span>
+        <div style="position:relative;display:flex;flex-direction:column;margin-top:14px;">
+          <sc-for list="{{fixtures}}" as="fx" hint-placeholder-count="3">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.16);padding:12px 0;">
+              <span style="font-size:14px;font-weight:600;">{{fx.opponent}}</span>
+              <span style="display:inline-flex;transform:skewX(-14deg);background:{{fx.tagBg}};padding:4px 10px;"><span style="transform:skewX(14deg);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:{{fx.tagInk}};white-space:nowrap;">{{fx.when}}</span></span>
+            </div>
+          </sc-for>
+        </div>
+        <a href="Centre Court Fixtures v2.dc.html" style="position:relative;display:inline-flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;" style-hover="color:#ffffff">Full fixtures
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div data-reveal="1" style="max-width:1400px;margin:clamp(48px,6vw,80px) auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:2px solid #0b0b0c;">
+    <a href="{{prev.href}}" style="display:flex;flex-direction:column;gap:6px;padding:20px 22px;background:#ffffff;color:#0b0b0c;border-right:2px solid #0b0b0c;transition:background .25s ease,color .25s ease;" style-hover="background:#0b0b0c;color:#ffffff">
+      <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;">&larr; Previous</span>
+      <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(24px,3vw,38px);line-height:.95;text-transform:uppercase;">{{prev.name}}</span>
+    </a>
+    <a href="{{next.href}}" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:20px 22px;background:#ffffff;color:#0b0b0c;text-align:right;transition:background .25s ease,color .25s ease;" style-hover="background:#0b0b0c;color:#ffffff">
+      <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;">Next &rarr;</span>
+      <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(24px,3vw,38px);line-height:.95;text-transform:uppercase;">{{next.name}}</span>
+    </a>
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  state = {
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+    slug: typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('team') || 'team-01') : 'team-01',
+    hover: -1,
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }));
+  };
+  componentDidMount() { window.addEventListener('resize', this.updateSize); this.observe(); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); this._io && this._io.disconnect(); }
+
+  observe() {
+    this._io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.style.opacity = '1'; e.target.style.transform = 'none'; this._io.unobserve(e.target);
+    }), { threshold: 0.1 });
+    let n = 0;
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      if (el.dataset.seen) return;
+      el.dataset.seen = '1';
+      const d = el.dataset.reveal === 'card' ? (n++ % 4) * 0.08 : 0;
+      el.style.opacity = '0'; el.style.transform = 'translateY(32px)';
+      el.style.transition = `opacity .7s ease ${d}s, transform .8s cubic-bezier(.2,.7,.2,1) ${d}s, background .3s ease, color .3s ease`;
+      this._io.observe(el);
+    });
+  }
+
+  renderVals() {
+    const { isMobile, hover } = this.state;
+    const roster = ['Player One', 'Player Two', 'Player Three', 'Player Four', 'Player Five', 'Player Six', 'Player Seven', 'Player Eight'];
+    const roles = ['Captain', 'Men\u2019s Singles', 'Women\u2019s Singles', 'Men\u2019s Doubles', 'Women\u2019s Doubles', 'Mixed Doubles', 'Impact Sub', 'Squad'];
+    const all = [
+      { slug: 'team-01', name: 'Team One', tag: 'Franchise 01' },
+      { slug: 'team-02', name: 'Team Two', tag: 'Franchise 02' },
+      { slug: 'team-03', name: 'Team Three', tag: 'Franchise 03' },
+      { slug: 'team-04', name: 'Team Four', tag: 'Franchise 04' },
+      { slug: 'team-05', name: 'Team Five', tag: 'Franchise 05' },
+      { slug: 'team-06', name: 'Team Six', tag: 'Franchise 06' },
+      { slug: 'team-07', name: 'Team Seven', tag: 'Franchise 07' },
+      { slug: 'team-08', name: 'Team Eight', tag: 'Franchise 08' },
+    ];
+    const idx = Math.max(0, all.findIndex(t => t.slug === this.state.slug));
+    const team = all[idx];
+    const words = team.name.split(' ');
+    const teamLast = words.length > 1 ? words.pop() : '';
+    const others = all.filter(t => t.slug !== team.slug);
+    const link = t => ({ name: t.name, href: 'Centre Court Team v2.dc.html?team=' + t.slug });
+    return {
+      teamNum: String(idx + 1).padStart(2, '0'),
+      teamFirst: words.join(' '),
+      teamLast,
+      teamTag: team.tag,
+      slotId: 'team-logo-' + team.slug,
+      stats: [
+        { value: '8', label: 'Contracted players' },
+        { value: '7', label: 'Matchdays' },
+        { value: '1', label: 'Home matchday' },
+        { value: '\u2014', label: 'League position' },
+      ],
+      squad: roster.map((name, i) => {
+        const on = hover === i;
+        return {
+          num: String(i + 1).padStart(2, '0'),
+          name, role: roles[i],
+          slotId: 'player-' + team.slug + '-' + (i + 1),
+          bg: on ? '#0b0b0c' : '#ffffff',
+          ink: on ? '#ffffff' : '#0b0b0c',
+          subInk: on ? '#e27b46' : '#5f5b52',
+          edge: on ? 1 : 0,
+          infoH: '84px',
+          enter: () => this.setState({ hover: i }),
+          leave: () => this.setState({ hover: -1 }),
+        };
+      }),
+      facts: [
+        { label: 'Owner group', value: 'To be announced' },
+        { label: 'Home venue', value: 'To be announced' },
+        { label: 'Head coach', value: 'To be announced' },
+        { label: 'Captain', value: roster[0] },
+      ],
+      fixtures: others.slice(0, 3).map((o, i) => ({
+        opponent: 'vs ' + o.name, when: 'Matchday ' + (i + 1),
+        tagBg: i === 0 ? '#e27b46' : 'rgba(255,255,255,.12)',
+        tagInk: i === 0 ? '#0b0b0c' : '#ffffff',
+      })),
+      prev: link(all[(idx + all.length - 1) % all.length]),
+      next: link(all[(idx + 1) % all.length]),
+      heroCols: isMobile ? '1fr' : 'auto minmax(0,1fr)',
+      logoBox: isMobile ? '140px' : '220px',
+      statCols: isMobile ? 'repeat(2,minmax(0,1fr))' : 'repeat(4,minmax(0,1fr))',
+      bodyCols: isMobile ? '1fr' : 'minmax(0,2fr) minmax(300px,1fr)',
+      squadCols: isMobile ? 'repeat(2,minmax(0,1fr))' : 'repeat(auto-fill,minmax(180px,1fr))',
+      squadGap: isMobile ? '10px' : '16px',
+    };
+  }
+}
+</script>
+</body>
+</html>

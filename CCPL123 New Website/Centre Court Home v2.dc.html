@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="ext-resource-dependency" content=".image-slots.state.json" data-resource-id="imageSlotsState" />
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#0b0b0c"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0b0c"/><text x="50" y="62" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-style="italic" font-size="30" fill="#e27b46">CC</text></svg></template>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;text-decoration:none;}
+    a:hover{color:#ffffff;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+    @keyframes ccFill{from{width:0}to{width:100%}}
+    @keyframes ccFloat{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-18px) rotate(-5deg)}}
+    @keyframes ccShadow{0%,100%{transform:scaleX(1);opacity:.28}50%{transform:scaleX(.82);opacity:.16}}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="overview" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Hero" onMouseEnter="{{pause}}" onMouseLeave="{{resume}}" onTouchStart="{{touchStart}}" onTouchEnd="{{touchEnd}}" style="position:relative;height:calc(100svh - 127px);min-height:680px;max-height:960px;overflow:hidden;background:#0b0b0c;font-family:'Montserrat',sans-serif;">
+  <sc-for list="{{slides}}" as="s" hint-placeholder-count="1">
+    <div style="position:absolute;inset:0;transition:opacity .9s ease;opacity:{{s.op}};z-index:{{s.z}};pointer-events:{{s.pe}};">
+      <div style="position:absolute;inset:0;transition:transform 8s linear;transform:scale({{s.scale}});">
+        <image-slot id="{{s.slotId}}" shape="rect" placeholder="{{s.placeholder}}" style="position:absolute;inset:0;width:100%;height:100%;"></image-slot>
+      </div>
+      <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(11,11,12,.92) 0%,rgba(11,11,12,.55) 45%,rgba(11,11,12,.1) 80%),linear-gradient(0deg,rgba(11,11,12,.92) 0%,rgba(11,11,12,0) 40%);"></div>
+      <div style="position:absolute;left:-1vw;top:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,30vw,480px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.14);transition:transform 1.2s cubic-bezier(.2,.7,.2,1),opacity 1s ease;transform:translateX({{s.numX}});opacity:{{s.textOp}};">{{s.num}}</div>
+      <div style="position:absolute;left:0;right:0;bottom:0;pointer-events:none;padding:0 6vw {{heroBottomPad}};">
+        <div style="max-width:1400px;margin:0 auto;">
+          <div style="max-width:{{copyMax}};">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;transition:opacity .5s ease .2s,transform .6s cubic-bezier(.2,.7,.2,1) .2s;opacity:{{s.textOp}};transform:translateX({{s.tagX}});">
+              <span style="display:inline-flex;width:fit-content;flex:none;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">{{s.tag}}</span></span>
+              <span style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#ffffff;">{{s.meta}}</span>
+            </div>
+            <h1 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;color:#ffffff;font-size:{{s.titleSize}};line-height:.88;letter-spacing:-.005em;text-wrap:balance;transition:clip-path 1s cubic-bezier(.7,0,.2,1) .3s;clip-path:{{s.wipe}};">{{s.title}}</h1>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px 28px;margin-top:26px;transition:opacity .6s ease .6s,transform .6s ease .6s;opacity:{{s.textOp}};transform:translateY({{s.subY}});">
+              <p style="margin:0;color:#e8e8e8;font-size:clamp(15px,1.4vw,18px);font-weight:500;line-height:1.5;max-width:42ch;border-left:4px solid #e27b46;padding-left:16px;display:{{s.subDisplay}};">{{s.sub}}</p>
+              <a href="{{s.href}}" style="pointer-events:auto;display:inline-flex;transform:skewX(-14deg);background:#e27b46;color:#0b0b0c;padding:15px 28px;transition:background .2s ease;" style-hover="background:#ffffff;color:#0b0b0c">
+                <span style="display:inline-flex;align-items:center;gap:12px;white-space:nowrap;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.05em;text-transform:uppercase;">Read Story
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+
+  <sc-if value="{{isDesktop}}" hint-placeholder-val="{{true}}">
+    <div style="position:absolute;right:calc(max(0px, (100% - 1600px) / 2) + 6vw);top:48px;z-index:6;width:380px;background:rgba(11,11,12,.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);border-top:6px solid #e27b46;padding:26px 28px 24px;color:#ffffff;">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;"><span style="width:8px;height:8px;background:#e27b46;display:inline-block;"></span>Opening Match Day</div>
+      <div style="margin-top:10px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:34px;line-height:.95;text-transform:uppercase;">Days to go until opening match</div>
+      <div style="display:flex;align-items:flex-end;gap:14px;margin-top:10px;">
+        <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:150px;line-height:.8;color:#e27b46;">{{cd.days}}</span>
+        <span style="font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding-bottom:8px;">Days</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:22px;">
+        <sc-for list="{{cd.units}}" as="u" hint-placeholder-count="3">
+          <div style="background:#ffffff;color:#0b0b0c;padding:10px 0 8px;text-align:center;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);">
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:40px;line-height:1;">{{u.v}}</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-top:2px;">{{u.l}}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.16);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);"><span>17 October 2026</span><span>5:00 PM IST</span></div>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(11,11,12,.85);backdrop-filter:blur(6px);border-top:1px solid rgba(255,255,255,.12);">
+    <div style="max-width:1400px;margin:0 auto;padding:0 6vw;display:flex;align-items:stretch;box-sizing:content-box;">
+      <div style="flex:1;min-width:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));">
+        <sc-for list="{{dots}}" as="d" hint-placeholder-count="4">
+          <button type="button" onClick="{{d.go}}" style="position:relative;text-align:left;border:0;border-right:1px solid rgba(255,255,255,.12);padding:16px clamp(10px,1.4vw,20px);cursor:pointer;color:#ffffff;font-family:'Montserrat',sans-serif;background:{{d.bg}};transition:background .3s ease;" style-hover="background:rgba(255,255,255,.06)">
+            <div style="position:absolute;left:0;right:0;top:-1px;height:3px;background:rgba(255,255,255,.12);overflow:hidden;">{{d.fill}}</div>
+            <div style="display:flex;gap:12px;align-items:baseline;transition:opacity .3s ease;opacity:{{d.op}};">
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:24px;color:#e27b46;">{{d.num}}</span>
+              <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:{{d.labelDisplay}};">{{d.label}}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;">
+        <button type="button" onClick="{{prev}}" aria-label="Previous story" style="width:60px;border:0;border-right:1px solid rgba(255,255,255,.12);background:transparent;color:#ffffff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s ease,color .2s ease;" style-hover="background:#ffffff;color:#0b0b0c">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M15 5l-7 7 7 7"></path></svg>
+        </button>
+        <button type="button" onClick="{{next}}" aria-label="Next story" style="width:60px;border:0;background:#e27b46;color:#0b0b0c;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s ease;" style-hover="background:#ffffff">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<sc-if value="{{isMobile}}" hint-placeholder-val="{{false}}">
+  <section data-screen-label="Countdown" style="background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:36px 6vw 40px;border-bottom:6px solid #e27b46;">
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e27b46;"><span style="width:8px;height:8px;background:#e27b46;display:inline-block;"></span>Opening Match Day</div>
+    <div style="margin-top:10px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:34px;line-height:.95;text-transform:uppercase;">Days to go until opening match</div>
+    <div style="display:flex;align-items:flex-end;gap:16px;margin-top:14px;">
+      <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:120px;line-height:.8;color:#e27b46;">{{cd.days}}</span>
+      <div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;">
+        <sc-for list="{{cd.units}}" as="u" hint-placeholder-count="3">
+          <div style="background:#ffffff;color:#0b0b0c;padding:8px 0 6px;text-align:center;clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);">
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:30px;line-height:1;">{{u.v}}</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;">{{u.l}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);"><span>17 October 2026</span><span>5:00 PM IST</span></div>
+  </section>
+</sc-if>
+
+<section data-screen-label="Season 1 Champions" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;padding:clamp(64px,8vw,110px) 6vw clamp(64px,8vw,110px);overflow:hidden;">
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div style="max-width:1400px;margin:0 auto;display:grid;grid-template-columns:{{champCols}};gap:clamp(28px,4vw,56px);align-items:center;">
+    <div data-reveal="1">
+      <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:#b3261a;margin-bottom:8px;">Season 1 Champions</div>
+      <h2 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(72px,10vw,160px);line-height:.82;letter-spacing:-.01em;">The <span style="color:#e27b46;">Mavericks</span></h2>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:32px;">
+        <a href="Centre Court Team v2.dc.html" style="display:inline-flex;transform:skewX(-14deg);background:#0b0b0c;color:#ffffff;padding:14px 26px;transition:background .2s ease;" style-hover="background:#e27b46;color:#0b0b0c">
+          <span style="display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:21px;letter-spacing:.05em;text-transform:uppercase;">Meet the team
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+          </span>
+        </a>
+        <a href="Centre Court Table v2.dc.html" style="display:inline-flex;transform:skewX(-14deg);border:2px solid #0b0b0c;color:#0b0b0c;padding:12px 24px;transition:background .2s ease;" style-hover="background:#0b0b0c;color:#ffffff">
+          <span style="transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:21px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;">Season 2 Table</span>
+        </a>
+      </div>
+    </div>
+    <div data-reveal="1" style="position:relative;aspect-ratio:16/10;border:2px solid #0b0b0c;background:#0b0b0c;overflow:hidden;">
+      <image-slot id="home-champions" shape="rect" placeholder="Drop photo · Season 1 champions" style="position:absolute;inset:0;width:100%;height:100%;"></image-slot>
+      <div style="position:absolute;left:0;bottom:0;display:inline-flex;background:#e27b46;padding:10px 20px 10px 18px;clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);pointer-events:none;">
+        <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:#0b0b0c;">HPL S1 · 2025</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Videos" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(64px,8vw,110px) 6vw clamp(64px,8vw,110px);">
+  <div style="max-width:1400px;margin:0 auto;">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:clamp(28px,3.5vw,48px);">
+      <div>
+        <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:#e27b46;margin-bottom:8px;">Watch</div>
+        <h2 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,8vw,128px);line-height:.85;">Videos &amp; Reels</h2>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <sc-for list="{{videoFilters}}" as="vf" hint-placeholder-count="3">
+          <button type="button" onClick="{{vf.select}}" style="display:inline-flex;align-items:center;height:44px;padding:0 24px;border:0;cursor:pointer;transform:skewX(-14deg);background:{{vf.bg}};color:{{vf.color}};box-shadow:inset 0 0 0 2px {{vf.ring}};transition:background .2s ease,color .2s ease,box-shadow .2s ease;" style-hover="box-shadow:inset 0 0 0 2px #e27b46">
+            <span style="display:inline-flex;align-items:center;gap:10px;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;">{{vf.label}}<span style="font-family:'Montserrat',sans-serif;font-style:normal;font-size:12px;font-weight:700;opacity:.7;">{{vf.count}}</span></span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:{{mediaCols}};grid-auto-flow:row dense;gap:clamp(12px,1.4vw,20px);">
+      <sc-for list="{{media}}" as="m" hint-placeholder-count="8">
+        <div onClick="{{m.open}}" style="position:relative;grid-column:{{m.col}};grid-row:{{m.row}};aspect-ratio:{{m.ratio}};min-height:0;background:#161617;overflow:hidden;cursor:pointer;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+          <image-slot id="{{m.thumbId}}" shape="rect" placeholder="{{m.placeholder}}" style="position:absolute;inset:0;width:100%;height:100%;"></image-slot>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(to top,rgba(11,11,12,.92),rgba(11,11,12,0));pointer-events:none;"></div>
+          <div style="position:absolute;top:0;left:0;display:inline-flex;align-items:center;gap:8px;padding:7px 16px 7px 12px;background:{{m.badgeBg}};color:{{m.badgeColor}};clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);pointer-events:none;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;">
+            <span style="width:7px;height:7px;background:currentColor;display:inline-block;"></span>{{m.platformLabel}}
+          </div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) skewX(-14deg);width:64px;height:46px;background:#e27b46;color:#0b0b0c;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="transform:skewX(14deg);"><path d="M7 4l13 8-13 8z"></path></svg>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;padding:16px 18px;pointer-events:none;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-bottom:6px;">{{m.meta}}</div>
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:{{m.titleSize}};line-height:.95;text-transform:uppercase;text-wrap:pretty;">{{m.title}}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <sc-if value="{{lightboxOpen}}" hint-placeholder-val="{{false}}">
+    <div onClick="{{closeLightbox}}" style="position:fixed;inset:0;z-index:200;background:rgba(11,11,12,.94);display:flex;align-items:center;justify-content:center;gap:clamp(12px,2vw,32px);padding:24px;box-sizing:border-box;">
+      <button type="button" onClick="{{prevMedia}}" aria-label="Previous" style="flex:none;width:52px;height:52px;border:0;background:#ffffff;color:#0b0b0c;cursor:pointer;display:flex;align-items:center;justify-content:center;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);" style-hover="background:#e27b46">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M20 12H5M11 6l-6 6 6 6"></path></svg>
+      </button>
+      <div onClick="{{stop}}" style="display:flex;flex-direction:column;gap:16px;width:{{lbWidth}};max-width:100%;">
+        <div style="position:relative;aspect-ratio:{{lb.ratio}};width:100%;background:#000000;overflow:hidden;">
+          <sc-if value="{{lb.useEmbed}}" hint-placeholder-val="{{false}}">
+            <iframe src="{{lb.embed}}" title="{{lb.title}}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen="{{true}}" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>
+          </sc-if>
+          <sc-if value="{{lb.useFile}}" hint-placeholder-val="{{true}}">
+            <video key="{{lb.key}}" src="{{lb.src}}" controls="{{true}}" autoPlay="{{true}}" playsInline="{{true}}" loop="{{lb.loop}}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"></video>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#e27b46;margin-bottom:6px;">{{lb.platformLabel}} · {{lb.meta}}</div>
+            <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(24px,2.4vw,36px);line-height:.95;text-transform:uppercase;text-wrap:pretty;">{{lb.title}}</div>
+          </div>
+          <a href="{{lb.link}}" target="_blank" rel="noopener" style="display:inline-flex;transform:skewX(-14deg);border:2px solid #ffffff;color:#ffffff;padding:10px 20px;text-decoration:none;" style-hover="background:#ffffff;color:#0b0b0c">
+            <span style="transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:18px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;">{{lb.linkLabel}}</span>
+          </a>
+        </div>
+      </div>
+      <button type="button" onClick="{{nextMedia}}" aria-label="Next" style="flex:none;width:52px;height:52px;border:0;background:#ffffff;color:#0b0b0c;cursor:pointer;display:flex;align-items:center;justify-content:center;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);" style-hover="background:#e27b46">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+      </button>
+      <button type="button" onClick="{{closeLightbox}}" aria-label="Close" style="position:absolute;top:20px;right:20px;width:48px;height:48px;border:0;background:#e27b46;color:#0b0b0c;cursor:pointer;display:flex;align-items:center;justify-content:center;" style-hover="background:#ffffff">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+      </button>
+    </div>
+  </sc-if>
+</section>
+
+<section data-screen-label="Partners" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:0 6vw clamp(64px,8vw,110px);">
+  <div style="max-width:1400px;margin:0 auto;border-top:1px solid rgba(255,255,255,.14);padding-top:clamp(56px,7vw,96px);">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:clamp(36px,4.5vw,64px);">
+      <div>
+        <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:#e27b46;margin-bottom:8px;">Backed by the best</div>
+        <h2 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,8vw,128px);line-height:.85;">Our Partners</h2>
+      </div>
+      <p style="margin:0;max-width:44ch;font-size:clamp(15px,1.3vw,18px);font-weight:500;line-height:1.55;color:rgba(255,255,255,.85);border-left:4px solid #e27b46;padding-left:16px;text-wrap:pretty;">Thank you to the partners who make the CCPL possible. Your support puts world-class pickleball on the court and in front of fans across Hyderabad.</p>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:clamp(40px,5vw,72px);">
+      <div style="flex:1 1 300px;min-width:0;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;">Title Sponsor</span>
+          <span style="flex:1;height:2px;background:#e27b46;"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;transition:outline-color .2s ease;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+            <image-slot id="partner-bc" shape="rect" fit="contain" placeholder="Title sponsor logo" style="position:absolute;top:14%;left:14%;width:72%;height:72%;"></image-slot>
+          </div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Province of British Columbia</div>
+        </div>
+      </div>
+
+      <div style="flex:3 1 600px;min-width:0;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;">Official Partners</span>
+          <span style="flex:1;height:2px;background:#e27b46;"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));grid-auto-flow:row dense;gap:clamp(12px,1.4vw,20px);">
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+            <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+              <image-slot id="partner-cbc" shape="rect" fit="contain" placeholder="CBC logo" style="position:absolute;top:10%;left:10%;width:80%;height:80%;"></image-slot>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Official Broadcast Partner</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+            <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+              <image-slot id="partner-connect915" shape="rect" fit="contain" placeholder="Connect 91.5 logo" style="position:absolute;top:14%;left:14%;width:72%;height:72%;"></image-slot>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Official Radio Partner</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+            <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+              <image-slot id="partner-h3" shape="rect" fit="contain" placeholder="H3 Hybrid logo" style="position:absolute;top:14%;left:14%;width:72%;height:72%;"></image-slot>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Official Wicket Partner</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+            <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+              <image-slot id="partner-sg" shape="rect" fit="contain" placeholder="SG logo" style="position:absolute;top:14%;left:14%;width:72%;height:72%;"></image-slot>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Official Ball Supplier</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+            <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+              <image-slot id="partner-sportsnection" shape="rect" fit="contain" placeholder="Sportsnection logo" style="position:absolute;top:14%;left:14%;width:72%;height:72%;"></image-slot>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Official Trading Card Partner</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+            <div style="position:relative;aspect-ratio:1/1;background:#ffffff;overflow:hidden;" style-hover="outline:3px solid #e27b46;outline-offset:-3px">
+              <image-slot id="partner-visaplus" shape="rect" fit="contain" placeholder="VisaPlus logo" style="position:absolute;top:14%;left:14%;width:72%;height:72%;"></image-slot>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);">Official Immigration Partner</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Mobile App" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;padding:clamp(64px,8vw,110px) 6vw calc(5vw + clamp(72px,9vw,130px));overflow:hidden;">
+  <div style="position:absolute;top:0;right:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(10px 0,100% 0,100% 100%,0 100%);"></div>
+  <div style="max-width:1400px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(40px,5vw,80px);align-items:center;">
+    <div>
+      <div style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:#b3261a;margin-bottom:8px;">CCPL Mobile App</div>
+      <h2 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(64px,8vw,128px);line-height:.85;letter-spacing:-.01em;text-wrap:balance;">The league in <span style="color:#e27b46;">your pocket</span></h2>
+      <p style="margin:24px 0 0;max-width:46ch;font-size:clamp(15px,1.3vw,18px);font-weight:500;line-height:1.55;border-left:4px solid #e27b46;padding-left:16px;text-wrap:pretty;">Live scores, fixtures, standings and auction updates from every match day, with alerts the moment your team takes the court.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:34px;">
+        <a href="#" style="display:inline-flex;transform:skewX(-14deg);background:#0b0b0c;color:#ffffff;padding:12px 26px;transition:background .2s ease,color .2s ease;" style-hover="background:#e27b46;color:#0b0b0c">
+          <span style="display:flex;flex-direction:column;transform:skewX(14deg);white-space:nowrap;">
+            <span style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.75;">Download on the</span>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:1;letter-spacing:.04em;text-transform:uppercase;">App Store</span>
+          </span>
+        </a>
+        <a href="#" style="display:inline-flex;transform:skewX(-14deg);background:transparent;color:#0b0b0c;box-shadow:inset 0 0 0 2px #0b0b0c;padding:12px 26px;transition:background .2s ease,color .2s ease;" style-hover="background:#e27b46;color:#0b0b0c">
+          <span style="display:flex;flex-direction:column;transform:skewX(14deg);white-space:nowrap;">
+            <span style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.75;">Get it on</span>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:26px;line-height:1;letter-spacing:.04em;text-transform:uppercase;">Google Play</span>
+          </span>
+        </a>
+      </div>
+    </div>
+    <div style="position:relative;display:flex;justify-content:center;align-items:center;min-height:clamp(480px,48vw,640px);">
+      <div style="position:absolute;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(200px,26vw,400px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(11,11,12,.12);pointer-events:none;">CCPL</div>
+      <div style="position:absolute;width:clamp(240px,24vw,340px);height:clamp(380px,40vw,540px);background:#e27b46;transform:skewX(-14deg) translateX(10%);"></div>
+      <div style="position:absolute;bottom:0;width:clamp(180px,18vw,240px);height:22px;border-radius:50%;background:#0b0b0c;filter:blur(10px);animation:ccShadow 5s ease-in-out infinite;"></div>
+      <div style="position:relative;width:clamp(230px,22vw,300px);aspect-ratio:9/19;background:#0b0b0c;border-radius:clamp(34px,3.4vw,46px);padding:10px;box-shadow:0 40px 80px -20px rgba(11,11,12,.55),inset 0 0 0 2px #2a2a2c;animation:ccFloat 5s ease-in-out infinite;">
+        <div style="position:relative;width:100%;height:100%;border-radius:clamp(26px,2.7vw,37px);overflow:hidden;background:#161617;">
+          <image-slot id="home-app-screen" shape="rect" placeholder="Drop app screenshot · 9:19" style="position:absolute;inset:0;width:100%;height:100%;"></image-slot>
+          <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);width:32%;height:24px;border-radius:14px;background:#0b0b0c;pointer-events:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Hero carousel&quot;},&quot;interval&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:7,&quot;min&quot;:3,&quot;max&quot;:12,&quot;step&quot;:1,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Hero carousel&quot;}}">
+const SLIDES = [
+  { tag: 'Featured', meta: 'Season 2', title: 'CCPL Season 2: The First Picks Are In', sub: "And They Tell You Everything About Each Team's Game Plan", href: 'Centre Court Article v2.dc.html', label: 'The First Picks Are In', placeholder: 'Drop photo · featured story' },
+  { tag: 'News', meta: 'Analysis', title: 'Mavericks vs. All Stars: An Analytical Breakdown of Pressure, Strategy, and Team Dynamics in the Championship', sub: '', href: 'Centre Court Article v2.dc.html', label: 'Mavericks vs. All Stars', placeholder: 'Drop photo · championship night' },
+  { tag: 'News', meta: 'Hyderabad', title: "The Reckoning: When Hyderabad's Best Collide", sub: '', href: 'Centre Court Article v2.dc.html', label: 'The Reckoning', placeholder: 'Drop photo · crowd' },
+  { tag: 'News', meta: 'Nationals', title: 'Medals and Momentum: Telangana and HPL Redefine the IPA Nationals Experience', sub: '', href: 'Centre Court Article v2.dc.html', label: 'Medals and Momentum', placeholder: 'Drop photo · nationals' },
+];
+// Set youtubeId / instagramId to embed the real post; src is a stand-in clip until then.
+const MEDIA = [
+  { p: 'ig', title: 'Match point. Mavericks lift the trophy', meta: 'Reel · 0:32', instagramId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },
+  { p: 'yt', title: 'Mavericks vs All Stars: Championship Highlights', meta: 'Final · 8:42', youtubeId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+  { p: 'yt', title: 'Inside the Mavericks Dressing Room', meta: 'Feature · 5:16', youtubeId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+  { p: 'ig', title: 'Behind the baseline at Centre Court', meta: 'Reel · 0:24', instagramId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
+  { p: 'ig', title: 'Fastest hands in Hyderabad', meta: 'Reel · 0:18', instagramId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+  { p: 'yt', title: 'Season 1 Top 10 Rallies', meta: 'Top 10 · 6:03', youtubeId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' },
+  { p: 'yt', title: 'Season 2 Player Auction Recap', meta: 'Auction · 7:55', youtubeId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+  { p: 'ig', title: 'Captains face off for Season 2', meta: 'Reel · 0:41', instagramId: '', src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4' },
+];
+const CHANNELS = { yt: 'https://www.youtube.com/', ig: 'https://www.instagram.com/' };
+const TARGET = new Date('2026-10-17T17:00:00+05:30').getTime();
+
+class Component extends DCLogic {
+  state = { vFilter: 'all', lbIndex: -1, i: 0, paused: false, cycle: 0, now: Date.now(), isMobile: typeof window !== 'undefined' && window.innerWidth < 1000 };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 1000;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }), () => this.observe());
+  };
+  componentDidMount() {
+    window.addEventListener('resize', this.updateSize);
+    this._t = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this.observe();
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateSize);
+    clearInterval(this._t);
+    this._io && this._io.disconnect();
+  }
+  componentDidUpdate(pp) {
+    if (pp.autoplay !== this.props.autoplay || pp.interval !== this.props.interval) this.setState(s => ({ cycle: s.cycle + 1 }));
+  }
+  observe() {
+    this._io && this._io.disconnect();
+    this._io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.style.opacity = '1'; e.target.style.transform = 'none'; this._io.unobserve(e.target);
+    }), { threshold: 0.1 });
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      if (el.dataset.seen) return;
+      el.dataset.seen = '1';
+      el.style.opacity = '0'; el.style.transform = 'translateY(32px)';
+      el.style.transition = 'opacity .7s ease, transform .8s cubic-bezier(.2,.7,.2,1)';
+      this._io.observe(el);
+    });
+  }
+  go(n) { const len = SLIDES.length; this.setState(s => ({ i: (n + len) % len, cycle: s.cycle + 1 })); }
+
+  mediaVals(isMobile) {
+    const { vFilter, lbIndex } = this.state;
+    const list = MEDIA.map((m, k) => ({ ...m, k })).filter(m => vFilter === 'all' || m.p === vFilter);
+    const ytN = { yt: 0, ig: 0 };
+    const media = list.map((m, j) => {
+      const yt = m.p === 'yt';
+      const n = ++ytN[m.p];
+      let col = 'auto', row = 'auto', ratio = yt ? '16/9' : '9/16';
+      if (vFilter === 'all') {
+        if (isMobile) { col = yt ? 'span 2' : 'span 1'; }
+        else {
+          const band = Math.floor(j / 4), pos = j % 4, r = band * 2 + 1;
+          if (pos === 0) { col = '1'; row = r + ' / span 2'; }
+          else if (pos === 1) { col = '2 / span 2'; row = String(r); ratio = 'auto'; }
+          else if (pos === 2) { col = '2 / span 2'; row = String(r + 1); ratio = 'auto'; }
+          else { col = '4'; row = r + ' / span 2'; }
+        }
+      }
+      return { ...m, col, row, ratio,
+        thumbId: yt ? 'home-video-thumb-' + n : 'home-reel-thumb-' + n,
+        placeholder: yt ? 'YouTube thumbnail' : 'Reel cover',
+        platformLabel: yt ? 'YouTube' : 'Instagram',
+        badgeBg: yt ? '#e27b46' : '#ffffff', badgeColor: '#0b0b0c',
+        titleSize: yt ? 'clamp(24px,2.2vw,34px)' : 'clamp(20px,1.6vw,26px)',
+        open: () => this.setState({ lbIndex: m.k }) };
+    });
+    const counts = { all: MEDIA.length, yt: MEDIA.filter(m => m.p === 'yt').length, ig: MEDIA.filter(m => m.p === 'ig').length };
+    const videoFilters = [['all', 'All'], ['yt', 'YouTube'], ['ig', 'Instagram']].map(([key, label]) => {
+      const on = vFilter === key;
+      return { label, count: counts[key], bg: on ? '#e27b46' : 'transparent', color: on ? '#0b0b0c' : '#ffffff',
+        ring: on ? '#e27b46' : 'rgba(255,255,255,.35)', select: () => this.setState({ vFilter: key }) };
+    });
+    const cols = vFilter === 'all' ? (isMobile ? 2 : 4) : vFilter === 'yt' ? (isMobile ? 1 : 2) : (isMobile ? 2 : 4);
+    const step = d => e => { e.stopPropagation(); const ks = list.map(m => m.k); const at = ks.indexOf(lbIndex); this.setState({ lbIndex: ks[(at + d + ks.length) % ks.length] }); };
+    const cur = MEDIA[lbIndex];
+    let lb = {}, lbWidth = '0px';
+    if (cur) {
+      const yt = cur.p === 'yt';
+      const embed = yt ? (cur.youtubeId ? 'https://www.youtube.com/embed/' + cur.youtubeId + '?autoplay=1&rel=0' : '') : (cur.instagramId ? 'https://www.instagram.com/reel/' + cur.instagramId + '/embed' : '');
+      lb = { ...cur, key: 'lb' + lbIndex, ratio: yt ? '16/9' : '9/16', useEmbed: !!embed, useFile: !embed, embed, loop: !yt,
+        platformLabel: yt ? 'YouTube' : 'Instagram',
+        link: yt ? (cur.youtubeId ? 'https://www.youtube.com/watch?v=' + cur.youtubeId : CHANNELS.yt) : (cur.instagramId ? 'https://www.instagram.com/reel/' + cur.instagramId + '/' : CHANNELS.ig),
+        linkLabel: yt ? 'Watch on YouTube' : 'View on Instagram' };
+      lbWidth = yt ? 'min(1100px, calc((100vh - 200px) * 16 / 9))' : 'min(440px, calc((100vh - 200px) * 9 / 16))';
+    }
+    return { media, videoFilters, mediaCols: 'repeat(' + cols + ',minmax(0,1fr))', lightboxOpen: !!cur, lb, lbWidth,
+      closeLightbox: () => this.setState({ lbIndex: -1 }), stop: e => e.stopPropagation(),
+      prevMedia: step(-1), nextMedia: step(1) };
+  }
+
+  renderVals() {
+    const { i, paused, cycle, now, isMobile } = this.state;
+    const autoplay = this.props.autoplay ?? true;
+    const interval = this.props.interval ?? 7;
+
+    const slides = SLIDES.map((s, k) => {
+      const on = k === i;
+      return { ...s, num: String(k + 1).padStart(2, '0'), slotId: 'home-hero-' + (k + 1), subDisplay: s.sub ? 'block' : 'none',
+        titleSize: s.title.length > 60 ? 'clamp(40px,min(5.4vw,7.5vh),92px)' : 'clamp(52px,min(8vw,11vh),140px)',
+        op: on ? 1 : 0, z: on ? 2 : 1, pe: on ? 'auto' : 'none', scale: on ? 1.08 : 1,
+        textOp: on ? 1 : 0, tagX: on ? '0px' : '-30px', subY: on ? '0px' : '16px', numX: on ? '0px' : '-12vw',
+        wipe: on ? 'inset(-0.25em -0.4em -0.25em -0.25em)' : 'inset(-0.25em 100% -0.25em -0.25em)' };
+    });
+
+    const dots = SLIDES.map((s, k) => {
+      const base = { position: 'absolute', left: 0, top: 0, bottom: 0, background: '#e27b46' };
+      const fill = (k === i && autoplay)
+        ? React.createElement('div', { key: 'f' + k + '-' + cycle, onAnimationEnd: () => this.go(i + 1), style: { ...base, width: 0, animation: `ccFill ${interval}s linear forwards`, animationPlayState: paused ? 'paused' : 'running' } })
+        : React.createElement('div', { key: 's' + k, style: { ...base, width: k === i ? '100%' : 0 } });
+      return { num: String(k + 1).padStart(2, '0'), label: s.label, labelDisplay: isMobile ? 'none' : 'block',
+        op: k === i ? 1 : .55, bg: k === i ? 'rgba(255,255,255,.06)' : 'transparent', fill, go: () => this.go(k) };
+    });
+
+    const diff = Math.max(0, TARGET - now);
+    const p = n => String(n).padStart(2, '0');
+    const cd = {
+      days: String(Math.floor(diff / 864e5)),
+      units: [
+        { v: p(Math.floor(diff / 36e5) % 24), l: 'Hrs' },
+        { v: p(Math.floor(diff / 6e4) % 60), l: 'Min' },
+        { v: p(Math.floor(diff / 1e3) % 60), l: 'Sec' },
+      ],
+    };
+
+    return {
+      slides, dots, cd, isMobile, isDesktop: !isMobile,
+      heroBottomPad: isMobile ? '96px' : '120px',
+      copyMax: isMobile ? '100%' : 'calc(100% - 440px)',
+      ...this.mediaVals(isMobile),
+      champCols: isMobile ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1.3fr)',
+      prev: () => this.go(i - 1), next: () => this.go(i + 1),
+      pause: () => this.setState({ paused: true }), resume: () => this.setState({ paused: false }),
+      touchStart: e => { this._tx = e.touches[0].clientX; },
+      touchEnd: e => { const dx = e.changedTouches[0].clientX - (this._tx || 0); if (Math.abs(dx) > 50) this.go(i + (dx < 0 ? 1 : -1)); },
+    };
+  }
+}
+</script>
+</body>
+</html>

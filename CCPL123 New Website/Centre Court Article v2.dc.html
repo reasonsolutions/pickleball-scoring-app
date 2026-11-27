@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold-italic.ttf') format('truetype');font-weight:700;font-style:italic;}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:#0b0b0c;-webkit-font-smoothing:antialiased;}
+    *{box-sizing:border-box}
+    a{color:#e27b46;text-decoration:none;}
+    a:hover{color:#0b0b0c;}
+    ::selection{background:#e27b46;color:#0b0b0c;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav v2" current="overview" hint-size="100%,147px"></dc-import>
+
+<section data-screen-label="Article Header" style="position:relative;background:#0b0b0c;color:#ffffff;font-family:'Montserrat',sans-serif;padding:clamp(48px,6vw,88px) 6vw calc(5vw + clamp(140px,16vw,240px));overflow:hidden;">
+  <div style="position:absolute;right:-1vw;top:2vw;pointer-events:none;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(180px,26vw,420px);line-height:.8;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.12);">NEWS</div>
+  <div style="position:absolute;top:0;left:0;width:38%;height:10px;background:#e27b46;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);"></div>
+  <div data-reveal="1" style="position:relative;max-width:1200px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px;">
+      <span style="display:inline-flex;width:fit-content;flex:none;transform:skewX(-14deg);background:#e27b46;padding:8px 16px;"><span style="transform:skewX(14deg);font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;">{{kicker}}</span></span>
+      <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.8);white-space:nowrap;"><span style="width:7px;height:7px;border-radius:50%;background:#e27b46;animation:cc-pulse 2s ease-in-out infinite;"></span>18 August 2026 / 4 min read</span>
+    </div>
+    <h1 style="margin:0;max-width:1000px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(56px,8.5vw,136px);line-height:.86;letter-spacing:-.01em;text-wrap:balance;">Centre Court Dream returns for a <span style="color:#e27b46;">second season</span></h1>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:clamp(28px,3.5vw,44px);padding-top:20px;border-top:2px solid rgba(255,255,255,.18);">
+      <span style="font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#ffffff;white-space:nowrap;">Centre Court Press Office</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <sc-for list="{{shares}}" as="s" hint-placeholder-count="3">
+          <a href="#" aria-label="{{s.label}}" style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:40px;transform:skewX(-14deg);background:rgba(255,255,255,.1);color:#ffffff;transition:background .2s ease,color .2s ease;" style-hover="background:#e27b46;color:#0b0b0c"><span style="transform:skewX(14deg);font-size:12px;font-weight:800;letter-spacing:.06em;">{{s.mark}}</span></a>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="position:relative;z-index:1;max-width:1200px;margin:calc(-1 * clamp(140px,16vw,240px)) auto 0;padding:0 6vw;box-sizing:content-box;">
+  <div data-reveal="1" style="position:relative;height:{{heroHeight}};border:2px solid #0b0b0c;background:#e4e1d8;">
+    <image-slot id="article-hero" shape="rect" placeholder="Drop the article hero photo" style="width:100%;height:100%;"></image-slot>
+    <span style="position:absolute;left:0;bottom:0;width:30%;height:10px;background:#e27b46;"></span>
+  </div>
+</div>
+
+<section data-screen-label="Article Content" style="position:relative;background:#f2f0ea;color:#0b0b0c;font-family:'Montserrat',sans-serif;margin-top:calc(-1 * {{heroHeight}} / 2);padding:calc({{heroHeight}} / 2 + clamp(40px,5vw,72px)) 6vw calc(5vw + clamp(64px,8vw,110px));clip-path:polygon(0 5vw,100% 0,100% 100%,0 100%);">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:{{articleCols}};gap:clamp(36px,4vw,64px);align-items:start;">
+
+      <div style="min-width:0;">
+        <p data-reveal="1" style="margin:0 0 30px;font-size:{{ledeSize}};line-height:1.45;font-weight:600;color:#0b0b0c;text-wrap:pretty;border-left:4px solid #e27b46;padding-left:18px;">The tournament that filled the stands last summer is back, with a wider trial window, eight franchise squads and a live player auction on 5 September.</p>
+
+        <p style="margin:0 0 22px;font-size:17px;line-height:1.75;color:#3a3833;text-wrap:pretty;">Registration for the second season of Centre Court Dream opened this week. Players enter through the trials, are ranked, and then go into the auction pool where franchise owners build their squads for the group stage.</p>
+
+        <p style="margin:0 0 22px;font-size:17px;line-height:1.75;color:#3a3833;text-wrap:pretty;">Season one ran across six weekends and closed with a final that sold out in under an hour. The format returns largely unchanged: a seeded single-elimination bracket, best of three sets, with the finals played over five.</p>
+
+        <h2 style="margin:0 0 16px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:{{h2Size}};line-height:.9;">What changes this season</h2>
+
+        <p style="margin:0 0 22px;font-size:17px;line-height:1.75;color:#3a3833;text-wrap:pretty;">Two additions to the calendar. Trials now run for three weeks instead of one, giving players outside the city a second window to enter. And every group-stage match will be streamed, with match data published the following morning.</p>
+
+        <figure data-reveal="1" style="margin:34px 0;">
+          <div style="position:relative;height:{{inlineFigHeight}};border:2px solid #0b0b0c;background:#e4e1d8;">
+            <image-slot id="article-inline" shape="rect" placeholder="Drop a supporting photo" style="width:100%;height:100%;"></image-slot>
+          </div>
+          <figcaption style="margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5f5b52;">Trials, week one.</figcaption>
+        </figure>
+
+        <p style="margin:0 0 22px;font-size:17px;line-height:1.75;color:#3a3833;text-wrap:pretty;">Squad size is capped at twelve, with at least four places reserved for players who came through the open trials rather than direct invitation. Franchise owners spend from a fixed purse at the auction.</p>
+
+        <h2 style="margin:36px 0 16px;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:{{h2Size}};line-height:.9;">How to enter</h2>
+
+        <p style="margin:0 0 22px;font-size:17px;line-height:1.75;color:#3a3833;text-wrap:pretty;">Registration closes when the auction pool is locked on 4 September. Players need a valid ID, a declared age category, and confirmation of availability across the group-stage weekends.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:34px;padding-top:28px;border-top:2px solid #0b0b0c;">
+          <a href="Centre Court Player Signup v2.dc.html" style="display:inline-flex;transform:skewX(-14deg);background:#e27b46;color:#0b0b0c;padding:13px 24px;transition:background .2s ease,color .2s ease;" style-hover="background:#0b0b0c;color:#ffffff">
+            <span style="display:inline-flex;align-items:center;gap:10px;white-space:nowrap;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.05em;text-transform:uppercase;">Register To Play
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+            </span>
+          </a>
+          <a href="Centre Court Player Rules v2.dc.html" style="display:inline-flex;transform:skewX(-14deg);background:transparent;border:2px solid #0b0b0c;color:#0b0b0c;padding:11px 22px;transition:background .2s ease,color .2s ease;" style-hover="background:#0b0b0c;color:#ffffff">
+            <span style="display:inline-flex;align-items:center;white-space:nowrap;transform:skewX(14deg);font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:20px;letter-spacing:.05em;text-transform:uppercase;">Read The Rules</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:clamp(64px,8vw,110px);">
+      <div data-reveal="1" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+        <h2 style="margin:0;font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;text-transform:uppercase;font-size:clamp(44px,5vw,72px);line-height:.85;">More From <span style="color:#e27b46;">The Court.</span></h2>
+        <a href="Centre Court Home v2.dc.html" style="display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#0b0b0c;white-space:nowrap;" style-hover="color:#e27b46">All news
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+        </a>
+      </div>
+      <div style="display:grid;grid-template-columns:{{relatedCols}};gap:20px;">
+        <sc-for list="{{related}}" as="r" hint-placeholder-count="3">
+          <a href="Centre Court Article v2.dc.html" data-reveal="card" onMouseEnter="{{r.enter}}" onMouseLeave="{{r.leave}}" style="position:relative;display:flex;flex-direction:column;overflow:hidden;border:2px solid #0b0b0c;background:{{r.bg}};color:{{r.ink}};transition:background .3s ease,color .3s ease;">
+            <div style="position:relative;aspect-ratio:16/10;background:#e4e1d8;border-bottom:2px solid #0b0b0c;overflow:hidden;">
+              <div style="width:100%;height:100%;transition:transform .5s cubic-bezier(.2,.7,.2,1);transform:scale({{r.imgScale}});">
+                <image-slot id="{{r.slotId}}" shape="rect" placeholder="Drop a match photo" style="width:100%;height:100%;"></image-slot>
+              </div>
+            </div>
+            <span style="position:absolute;left:0;bottom:0;height:48px;width:8px;background:#e27b46;transition:transform .35s cubic-bezier(.2,.7,.2,1);transform-origin:bottom;transform:scaleY({{r.edge}});"></span>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:18px 22px 22px;">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:{{r.subInk}};transition:color .3s ease;">{{r.kicker}}</span>
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:28px;line-height:.95;text-transform:uppercase;text-wrap:balance;">{{r.title}}</span>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="margin-top:-5vw;position:relative;">
+  <dc-import name="Centre Court Footer v2" above="transparent" hint-size="100%,560px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000},&quot;kicker&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Community&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+    isNarrow: typeof window !== 'undefined' && window.innerWidth < 1100,
+    hover: -1,
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    const isNarrow = window.innerWidth < 1100;
+    this.setState(s => (s.isMobile === isMobile && s.isNarrow === isNarrow ? null : { isMobile, isNarrow }));
+  };
+  componentDidMount() { window.addEventListener('resize', this.updateSize); this.observe(); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); this._io && this._io.disconnect(); }
+
+  observe() {
+    this._io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.style.opacity = '1'; e.target.style.transform = 'none'; this._io.unobserve(e.target);
+    }), { threshold: 0.1 });
+    let n = 0;
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      if (el.dataset.seen) return;
+      el.dataset.seen = '1';
+      const d = el.dataset.reveal === 'card' ? (n++ % 3) * 0.08 : 0;
+      el.style.opacity = '0'; el.style.transform = 'translateY(32px)';
+      el.style.transition = `opacity .7s ease ${d}s, transform .8s cubic-bezier(.2,.7,.2,1) ${d}s, background .3s ease, color .3s ease`;
+      this._io.observe(el);
+    });
+  }
+
+  renderVals() {
+    const { isMobile, isNarrow, hover } = this.state;
+    const days = Math.max(0, Math.ceil((new Date('2026-09-05T00:00:00').getTime() - Date.now()) / 86400000));
+    const dates = [
+      { label: 'Trials open', when: '20 Aug' },
+      { label: 'Trials close', when: '10 Sep' },
+      { label: 'Auction pool locked', when: '4 Sep' },
+      { label: 'Player auction', when: '5 Sep' },
+      { label: 'Group stage begins', when: '19 Sep' },
+    ];
+    const related = [
+      { slotId: 'article-rel-1', kicker: 'Community', title: 'Trials draw record entries in week one' },
+      { slotId: 'article-rel-2', kicker: 'League', title: 'Eight franchises confirmed for the auction' },
+      { slotId: 'article-rel-3', kicker: 'Format', title: 'How the seeded bracket works this season' },
+    ];
+    return {
+      kicker: this.props.kicker ?? 'Community',
+      cdDays: String(days),
+      shares: [
+        { label: 'Share on X', mark: 'X' },
+        { label: 'Share on Instagram', mark: 'IG' },
+        { label: 'Copy link', mark: '\u2197' },
+      ],
+      dates: dates.map((d, i) => ({
+        ...d,
+        tagBg: i === 3 ? '#e27b46' : '#0b0b0c',
+        tagInk: i === 3 ? '#0b0b0c' : '#ffffff',
+      })),
+      related: related.map((r, i) => {
+        const on = hover === i;
+        return {
+          ...r,
+          bg: on ? '#0b0b0c' : '#ffffff',
+          ink: on ? '#ffffff' : '#0b0b0c',
+          subInk: on ? '#e27b46' : '#5f5b52',
+          edge: on ? 1 : 0,
+          imgScale: on ? 1.05 : 1,
+          enter: () => this.setState({ hover: i }),
+          leave: () => this.setState({ hover: -1 }),
+        };
+      }),
+      heroHeight: isMobile ? '260px' : 'clamp(360px,42vw,560px)',
+      articleCols: 'minmax(0,1fr)',
+      asidePos: isNarrow ? 'static' : 'sticky',
+      ledeSize: isMobile ? '19px' : '23px',
+      quotePad: isMobile ? '28px 22px 24px' : '38px 36px 32px',
+      quoteSize: isMobile ? '34px' : '48px',
+      h2Size: isMobile ? '36px' : '48px',
+      inlineFigHeight: isMobile ? '220px' : '380px',
+      relatedCols: isMobile ? 'minmax(0,1fr)' : 'repeat(3,minmax(0,1fr))',
+    };
+  }
+}
+</script>
+</body>
+</html>

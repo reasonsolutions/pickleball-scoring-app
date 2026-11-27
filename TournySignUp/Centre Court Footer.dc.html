@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#0a0f1e;}
+    a{color:#ff7a33;}
+    a:hover{color:#ffb37a;}
+    .cc-foot-link{transition:color .2s ease;}
+    .cc-foot-link:hover{color:rgba(255,255,255,0.85) !important;}
+  </style>
+</helmet>
+
+<footer style="background:#0a0f1e;font-family:'Montserrat',sans-serif;padding:{{footPad}};box-sizing:border-box;border-top:1px solid rgba(255,255,255,0.09);">
+  <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:22px;">
+    <img src="uploads/Logo Version - White-f687a7c7.png" alt="Centre Court" style="height:{{logoHeight}};width:auto;display:block;opacity:0.85;"/>
+    <div style="display:flex;flex-direction:column;gap:14px;align-items:{{blockAlign}};">
+      <nav style="display:flex;flex-wrap:wrap;gap:{{policyGap}};justify-content:{{blockJustify}};">
+        <sc-for list="{{policies}}" as="p" hint-placeholder-count="4">
+          <a href="{{p.href}}" class="cc-foot-link" style="font-size:{{lineSize}};font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.5);text-decoration:none;">{{p.label}}</a>
+        </sc-for>
+      </nav>
+      <p style="margin:0;font-size:{{lineSize}};line-height:1.7;letter-spacing:0.04em;color:rgba(255,255,255,0.42);text-align:{{lineAlign}};">&copy;&#xFE0F; 2026 Centre Court Sports &amp; Entertainment. All Rights Reserved. &mdash; More Than Sport.</p>
+    </div>
+  </div>
+</footer>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:140}}">
+class Component extends DCLogic {
+  state = { isMobile: typeof window !== 'undefined' && window.innerWidth < 860 };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }));
+  };
+
+  componentDidMount() { window.addEventListener('resize', this.updateSize); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); }
+
+  renderVals() {
+    const isMobile = this.state.isMobile;
+    return {
+      policies: [
+        { label: 'Privacy Policy', href: '#' },
+        { label: 'Terms of Use', href: '#' },
+        { label: 'Cookie Policy', href: '#' },
+        { label: 'Code of Conduct', href: '#' },
+      ],
+      blockAlign: isMobile ? 'flex-start' : 'flex-end',
+      blockJustify: isMobile ? 'flex-start' : 'flex-end',
+      policyGap: isMobile ? '14px 18px' : '26px',
+      footPad: isMobile ? '30px 6vw 34px' : '38px 6vw 42px',
+      logoHeight: isMobile ? '30px' : '40px',
+      lineSize: isMobile ? '10.5px' : '11.5px',
+      lineAlign: isMobile ? 'left' : 'right',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

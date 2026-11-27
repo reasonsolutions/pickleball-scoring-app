@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Schibsted+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:transparent;font-family:'Schibsted Grotesk',sans-serif}
+a{color:#fff}a:hover{color:#ff9a2e}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,45,120,.7)}50%{opacity:.55;box-shadow:0 0 0 12px rgba(255,45,120,0)}}
+@keyframes servepulse{0%,100%{transform:scale(1);box-shadow:0 0 18px rgba(255,199,46,.9)}50%{transform:scale(1.35);box-shadow:0 0 34px rgba(255,199,46,1)}}
+</style>
+</helmet>
+<div data-screen-label="Center Screen" style="position:relative;width:1920px;height:1080px;overflow:hidden;font-family:'Schibsted Grotesk',sans-serif;color:#fff">
+  {{ stageBg }}
+
+  <div data-screen-label="Match 1" style="position:absolute;left:0;right:0;top:0;height:216px;display:flex;flex-direction:column;background:linear-gradient(180deg,#0b0420,#160835);box-shadow:0 20px 60px rgba(0,0,0,.55)">
+    <div style="position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#ff9a2e,#ff2d78 55%,#7b2cff)"></div>
+    <div style="flex:1;display:grid;grid-template-columns:140px minmax(0,1fr) 170px 170px minmax(0,1fr) 140px;min-height:0">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-right:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25)">
+        <div style="font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8)">Won</div>
+        <div style="font:900 52px/1 'Unbounded',sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums">{{ m1.a.won }}</div>
+      </div>
+      <div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:flex-end;gap:22px;padding:0 24px;min-width:0;background:{{ m1.rowABg }}">
+        <span aria-hidden="true" style="position:absolute;top:-10%;bottom:-10%;left:-30px;width:300px;background:url('uploads/pasted-1789966158186-0.png') left center/contain no-repeat;opacity:.3;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,#000 25%,transparent 95%);mask-image:linear-gradient(90deg,#000 25%,transparent 95%)"></span>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0;text-align:right">
+          <div style="max-width:100%;font:900 32px/1.2 'Unbounded',sans-serif;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m1.a.name }}</div>
+          <div style="max-width:100%;font:800 20px/1.2 'Schibsted Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m1.a.players }}</div>
+        </div>
+        {{ m1.serveA }}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#ff8a1f,#ef6a12);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">
+        <span style="font:900 96px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums;text-shadow:0 3px 14px rgba(0,0,0,.45)">{{ m1.a.score }}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#e9691a,#c9500d);border-left:1px solid rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">
+        <span style="font:900 96px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums;text-shadow:0 3px 14px rgba(0,0,0,.45)">{{ m1.b.score }}</span>
+      </div>
+      <div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:flex-start;gap:22px;padding:0 24px;min-width:0;background:{{ m1.rowBBg }}">
+        <span aria-hidden="true" style="position:absolute;top:-10%;bottom:-10%;right:-30px;width:300px;background:url('uploads/pasted-1789966172391-0.png') right center/contain no-repeat;opacity:.3;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(270deg,#000 25%,transparent 95%);mask-image:linear-gradient(270deg,#000 25%,transparent 95%)"></span>
+        {{ m1.serveB }}
+        <div style="position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0">
+          <div style="max-width:100%;font:900 32px/1.2 'Unbounded',sans-serif;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m1.b.name }}</div>
+          <div style="max-width:100%;font:800 20px/1.2 'Schibsted Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m1.b.players }}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-left:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25)">
+        <div style="font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8)">Won</div>
+        <div style="font:900 52px/1 'Unbounded',sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums">{{ m1.b.won }}</div>
+      </div>
+    </div>
+    <div style="height:48px;flex:none;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 32px;background:linear-gradient(90deg,rgba(4,1,14,.95),rgba(12,4,34,.9));border-top:1px solid rgba(255,154,46,.65)">
+      <span style="width:12px;height:12px;border-radius:50%;background:#ff2d78;animation:livepulse 1.6s ease-in-out infinite"></span>
+      <span style="font:900 20px/1 'Unbounded',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ff9a2e;white-space:nowrap">{{ m1.court }}</span>
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.22)"></span>
+      <span style="font:800 19px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.85);white-space:nowrap">{{ m1.label }}</span>
+    </div>
+  </div>
+
+  <div data-screen-label="Match 2" style="position:absolute;left:0;right:0;bottom:0;height:216px;display:flex;flex-direction:column;background:linear-gradient(0deg,#0b0420,#160835);box-shadow:0 -20px 60px rgba(0,0,0,.55)">
+    <div style="position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,#ff9a2e,#ff2d78 55%,#7b2cff)"></div>
+    <div style="height:48px;flex:none;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 32px;background:linear-gradient(90deg,rgba(4,1,14,.95),rgba(12,4,34,.9));border-bottom:1px solid rgba(255,154,46,.65)">
+      <span style="width:12px;height:12px;border-radius:50%;background:#ff2d78;animation:livepulse 1.6s ease-in-out infinite"></span>
+      <span style="font:900 20px/1 'Unbounded',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#ff9a2e;white-space:nowrap">{{ m2.court }}</span>
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.22)"></span>
+      <span style="font:800 19px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.85);white-space:nowrap">{{ m2.label }}</span>
+    </div>
+    <div style="flex:1;display:grid;grid-template-columns:140px minmax(0,1fr) 170px 170px minmax(0,1fr) 140px;min-height:0">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-right:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25)">
+        <div style="font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8)">Won</div>
+        <div style="font:900 52px/1 'Unbounded',sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums">{{ m2.a.won }}</div>
+      </div>
+      <div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:flex-end;gap:22px;padding:0 24px;min-width:0;background:{{ m2.rowABg }}">
+        <span aria-hidden="true" style="position:absolute;top:-10%;bottom:-10%;left:-30px;width:300px;background:url('uploads/pasted-1789966158186-0.png') left center/contain no-repeat;opacity:.3;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,#000 25%,transparent 95%);mask-image:linear-gradient(90deg,#000 25%,transparent 95%)"></span>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0;text-align:right">
+          <div style="max-width:100%;font:900 32px/1.2 'Unbounded',sans-serif;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m2.a.name }}</div>
+          <div style="max-width:100%;font:800 20px/1.2 'Schibsted Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m2.a.players }}</div>
+        </div>
+        {{ m2.serveA }}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#ff8a1f,#ef6a12);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">
+        <span style="font:900 96px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums;text-shadow:0 3px 14px rgba(0,0,0,.45)">{{ m2.a.score }}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#e9691a,#c9500d);border-left:1px solid rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">
+        <span style="font:900 96px/1 'Unbounded',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums;text-shadow:0 3px 14px rgba(0,0,0,.45)">{{ m2.b.score }}</span>
+      </div>
+      <div style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:flex-start;gap:22px;padding:0 24px;min-width:0;background:{{ m2.rowBBg }}">
+        <span aria-hidden="true" style="position:absolute;top:-10%;bottom:-10%;right:-30px;width:300px;background:url('uploads/pasted-1789966172391-0.png') right center/contain no-repeat;opacity:.3;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:linear-gradient(270deg,#000 25%,transparent 95%);mask-image:linear-gradient(270deg,#000 25%,transparent 95%)"></span>
+        {{ m2.serveB }}
+        <div style="position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0">
+          <div style="max-width:100%;font:900 32px/1.2 'Unbounded',sans-serif;letter-spacing:-.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m2.b.name }}</div>
+          <div style="max-width:100%;font:800 20px/1.2 'Schibsted Grotesk',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffb96b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m2.b.players }}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-left:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25)">
+        <div style="font:800 15px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.8)">Won</div>
+        <div style="font:900 52px/1 'Unbounded',sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums">{{ m2.b.won }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080},&quot;serveMatch1&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;a&quot;,&quot;b&quot;],&quot;default&quot;:&quot;a&quot;,&quot;tsType&quot;:&quot;'a'|'b'&quot;,&quot;section&quot;:&quot;State&quot;},&quot;serveMatch2&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;a&quot;,&quot;b&quot;],&quot;default&quot;:&quot;b&quot;,&quot;tsType&quot;:&quot;'a'|'b'&quot;,&quot;section&quot;:&quot;State&quot;},&quot;previewBackground&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Output&quot;}}">
+class Component extends DCLogic {
+  state = {
+    m1: { court: 'Court 1', label: "Men's Doubles · Game 3 to 11",
+      a: { name: 'The Mavericks', players: 'A. Rahman / V. Iyer', score: 9, won: 5 },
+      b: { name: 'Starry Smashers', players: 'N. Deshmukh / P. Rao', score: 6, won: 1 } },
+    m2: { court: 'Court 2', label: "Mixed Doubles · Game 1 to 11",
+      a: { name: 'Deccan Dinkers', players: 'S. Reddy / K. Menon', score: 4, won: 2 },
+      b: { name: 'Charminar Chargers', players: 'R. Varma / L. Joseph', score: 7, won: 3 } },
+  };
+  serveDot(on) {
+    return React.createElement('span', { style: {
+      flex: 'none', width: 20, height: 20, borderRadius: '50%',
+      background: on ? '#ffc72e' : 'rgba(255,255,255,.09)',
+      boxShadow: on ? '0 0 18px rgba(255,199,46,.9)' : 'inset 0 0 0 1px rgba(255,255,255,.14)',
+      animation: on ? 'servepulse 1.8s ease-in-out infinite' : 'none' } });
+  }
+  match(m, serve) {
+    return { ...m, serveA: this.serveDot(serve === 'a'), serveB: this.serveDot(serve === 'b'),
+      rowABg: serve === 'a' ? 'rgba(255,154,46,.1)' : 'transparent',
+      rowBBg: serve === 'b' ? 'rgba(255,154,46,.1)' : 'transparent' };
+  }
+  renderVals() {
+    const preview = this.props.previewBackground ?? true;
+    const stageBg = preview
+      ? React.createElement('div', { key: 'bg', style: { position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 40%, #1d3a5c 0%, #0a1526 55%, #050a12 100%)' } },
+          React.createElement('div', { style: { position: 'absolute', inset: 0, backgroundImage: 'repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 6px)' } }))
+      : null;
+    return {
+      m1: this.match(this.state.m1, this.props.serveMatch1 ?? 'a'),
+      m2: this.match(this.state.m2, this.props.serveMatch2 ?? 'b'),
+      stageBg,
+    };
+  }
+}
+</script>
+</body>
+</html>

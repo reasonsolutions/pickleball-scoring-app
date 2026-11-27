@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:#ee3a24;}
+    a:hover{color:#ffffff;}
+    ::selection{background:#ee3a24;color:#0b0b0c;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes cc-fade-up{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes cc-line-grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+    @keyframes cc-open{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+    .cc-in{opacity:0;animation:cc-fade-up .8s cubic-bezier(.16,1,.3,1) forwards;}
+    .cc-row{transition:background .25s ease,border-color .25s ease;}
+    .cc-row:hover{background:#15151700 !important;}
+    .cc-row:hover{background:#141415 !important;}
+    .cc-th{transition:color .25s ease,background .25s ease;cursor:pointer;}
+    .cc-th:hover{color:#ffffff !important;}
+    .cc-panel{animation:cc-open .4s cubic-bezier(.16,1,.3,1) both;}
+    .cc-scroll{overflow-x:auto;}
+    .cc-scroll::-webkit-scrollbar{height:6px;}
+    .cc-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav" current="table" hint-size="100%,146px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;padding:{{sectionPadding}};box-sizing:border-box;overflow:hidden;">
+
+  <div style="position:absolute;top:32px;left:6vw;right:6vw;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0.5),rgba(255,255,255,0) 75%);transform-origin:left;animation:cc-line-grow 1.1s cubic-bezier(.16,1,.3,1) both;"></div>
+  <div style="position:absolute;top:26px;left:6vw;width:1px;height:13px;background:#fff;"></div>
+  <div style="position:absolute;top:26px;right:6vw;width:1px;height:13px;background:#fff;"></div>
+
+  <div class="cc-in" style="position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:{{topMetaMargin}};animation-delay:.05s;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:{{accentColor}};animation:cc-pulse 2s ease-in-out infinite;"></div>
+      <span style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.8);">CCPL Hyderabad / Season 2</span>
+    </div>
+    <span style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.8);">{{playedLabel}}</span>
+  </div>
+
+  <div style="position:relative;display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:20px;margin-bottom:{{headerMargin}};">
+    <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(52px,8vw,132px);line-height:0.86;margin:0;text-transform:uppercase;">
+      Team<br>Rankings.
+    </h1>
+    <p class="cc-in" style="margin:0;max-width:{{introMaxWidth}};font-size:16px;line-height:1.65;color:rgba(255,255,255,0.8);animation-delay:.3s;">
+      Two points per battle won. Ties are split on games difference, then points difference. Tap any column to re-sort the table.
+    </p>
+  </div>
+
+  <sc-if value="{{isDesktop}}" hint-placeholder-val="{{true}}">
+  <div class="cc-in cc-scroll" style="position:relative;border:1px solid rgba(255,255,255,0.16);background:#0e0e0f;animation-delay:.4s;">
+    <div style="min-width:1240px;">
+
+      <div style="display:grid;grid-template-columns:{{tableCols}};align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.16);">
+        <div style="display:flex;align-items:center;padding:18px 26px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.78);">Team Rank</div>
+        <sc-for list="{{headers}}" as="h" hint-placeholder-count="9">
+          <div class="cc-th" role="button" tabindex="0" onClick="{{h.sort}}" title="{{h.title}}" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:18px 10px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:{{h.color}};background:{{h.bg}};border-left:1px solid rgba(255,255,255,0.07);">
+            <span style="text-align:center;line-height:1.3;">{{h.label}}</span>
+            <span style="font-size:12px;color:{{accentColor}};">{{h.arrow}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+        <div class="cc-row" style="display:grid;grid-template-columns:{{tableCols}};align-items:stretch;border-top:1px solid rgba(255,255,255,0.08);background:{{r.rowBg}};">
+          <div style="display:flex;align-items:center;gap:16px;padding:16px 26px;min-width:0;border-left:2px solid {{r.edge}};">
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:22px;line-height:1;width:26px;color:{{r.rankColor}};">{{r.rank}}</span>
+            <image-slot id="{{r.slot}}" shape="circle" placeholder="Logo" style="width:40px;height:40px;flex-shrink:0;"></image-slot>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:22px;line-height:1.05;text-transform:uppercase;">{{r.team}}</span>
+          </div>
+          <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="9">
+            <div style="display:flex;align-items:center;justify-content:center;padding:16px 10px;font-size:{{c.size}};font-weight:{{c.weight}};color:{{c.color}};background:{{c.bg}};border-left:1px solid rgba(255,255,255,0.05);">{{c.value}}</div>
+          </sc-for>
+        </div>
+      </sc-for>
+
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{isMobile}}" hint-placeholder-val="{{false}}">
+  <div style="position:relative;display:flex;flex-direction:column;gap:10px;">
+    <div class="cc-in cc-scroll" style="display:flex;gap:8px;padding-bottom:12px;animation-delay:.35s;">
+      <sc-for list="{{chips}}" as="ch" hint-placeholder-count="4">
+        <span role="button" tabindex="0" onClick="{{ch.sort}}" style="flex-shrink:0;display:flex;align-items:center;min-height:44px;box-sizing:border-box;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:0 16px;border:1px solid {{ch.border}};color:{{ch.color}};background:{{ch.bg}};">{{ch.label}}</span>
+      </sc-for>
+    </div>
+
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+      <div class="cc-in" style="animation-delay:{{r.delay}};">
+        <div role="button" tabindex="0" onClick="{{r.toggle}}" style="display:flex;flex-direction:column;gap:14px;padding:16px;border:1px solid {{r.cardBorder}};border-left:2px solid {{r.edge}};background:{{r.cardBg}};cursor:pointer;">
+
+          <div style="display:grid;grid-template-columns:26px 38px minmax(0,1fr) auto;align-items:center;gap:12px;">
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:22px;line-height:1;color:{{r.rankColor}};">{{r.rank}}</span>
+            <image-slot id="{{r.slot}}" shape="circle" placeholder="Logo" style="width:38px;height:38px;"></image-slot>
+            <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:19px;line-height:1.05;text-transform:uppercase;">{{r.team}}</span>
+            <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+              <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;color:{{accentColor}};">{{r.points}}</span>
+              <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">Points</span>
+            </span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+            <span style="display:flex;flex-direction:column;gap:4px;">
+              <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">Battles</span>
+              <span style="font-size:14px;">{{r.battleRecord}}</span>
+            </span>
+            <span style="display:flex;flex-direction:column;gap:4px;">
+              <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">Games</span>
+              <span style="font-size:14px;">{{r.gameRecord}}</span>
+            </span>
+            <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+              <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">Games diff</span>
+              <span style="font-size:14px;color:{{r.gamesDiffColor}};">{{r.gamesDiffText}}</span>
+            </span>
+          </div>
+
+          <sc-if value="{{r.isOpen}}" hint-placeholder-val="{{false}}">
+            <div class="cc-panel" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+              <sc-for list="{{r.detail}}" as="d" hint-placeholder-count="6">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+                  <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{d.label}}</span>
+                  <span style="font-size:14px;color:{{d.color}};">{{d.value}}</span>
+                </span>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:{{accentColor}};">{{r.tapLabel}}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <div class="cc-in" style="position:relative;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:{{footerMargin}};animation-delay:.9s;">
+    <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">Table updates within an hour of the final whistle.</span>
+    <a href="Centre Court Fixtures.dc.html" style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.78);text-decoration:underline;">See the fixtures</a>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1100},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ff5a3c&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ee3a24&quot;,&quot;#ff5a3c&quot;,&quot;#f5c451&quot;]},&quot;highlightTop&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:4,&quot;min&quot;:0,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = {
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 900,
+    sort: 'points',
+    open: null,
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 900;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile }));
+  };
+  componentDidMount() { window.addEventListener('resize', this.updateSize); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); }
+
+  slot(name) { return 'table-logo-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  fixtures() {
+    // Individual match scores behind each battle, mirroring the Fixtures page.
+    const gen = (n, homeWins) => Array.from({ length: n }, (_, i) =>
+      i < homeWins ? [15, 12] : [11, 15]);
+    return [
+      { home: 'All Stars', away: 'Credicon Mavericks', matches: [[7,15],[11,15],[15,10],[12,15],[16,18],[15,13]] },
+      { home: 'Nandi Chargers', away: 'Teramor Titans', matches: gen(7, 4) },
+      { home: 'Dasos Dynamos', away: 'The Raptors', matches: gen(7, 4) },
+      { home: 'Keerthi Warriors', away: 'Starry Smashers', matches: gen(6, 1) },
+      { home: 'Dasos Dynamos', away: 'Teramor Titans', matches: gen(6, 2) },
+      { home: 'Starry Smashers', away: 'All Stars', matches: gen(6, 2) },
+    ];
+  }
+
+  standings() {
+    const teams = {};
+    const blank = name => ({ team: name, bw: 0, bl: 0, gw: 0, gl: 0, pw: 0, pl: 0 });
+    const get = name => (teams[name] = teams[name] || blank(name));
+
+    this.fixtures().forEach(f => {
+      const h = get(f.home), a = get(f.away);
+      let hg = 0, ag = 0;
+      f.matches.forEach(([hs, as_]) => {
+        h.pw += hs; h.pl += as_; a.pw += as_; a.pl += hs;
+        if (hs > as_) hg += 1; else ag += 1;
+      });
+      h.gw += hg; h.gl += ag; a.gw += ag; a.gl += hg;
+      if (hg > ag) { h.bw += 1; a.bl += 1; } else { a.bw += 1; h.bl += 1; }
+    });
+
+    return Object.values(teams).map(t => Object.assign(t, {
+      points: t.bw * 2,
+      gd: t.gw - t.gl,
+      pd: t.pw - t.pl,
+    }));
+  }
+
+  cols() {
+    return [
+      { key: 'bw', label: 'Battle Wins', tone: 'good' },
+      { key: 'bl', label: 'Battle Losses', tone: 'bad' },
+      { key: 'points', label: 'Points', tone: 'accent' },
+      { key: 'gw', label: 'Game Wins' },
+      { key: 'gl', label: 'Game Losses' },
+      { key: 'pw', label: 'Points Won' },
+      { key: 'pl', label: 'Points Lost' },
+      { key: 'gd', label: 'Games Diff', tone: 'diff' },
+      { key: 'pd', label: 'Points Diff', tone: 'diff' },
+    ];
+  }
+
+  sortBy(key) {
+    this.setState({ sort: key });
+  }
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#ee3a24';
+    const highlightTop = this.props.highlightTop ?? 4;
+    const isMobile = this.state.isMobile;
+    const sort = this.state.sort;
+    const cols = this.cols();
+
+    const rank = (a, b) => (b[sort] - a[sort]) || (b.points - a.points) || (b.gd - a.gd) || (b.pd - a.pd) || a.team.localeCompare(b.team);
+    const table = this.standings().sort(rank);
+
+    const signed = n => (n > 0 ? '+' + n : String(n));
+    const diffColor = n => (n > 0 ? '#7fdba0' : n < 0 ? '#e2705f' : 'rgba(255,255,255,0.72)');
+
+    const headers = cols.map(c => ({
+      label: c.label,
+      arrow: sort === c.key ? '\u2193' : '',
+      color: sort === c.key ? '#fff' : 'rgba(255,255,255,0.78)',
+      bg: sort === c.key ? 'rgba(238,58,36,0.12)' : 'transparent',
+      title: 'Sort by ' + c.label,
+      sort: () => this.sortBy(c.key),
+    }));
+
+    const chips = [
+      { key: 'points', label: 'Points' },
+      { key: 'bw', label: 'Battle Wins' },
+      { key: 'gd', label: 'Games Diff' },
+      { key: 'pd', label: 'Points Diff' },
+    ].map(c => ({
+      label: c.label,
+      border: sort === c.key ? accentColor : 'rgba(255,255,255,0.22)',
+      color: sort === c.key ? '#fff' : 'rgba(255,255,255,0.78)',
+      bg: sort === c.key ? 'rgba(238,58,36,0.14)' : 'transparent',
+      sort: () => this.sortBy(c.key),
+    }));
+
+    const rows = table.map((t, i) => {
+      const top = i < highlightTop;
+      const isOpen = this.state.open === t.team;
+      return {
+        team: t.team,
+        slot: this.slot(t.team),
+        rank: String(i + 1).padStart(2, '0'),
+        rankColor: top ? accentColor : 'rgba(255,255,255,0.72)',
+        edge: top ? accentColor : 'rgba(255,255,255,0.12)',
+        rowBg: i % 2 ? '#101011' : '#0e0e0f',
+        cardBg: isOpen ? '#121213' : '#0e0e0f',
+        cardBorder: isOpen ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.16)',
+        points: t.points,
+        battleRecord: t.bw + ' W / ' + t.bl + ' L',
+        gameRecord: t.gw + ' W / ' + t.gl + ' L',
+        gamesDiffText: signed(t.gd),
+        gamesDiffColor: diffColor(t.gd),
+        isOpen,
+        tapLabel: isOpen ? 'Hide full stats' : 'View full stats',
+        toggle: () => this.setState(s => ({ open: s.open === t.team ? null : t.team })),
+        delay: (0.4 + i * 0.05).toFixed(2) + 's',
+        detail: [
+          { label: 'Game wins', value: t.gw, color: '#7fdba0' },
+          { label: 'Game losses', value: t.gl, color: '#e2705f' },
+          { label: 'Points won', value: t.pw, color: '#fff' },
+          { label: 'Points lost', value: t.pl, color: 'rgba(255,255,255,0.8)' },
+          { label: 'Points diff', value: signed(t.pd), color: diffColor(t.pd) },
+          { label: 'Battles played', value: t.bw + t.bl, color: 'rgba(255,255,255,0.8)' },
+        ],
+        cells: cols.map(c => {
+          const v = t[c.key];
+          const isSorted = sort === c.key;
+          let color = 'rgba(255,255,255,0.9)';
+          if (c.tone === 'good') color = '#7fdba0';
+          if (c.tone === 'bad') color = '#e2705f';
+          if (c.tone === 'accent') color = accentColor;
+          if (c.tone === 'diff') color = diffColor(v);
+          return {
+            value: c.tone === 'diff' ? signed(v) : String(v),
+            color,
+            size: c.tone === 'accent' ? '17px' : '15px',
+            weight: c.tone === 'accent' || isSorted ? '600' : '400',
+            bg: isSorted ? 'rgba(238,58,36,0.07)' : 'transparent',
+          };
+        }),
+      };
+    });
+
+    return {
+      accentColor, headers, rows, chips,
+      isMobile, isDesktop: !isMobile,
+      playedLabel: 'Round Robin / ' + this.fixtures().length + ' battles played',
+      tableCols: 'minmax(300px,1.8fr) repeat(9,minmax(104px,1fr))',
+      sectionPadding: isMobile ? '32px 6vw 56px' : '56px 6vw 88px',
+      topMetaMargin: isMobile ? '36px' : '52px',
+      headerGridCols: isMobile ? '1fr' : '1fr 340px',
+      headerMargin: isMobile ? '36px' : '64px',
+      introMaxWidth: isMobile ? '100%' : '340px',
+      footerMargin: isMobile ? '44px' : '64px',
+    };
+  }
+}
+</script>
+</body>
+</html>

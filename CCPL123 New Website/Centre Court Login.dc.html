@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black.ttf') format('truetype');font-weight:900;font-style:normal;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:{{accentColor}};}
+    a:hover{color:#ffffff;}
+    input::placeholder{color:rgba(255,255,255,0.35);}
+    ::selection{background:{{accentColor}};color:#0b0b0c;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav" current="signup" hint-size="100%,146px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;min-height:calc(100vh - 146px);box-sizing:border-box;padding:64px 6vw 96px;display:flex;justify-content:center;">
+
+  <div style="max-width:460px;width:100%;">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:{{accentColor}};"></div>
+      <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Season 2 &middot; Account Sign In</span>
+    </div>
+
+    <div style="display:flex;border:1px solid rgba(255,255,255,0.18);margin-bottom:32px;">
+      <button type="button" onClick="{{selectPlayer}}" style="flex:1;padding:14px 8px;background:{{playerTabBg}};color:{{playerTabColor}};border:none;border-right:1px solid rgba(255,255,255,0.18);font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">Player</button>
+      <button type="button" onClick="{{selectOwner}}" style="flex:1;padding:14px 8px;background:{{ownerTabBg}};color:{{ownerTabColor}};border:none;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">Team Owner</button>
+    </div>
+
+    <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:italic;font-size:clamp(38px,5vw,56px);line-height:0.9;margin:0 0 10px;text-transform:uppercase;">Welcome Back.</h1>
+    <p style="margin:0 0 32px;font-size:14px;line-height:1.6;color:rgba(255,255,255,0.5);max-width:380px;">{{roleSubtitle}}</p>
+
+    <sc-if value="{{loggedIn}}" hint-placeholder-val="{{false}}">
+      <div style="border:1px solid rgba(255,255,255,0.18);padding:40px 32px;display:flex;flex-direction:column;gap:14px;">
+        <span style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:{{accentColor}};">Signed In</span>
+        <p style="font-family:'Zuume Cut',sans-serif;font-weight:900;font-style:normal;font-size:32px;line-height:1;margin:0;text-transform:uppercase;">You're In.</p>
+        <p style="font-size:13.5px;line-height:1.6;color:rgba(255,255,255,0.55);margin:0;">{{loggedInMessage}}</p>
+        <a href="#" onClick="{{logOut}}" style="margin-top:8px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;text-decoration:underline;">Sign in as someone else</a>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{notLoggedIn}}" hint-placeholder-val="{{true}}">
+      <form onSubmit="{{handleSubmit}}" style="display:flex;flex-direction:column;gap:22px;">
+
+        <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+          {{identifierLabel}}
+          <input required="" name="identifier" placeholder="{{identifierPlaceholder}}" value="{{form.identifier}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+        </label>
+
+        <label style="display:flex;flex-direction:column;gap:8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">
+          Password
+          <input required="" type="password" name="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" value="{{form.password}}" onChange="{{onField}}" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;padding:10px 2px;outline:none;"/>
+        </label>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <label style="display:flex;gap:10px;align-items:center;cursor:pointer;">
+            <input type="checkbox" checked="{{form.remember}}" onChange="{{toggleRemember}}" style="width:15px;height:15px;accent-color:{{accentColor}};flex-shrink:0;cursor:pointer;"/>
+            <span style="font-size:13px;color:rgba(255,255,255,0.6);">Remember me</span>
+          </label>
+          <a href="#" style="font-size:12px;letter-spacing:0.04em;text-decoration:underline;">Forgot password?</a>
+        </div>
+
+        <sc-if value="{{hasError}}" hint-placeholder-val="{{false}}">
+          <p style="margin:0;font-size:12.5px;color:{{accentColor}};">{{errorMessage}}</p>
+        </sc-if>
+
+        <button type="submit" style="padding:19px;background:linear-gradient(180deg,{{accentColor}},{{accentColorDark}});border:none;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">{{submitLabel}} &rarr;</button>
+      </form>
+
+      <p style="margin:28px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.45);">{{signupPrompt}} <a href="{{signupHref}}" style="text-decoration:underline;">{{signupLinkLabel}}</a></p>
+    </sc-if>
+
+  </div>
+
+</section>
+
+<dc-import name="Centre Court Footer" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ee3a24&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ee3a24&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]}}">
+class Component extends DCLogic {
+  state = {
+    role: 'player',
+    loggedIn: false,
+    form: { identifier: '', password: '', remember: false },
+    error: '',
+  };
+
+  selectRole = (role) => this.setState({ role, error: '', form: { identifier: '', password: '', remember: false } });
+  selectPlayer = () => this.selectRole('player');
+  selectOwner = () => this.selectRole('owner');
+
+  setField = (name, value) => this.setState(s => ({ form: { ...s.form, [name]: value } }));
+  onField = (e) => this.setField(e.target.name, e.target.value);
+  toggleRemember = () => this.setState(s => ({ form: { ...s.form, remember: !s.form.remember } }));
+
+  handleSubmit = (e) => {
+    e.preventDefault();
+    const { identifier, password } = this.state.form;
+    if (!identifier.trim() || !password.trim()) {
+      this.setState({ error: 'Enter your credentials to continue.' });
+      return;
+    }
+    this.setState({ loggedIn: true, error: '' });
+  };
+
+  logOut = (e) => {
+    e.preventDefault();
+    this.setState({ loggedIn: false, form: { identifier: '', password: '', remember: false } });
+  };
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#ee3a24';
+    const accentColorDark = '#7d0f0f';
+    const { role, loggedIn, form, error } = this.state;
+    const isPlayer = role === 'player';
+
+    return {
+      accentColor, accentColorDark,
+      selectPlayer: this.selectPlayer,
+      selectOwner: this.selectOwner,
+      playerTabBg: isPlayer ? accentColor : 'transparent',
+      playerTabColor: isPlayer ? '#fff' : 'rgba(255,255,255,0.55)',
+      ownerTabBg: !isPlayer ? accentColor : 'transparent',
+      ownerTabColor: !isPlayer ? '#fff' : 'rgba(255,255,255,0.55)',
+      roleSubtitle: isPlayer
+        ? 'Sign in to manage your registration, availability and auction status.'
+        : 'Sign in to manage your franchise roster, budget and team operations.',
+      identifierLabel: isPlayer ? 'Email or WhatsApp Number' : 'Email Address',
+      identifierPlaceholder: isPlayer ? 'you@email.com or +91 90000 00000' : 'owner@franchise.com',
+      form,
+      onField: this.onField,
+      toggleRemember: this.toggleRemember,
+      handleSubmit: this.handleSubmit,
+      hasError: !!error,
+      errorMessage: error,
+      submitLabel: isPlayer ? 'Sign In as Player' : 'Sign In as Team Owner',
+      signupPrompt: isPlayer ? "Not registered yet?" : "Don't have an owner account?",
+      signupHref: isPlayer ? 'Centre Court Player Signup.dc.html' : '#',
+      signupLinkLabel: isPlayer ? 'Register as a player' : 'Contact the League Office',
+      loggedIn,
+      notLoggedIn: !loggedIn,
+      loggedInMessage: isPlayer
+        ? 'Redirecting you to your player dashboard.'
+        : 'Redirecting you to your franchise dashboard.',
+      logOut: this.logOut,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

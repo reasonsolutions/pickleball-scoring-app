@@ -1,0 +1,333 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { db } from '../utils/firebase';
+import CCPLNavbar from '../components/CCPLNavbar';
+import CCPLFooter from '../components/CCPLFooter';
+
+import CCPLTopBar from '../components/CCPLTopBar';
+export default function CCPLHome() {
+  const [openRule, setOpenRule] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [countdown, setCountdown] = useState({ days: '0', hours: '00', mins: '00', secs: '00' });
+  const [newsArticles, setNewsArticles] = useState([]);
+  const [featuredArticle, setFeaturedArticle] = useState(null);
+
+  const accentColor = '#ee3a24';
+  const accentColorDark = '#7d0f0f';
+
+  const toggleRule = (i) => {
+    setOpenRule(prev => prev === i ? -1 : i);
+  };
+
+  useEffect(() => {
+    const updateSize = () => {
+      setIsMobile(window.innerWidth < 860);
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  // Fetch news articles
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        // Fetch all latest articles
+        const newsQuery = query(
+          collection(db, 'news'),
+          orderBy('publishDate', 'desc'),
+          limit(4)
+        );
+        const newsSnapshot = await getDocs(newsQuery);
+        const allArticles = newsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Find featured article (first one with featured=true)
+        const featured = allArticles.find(article => article.featured === true);
+        if (featured) {
+          setFeaturedArticle(featured);
+          // Set remaining articles (excluding the featured one)
+          setNewsArticles(allArticles.filter(article => article.id !== featured.id).slice(0, 3));
+        } else {
+          // If no featured article, use first as featured and rest as articles
+          setFeaturedArticle(allArticles[0] || null);
+          setNewsArticles(allArticles.slice(1, 4));
+        }
+      } catch (error) {
+        console.error('Error fetching news:', error);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  // Countdown timer - 17th October 2026, 5:00 PM IST
+  useEffect(() => {
+    const calculateCountdown = () => {
+      // IST is UTC+5:30, so 5:00 PM IST = 11:30 AM UTC
+      const target = new Date('2026-10-17T11:30:00Z').getTime();
+      const now = Date.now();
+      const diff = Math.max(0, target - now);
+      const s = Math.floor(diff / 1000);
+      const pad = n => String(n).padStart(2, '0');
+      
+      setCountdown({
+        days: String(Math.floor(s / 86400)),
+        hours: pad(Math.floor(s / 3600) % 24),
+        mins: pad(Math.floor(s / 60) % 60),
+        secs: pad(s % 60),
+      });
+    };
+
+    calculateCountdown();
+    const interval = setInterval(calculateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const rulesData = [
+    { title: 'Registration', body: 'Registration does not guarantee eligibility. Players registered will be evaluated against eligibility criteria and approved accordingly.' },
+    { title: 'Player Eligibility', body: 'Players who have registered/participated in the CCPL Hyderabad S1 (formerly HPL S1) and participated in the CCPL Club League S1 (formerly HPL Club League S1), along with players who can provide proof of residence in Hyderabad, are eligible to register.' },
+    { title: 'Player Auction Purse', body: 'Each of the eight franchises will be allocated a Player Auction Purse of ₹10,00,000 (Rupees Ten Lakhs). The Auction Purse shall be used exclusively to acquire players through the Player Auction and to constitute a 10-player squad for the season.' },
+    { title: 'Schedule', body: 'The Centre Court Pickleball League (CCPL) Season 2 will be held in Hyderabad from 17 October to 12 December 2026, with league fixtures scheduled on Saturdays during this period. The CCPL Season 2 Player Auction will be held on 5 September 2026. The detailed match schedule, venues and timings will be communicated separately by the League.' },
+    { title: 'Player Availability', body: 'Selected players must be available for all fixtures they have declared to be available for and honour their team commitments throughout the season. In case of wrong declarations, player will lose the opportunity to participate on the matchday they declare as being unavailable.' },
+    { title: 'Practice', body: 'Players will be required to declare the availability for a minimum of 2 practice sessions per week from September 17th until the end of the league.' },
+    { title: 'Unselected Players', body: 'All players not selected in the auction form the reserve pool and teams may pick them up in the single transfer window which will open post Matchday 3 before Matchday 4.' },
+    { title: 'Rules & Conduct', body: 'All players must follow the league rules, match regulations, code of conduct and decisions of league officials.' },
+  ];
+  ];
+
+  return (
+    <>
+      <style>{`
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/fonts/zuume-cut-black.ttf') format('truetype');
+          font-weight: 900;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/fonts/zuume-cut-black-italic.ttf') format('truetype');
+          font-weight: 900;
+          font-style: italic;
+        }
+        @font-face {
+          font-family: 'Zuume Cut';
+          src: url('/fonts/zuume-cut-bold.ttf') format('truetype');
+          font-weight: 700;
+          font-style: normal;
+        }
+        
+        .ccpl-container {
+          background: #0b0b0c;
+          color: #fff;
+          font-family: 'Montserrat', sans-serif;
+          min-height: 100vh;
+          overflow-x: hidden;
+        }
+        
+        @keyframes cc-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        
+        .cc-tile {
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .cc-tile:hover {
+          transform: translateY(-6px);
+        }
+        
+        .cc-tile:hover .cc-arrow {
+          transform: translateX(6px);
+        }
+        
+        .cc-arrow {
+          transition: transform 0.3s ease;
+        }
+        
+        @keyframes cc-fade-up {
+          from {
+            opacity: 0;
+            transform: translateY(28px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes cc-line-grow {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+        
+        .cc-in {
+          opacity: 0;
+          animation: cc-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+
+      <div className="ccpl-container">
+        {/* Top Bar */}
+        <div className="ccpl-top-bar" style={{ display: 'flex', alignItems: 'stretch', background: accentColor, boxSizing: 'border-box', height: '50px', overflowX: 'auto', overflowY: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
+            {leagues.map((lg, idx) => (
+        <CCPLTopBar activeLeague="ccpl-s2" accentColor={accentColor} />
+        {/* News Section */}
+        <section style={{ position: 'relative', background: '#0b0b0c', color: '#fff', fontFamily: "'Montserrat', sans-serif", padding: isMobile ? '8px 6vw 56px' : '16px 6vw 88px', boxSizing: 'border-box' }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 400px', gap: isMobile ? '20px' : '28px', alignItems: 'stretch' }}>
+            
+            {/* Left Column - News Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '20px' : '28px' }}>
+              
+              {/* Feature News Card */}
+              {featuredArticle ? (
+                <Link to={`/news/${featuredArticle.id}`} className="cc-tile" style={{ position: 'relative', display: 'block', height: isMobile ? '300px' : '460px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', textDecoration: 'none', color: '#fff' }}>
+                  <div style={{ position: 'absolute', inset: 0 }}>
+                    <img
+                      src={featuredArticle.featuredImage?.secure_url || featuredArticle.featuredImage?.url || '/images/ccpl-news-feature.png'}
+                      alt={featuredArticle.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #0b0b0c 100%)';
+                      }}
+                    />
+                  </div>
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(11,11,12,0) 40%, rgba(11,11,12,0.8) 78%, #0b0b0c 100%)', pointerEvents: 'none' }}></div>
+                  <div style={{ position: 'absolute', left: '28px', right: '28px', bottom: '26px', pointerEvents: 'none' }}>
+                    <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: accentColor, marginBottom: '10px' }}>Featured</span>
+                    <h3 style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(26px, 2.6vw, 40px)', lineHeight: 0.98, margin: 0, textTransform: 'uppercase', maxWidth: '760px' }}>
+                      {featuredArticle.title}
+                    </h3>
+                    {featuredArticle.subtext && (
+                      <p style={{ fontSize: '13px', lineHeight: 1.4, color: 'rgba(255,255,255,0.7)', margin: '8px 0 0', maxWidth: '600px' }}>
+                        {featuredArticle.subtext}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ) : (
+                <div className="cc-tile" style={{ position: 'relative', display: 'block', height: isMobile ? '300px' : '460px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', background: 'linear-gradient(135deg, #1a1a1a 0%, #0b0b0c 100%)' }}>
+                  <div style={{ position: 'absolute', left: '28px', right: '28px', bottom: '26px' }}>
+                    <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: accentColor, marginBottom: '10px' }}>Featured</span>
+                    <h3 style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(26px, 2.6vw, 40px)', lineHeight: 0.98, margin: 0, textTransform: 'uppercase' }}>
+                      Loading...
+                    </h3>
+                  </div>
+                </div>
+              )}
+
+              {/* Small News Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0,1fr))', gap: isMobile ? '20px' : '28px' }}>
+                {newsArticles.length > 0 ? newsArticles.map((article, idx) => (
+                  <Link key={article.id} to={`/news/${article.id}`} className="cc-tile" style={{ position: 'relative', display: 'block', height: isMobile ? '200px' : '240px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', textDecoration: 'none', color: '#fff' }}>
+                    {article.featuredImage?.secure_url || article.featuredImage?.url ? (
+                      <>
+                        <div style={{ position: 'absolute', inset: 0 }}>
+                          <img
+                            src={article.featuredImage.secure_url || article.featuredImage.url}
+                            alt={article.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #0b0b0c 100%)';
+                            }}
+                          />
+                        </div>
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(11,11,12,0) 35%, rgba(11,11,12,0.85) 80%, #0b0b0c 100%)', pointerEvents: 'none' }}></div>
+                      </>
+                    ) : (
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1a1a1a 0%, #0b0b0c 100%)' }}></div>
+                    )}
+                    <div style={{ position: 'absolute', left: '18px', right: '18px', bottom: '18px', pointerEvents: 'none' }}>
+                      <span style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: accentColor, marginBottom: '8px' }}>News</span>
+                      <h4 style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: '19px', lineHeight: 1, margin: 0, textTransform: 'uppercase' }}>{article.title}</h4>
+                    </div>
+                  </Link>
+                )) : (
+                  // Placeholder cards while loading
+                  [1, 2, 3].map((idx) => (
+                    <div key={idx} className="cc-tile" style={{ position: 'relative', display: 'block', height: isMobile ? '200px' : '240px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.18)', background: 'linear-gradient(135deg, #1a1a1a 0%, #0b0b0c 100%)' }}>
+                      <div style={{ position: 'absolute', left: '18px', right: '18px', bottom: '18px' }}>
+                        <span style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: accentColor, marginBottom: '8px' }}>News</span>
+                        <h4 style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: '19px', lineHeight: 1, margin: 0, textTransform: 'uppercase' }}>Loading...</h4>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Right Column - Countdown & Champion */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '20px' : '28px' }}>
+              
+              {/* Countdown Card */}
+              <div style={{ border: '1px solid rgba(255,255,255,0.16)', padding: '28px 26px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: accentColor, animation: 'cc-pulse 2s ease-in-out infinite' }}></div>
+                  <span style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Opening Match Day</span>
+                </div>
+                <h3 style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(26px, 2.4vw, 34px)', lineHeight: 0.95, margin: '0 0 22px', textTransform: 'uppercase' }}>
+                  Days To Go Until Opening Match
+                </h3>
+
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', paddingBottom: '22px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(72px, 9vw, 112px)', lineHeight: 0.8, color: accentColor }}>{countdown.days}</span>
+                  <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 600, fontSize: '13px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', paddingBottom: '10px' }}>Days</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '20px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', padding: '14px 10px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 700, fontSize: '26px', lineHeight: 1 }}>{countdown.hours}</div>
+                    <div style={{ fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Hrs</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', padding: '14px 10px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 700, fontSize: '26px', lineHeight: 1 }}>{countdown.mins}</div>
+                    <div style={{ fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Min</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', padding: '14px 10px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 700, fontSize: '26px', lineHeight: 1 }}>{countdown.secs}</div>
+                    <div style={{ fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Sec</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '22px', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                  <span>17 October 2026</span>
+                  <span>5:00 PM IST</span>
+                </div>
+              </div>
+
+              {/* Season 1 Champions Card */}
+              <div style={{ overflow: 'hidden', background: '#101830', border: '1px solid rgba(255,255,255,0.16)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '18px 24px', background: 'rgba(255,255,255,0.04)' }}>
+                  <span style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: '22px', letterSpacing: '0.02em', textTransform: 'uppercase', color: accentColor }}>Season 1 Champions</span>
+                </div>
+                <div style={{ position: 'relative', flex: 1, minHeight: isMobile ? '142px' : '182px' }}>
+                  <img
+                    src="https://res.cloudinary.com/dnfcybtnn/image/upload/v1787660162/mavericks_win_e9swg5.jpg"
+                    alt="The Mavericks - Season 1 Champions"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #0b0b0c 100%)';
+                    }}
+                  />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(11,11,12,0.15) 0%, rgba(11,11,12,0.15) 55%, rgba(11,11,12,0.85) 100%)', pointerEvents: 'none' }}></div>
+                  <div style={{ position: 'absolute', left: '24px', right: '24px', bottom: '22px', pointerEvents: 'none' }}>
+                    <h4 style={{ fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic', fontSize: '28px', lineHeight: 1, margin: 0, textTransform: 'uppercase' }}>The Mavericks</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <CCPLFooter />
+    </>
+  );
+}

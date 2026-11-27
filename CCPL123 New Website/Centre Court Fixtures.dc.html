@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-bold.ttf') format('truetype');font-weight:700;font-style:normal;}
+    body{margin:0;background:#0b0b0c;}
+    a{color:#ee3a24;}
+    a:hover{color:#ffffff;}
+    ::selection{background:#ee3a24;color:#0b0b0c;}
+    @keyframes cc-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes cc-fade-up{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes cc-line-grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+    @keyframes cc-bar{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+    @keyframes cc-open{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+    .cc-in{opacity:0;animation:cc-fade-up .8s cubic-bezier(.16,1,.3,1) forwards;}
+    .cc-panel{animation:cc-open .45s cubic-bezier(.16,1,.3,1) both;}
+    .cc-scroll{overflow-x:auto;scrollbar-width:none;}
+    .cc-scroll::-webkit-scrollbar{display:none;}
+  </style>
+</helmet>
+
+<dc-import name="Centre Court Nav" current="fixtures" hint-size="100%,146px"></dc-import>
+
+<section style="position:relative;background:#0b0b0c;color:#fff;font-family:'Montserrat',sans-serif;padding:{{sectionPadding}};box-sizing:border-box;overflow:hidden;">
+
+  <div style="position:absolute;top:32px;left:6vw;right:6vw;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0.5),rgba(255,255,255,0) 75%);transform-origin:left;animation:cc-line-grow 1.1s cubic-bezier(.16,1,.3,1) both;"></div>
+  <div style="position:absolute;top:26px;left:6vw;width:1px;height:13px;background:#fff;"></div>
+  <div style="position:absolute;top:26px;right:6vw;width:1px;height:13px;background:#fff;"></div>
+
+  <div class="cc-in" style="position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 20px;margin-bottom:{{topMetaMargin}};animation-delay:.05s;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:{{accentColor}};animation:cc-pulse 2s ease-in-out infinite;"></div>
+      <span style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.8);">CCPL Hyderabad / Season 2</span>
+    </div>
+    <span style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.8);">Round Robin / Seven Matchdays</span>
+  </div>
+
+  <div style="position:relative;display:grid;grid-template-columns:{{headerGridCols}};align-items:end;gap:28px;margin-bottom:{{headerMargin}};">
+    <h1 style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(64px,11vw,184px);line-height:0.82;margin:0;text-transform:uppercase;">
+      The<br>Fixtures.
+    </h1>
+    <div class="cc-in" style="display:flex;flex-direction:column;gap:14px;animation-delay:.3s;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+        <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.78);white-space:nowrap;">Season progress</span>
+        <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:34px;line-height:1;white-space:nowrap;flex-shrink:0;">{{playedText}}<span style="color:rgba(255,255,255,0.72);"> / {{totalText}}</span></span>
+      </div>
+      <div style="position:relative;height:4px;background:rgba(255,255,255,0.12);">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:{{progressPct}};background:{{accentColor}};transform-origin:left;animation:cc-bar 1.2s .5s cubic-bezier(.16,1,.3,1) both;"></div>
+      </div>
+      <span style="font-size:16px;line-height:1.6;color:rgba(255,255,255,0.78);">Battles played. Open any battle to see the six or seven matches behind the scoreline.</span>
+    </div>
+  </div>
+
+  <div class="cc-in" style="position:relative;display:flex;gap:4px;margin-bottom:16px;animation-delay:.32s;">
+    <sc-for list="{{stages}}" as="st" hint-placeholder-count="2">
+      <div role="button" tabindex="0" onClick="{{st.pick}}" style="display:flex;flex-direction:{{stageDir}};align-items:{{stageAlign}};gap:{{stageGap}};flex:{{stageFlex}};min-width:0;padding:{{stagePad}};border:1px solid {{st.border}};background:{{st.bg}};color:{{st.color}};cursor:pointer;transition:border-color .25s ease,background .25s ease,color .25s ease;" style-hover="border-color:rgba(255,255,255,0.8);color:#fff;">
+        <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:{{stageSize}};line-height:1;text-transform:uppercase;white-space:nowrap;">{{st.label}}</span>
+        <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:{{st.metaColor}};">{{st.meta}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div class="cc-in cc-scroll" style="position:relative;margin:0 {{railBleed}} {{railMargin}};padding:0 {{railPad}};animation-delay:.35s;">
+    <div style="display:grid;grid-template-columns:{{railCols}};border-top:1px solid rgba(255,255,255,0.16);border-bottom:1px solid rgba(255,255,255,0.16);">
+      <sc-for list="{{matchdays}}" as="md" hint-placeholder-count="7">
+        <div role="button" tabindex="0" onClick="{{md.pick}}" style="position:relative;display:flex;flex-direction:column;gap:8px;padding:18px 18px 16px;border-left:1px solid rgba(255,255,255,0.08);background:{{md.bg}};cursor:pointer;opacity:{{md.opacity}};transition:background .25s ease;" style-hover="background:#141415;">
+          <div style="position:absolute;left:0;right:0;top:-1px;height:3px;background:{{md.bar}};"></div>
+          <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:{{md.labelColor}};">{{md.code}}</span>
+          <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:30px;line-height:1;text-transform:uppercase;white-space:nowrap;">{{md.date}}</span>
+          <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{md.info}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position:relative;display:flex;flex-direction:column;gap:16px;">
+    <sc-for list="{{fixtures}}" as="fx" hint-placeholder-count="4">
+      <div class="cc-in" style="border:1px solid {{fx.borderColor}};background:{{fx.bg}};animation-delay:{{fx.delay}};transition:border-color .3s ease,background .3s ease;" style-hover="border-color:rgba(255,255,255,0.72);">
+
+        <div role="button" tabindex="0" onClick="{{fx.toggle}}" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:{{cardHeadPad}};border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.78);">{{fx.meta}}</span>
+            <span style="flex-shrink:0;display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:5px 10px;border:1px solid {{fx.statusBorder}};color:{{fx.statusColor}};">
+              <span style="width:6px;height:6px;border-radius:50%;background:{{fx.statusColor}};"></span>{{fx.status}}
+            </span>
+          </div>
+
+          <sc-if value="{{isDesktop}}" hint-placeholder-val="{{true}}">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:32px;padding:36px 32px 28px;">
+              <div style="display:flex;align-items:center;gap:22px;min-width:0;">
+                <image-slot id="{{fx.homeSlot}}" shape="rect" placeholder="Logo" style="width:72px;height:72px;flex-shrink:0;"></image-slot>
+                <div style="display:flex;flex-direction:column;gap:10px;min-width:0;">
+                  <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(28px,2.8vw,44px);line-height:0.95;text-transform:uppercase;color:{{fx.homeColor}};">{{fx.home}}</span>
+                  <span style="display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);"><span style="width:14px;height:3px;background:{{accentColor}};"></span>{{fx.homeTag}}</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:22px;font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(72px,7vw,112px);line-height:0.8;">
+                <span style="color:{{fx.homeScoreColor}};">{{fx.homeScoreText}}</span>
+                <span style="width:24px;height:4px;background:rgba(255,255,255,0.25);"></span>
+                <span style="color:{{fx.awayScoreColor}};">{{fx.awayScoreText}}</span>
+              </div>
+              <div style="display:flex;flex-direction:row-reverse;align-items:center;gap:22px;min-width:0;">
+                <image-slot id="{{fx.awaySlot}}" shape="rect" placeholder="Logo" style="width:72px;height:72px;flex-shrink:0;"></image-slot>
+                <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;min-width:0;text-align:right;">
+                  <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:clamp(28px,2.8vw,44px);line-height:0.95;text-transform:uppercase;color:{{fx.awayColor}};">{{fx.away}}</span>
+                  <span style="display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);"><span style="width:14px;height:3px;background:#fff;"></span>{{fx.awayTag}}</span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isMobile}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;flex-direction:column;gap:14px;padding:22px 16px 18px;">
+              <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 52px;align-items:center;gap:14px;">
+                <image-slot id="{{fx.homeSlot}}" shape="rect" placeholder="Logo" style="width:48px;height:48px;"></image-slot>
+                <span style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;text-transform:uppercase;color:{{fx.homeColor}};">{{fx.home}}</span>
+                  <span style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);"><span style="width:12px;height:3px;background:{{accentColor}};"></span>{{fx.homeTag}}</span>
+                </span>
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:48px;line-height:1;text-align:right;color:{{fx.homeScoreColor}};">{{fx.homeScoreText}}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:48px minmax(0,1fr) 52px;align-items:center;gap:14px;">
+                <image-slot id="{{fx.awaySlot}}" shape="rect" placeholder="Logo" style="width:48px;height:48px;"></image-slot>
+                <span style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:26px;line-height:1;text-transform:uppercase;color:{{fx.awayColor}};">{{fx.away}}</span>
+                  <span style="display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);"><span style="width:12px;height:3px;background:#fff;"></span>{{fx.awayTag}}</span>
+                </span>
+                <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:48px;line-height:1;text-align:right;color:{{fx.awayScoreColor}};">{{fx.awayScoreText}}</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:14px;padding:{{trackerPad}};">
+            <sc-if value="{{showTracker}}" hint-placeholder-val="{{true}}">
+              <div style="display:flex;gap:4px;">
+                <sc-for list="{{fx.matches}}" as="m" hint-placeholder-count="6">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                    <div style="height:8px;background:{{m.segColor}};"></div>
+                    <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{m.code}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{fx.count}}</span>
+              <span style="display:flex;align-items:center;gap:10px;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:{{accentColor}};">{{fx.tapLabel}}<span style="font-size:16px;display:inline-block;transition:transform .3s cubic-bezier(.16,1,.3,1);transform:{{fx.chevron}};">&darr;</span></span>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{fx.isOpen}}" hint-placeholder-val="{{false}}">
+          <div class="cc-panel" style="display:flex;flex-direction:column;gap:{{matchGap}};padding:{{panelPad}};border-top:1px solid rgba(255,255,255,0.12);background:#0b0b0c;">
+            <sc-for list="{{fx.matches}}" as="m" hint-placeholder-count="6">
+              <sc-if value="{{wideMatches}}" hint-placeholder-val="{{true}}">
+                <div style="display:grid;grid-template-columns:250px minmax(0,1fr) minmax(200px,260px) minmax(0,1fr);align-items:center;gap:32px;padding:26px 28px;border:1px solid rgba(255,255,255,0.1);border-left:3px solid {{m.edge}};background:#121213;">
+                  <div style="display:flex;align-items:center;gap:16px;">
+                    <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:40px;line-height:1;min-width:58px;color:{{m.codeColor}};">{{m.code}}</span>
+                    <span style="display:flex;flex-direction:column;gap:4px;">
+                      <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{m.num}}</span>
+                      <span style="font-size:13px;letter-spacing:0.1em;line-height:1.4;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.8);">{{m.category}}</span>
+                    </span>
+                  </div>
+                  <span style="font-size:16px;line-height:1.5;text-align:right;color:{{m.homeColor}};font-weight:{{m.homeWeight}};">{{m.homePlayers}}</span>
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:44px;line-height:1;">
+                      <span style="color:{{m.homeScoreColor}};">{{m.homeScore}}</span>
+                      <span style="font-family:'Montserrat',sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{m.margin}}</span>
+                      <span style="color:{{m.awayScoreColor}};">{{m.awayScore}}</span>
+                    </div>
+                    <div style="display:flex;gap:3px;height:5px;">
+                      <div style="width:{{m.homePct}};background:{{m.homeBar}};"></div>
+                      <div style="flex:1;background:{{m.awayBar}};"></div>
+                    </div>
+                  </div>
+                  <span style="font-size:16px;line-height:1.5;color:{{m.awayColor}};font-weight:{{m.awayWeight}};">{{m.awayPlayers}}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{compactMatches}}" hint-placeholder-val="{{false}}">
+                <div style="display:flex;flex-direction:column;gap:14px;padding:18px 16px;border:1px solid rgba(255,255,255,0.1);border-left:3px solid {{m.edge}};background:#121213;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <span style="display:flex;align-items:center;gap:12px;">
+                      <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:32px;line-height:1;color:{{m.codeColor}};">{{m.code}}</span>
+                      <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.78);">{{m.category}}</span>
+                    </span>
+                    <span style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">{{m.margin}}</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:12px;">
+                    <span style="font-size:15px;line-height:1.4;color:{{m.homeColor}};font-weight:{{m.homeWeight}};">{{m.homePlayers}}</span>
+                    <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:34px;line-height:1;text-align:right;color:{{m.homeScoreColor}};">{{m.homeScore}}</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:12px;">
+                    <span style="font-size:15px;line-height:1.4;color:{{m.awayColor}};font-weight:{{m.awayWeight}};">{{m.awayPlayers}}</span>
+                    <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:34px;line-height:1;text-align:right;color:{{m.awayScoreColor}};">{{m.awayScore}}</span>
+                  </div>
+                  <div style="display:flex;gap:3px;height:4px;">
+                    <div style="width:{{m.homePct}};background:{{m.homeBar}};"></div>
+                    <div style="flex:1;background:{{m.awayBar}};"></div>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{isUpcoming}}" hint-placeholder-val="{{false}}">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:48px 0;border-top:1px solid rgba(255,255,255,0.16);">
+      <span style="font-family:'Zuume Cut',sans-serif;font-weight:500;font-size:40px;line-height:1;text-transform:uppercase;">{{emptyTitle}}</span>
+      <span style="font-size:16px;line-height:1.6;color:rgba(255,255,255,0.78);">{{emptyText}}</span>
+    </div>
+  </sc-if>
+
+  <div class="cc-in" style="position:relative;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:{{footerMargin}};animation-delay:.9s;">
+    <span style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.72);">Scores update within an hour of the final whistle.</span>
+    <a href="Centre Court Table.dc.html" style="font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,0.78);text-decoration:underline;">See the table</a>
+  </div>
+</section>
+
+<dc-import name="Centre Court Footer" hint-size="100%,120px"></dc-import>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1100},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ee3a24&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ee3a24&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]},&quot;showScores&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showTracker&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 900,
+    isCompact: typeof window !== 'undefined' && window.innerWidth < 1200,
+    stage: 'rr',
+    md: 0,
+    open: 'f1',
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 900;
+    const isCompact = window.innerWidth < 1200;
+    this.setState(s => (s.isMobile === isMobile && s.isCompact === isCompact ? null : { isMobile, isCompact }));
+  };
+  componentDidMount() { window.addEventListener('resize', this.updateSize); }
+  componentWillUnmount() { window.removeEventListener('resize', this.updateSize); }
+
+  slot(name) { return 'fixture-logo-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  code(cat) {
+    return ({ "Men's Doubles": 'MD', "Men's Doubles (2)": 'MD2', "Women's Doubles": 'WD', "Men's Singles": 'MS', "Men's Singles (2)": 'MS2', "Women's Singles": 'WS', 'Mixed Doubles': 'XD' })[cat] || cat;
+  }
+
+  data() {
+    const P = 'Player / Player';
+    const cats = ["Men's Doubles", "Women's Doubles", "Men's Singles", "Women's Singles", "Men's Doubles (2)", 'Mixed Doubles', "Men's Singles (2)"];
+    const generic = (n, homeWins, home, away) => Array.from({ length: n }, (_, i) => {
+      const homeWin = i < homeWins;
+      return { category: cats[i], homePlayers: P, awayPlayers: P, homeScore: homeWin ? 15 : 11, awayScore: homeWin ? 12 : 15, winner: homeWin ? home : away };
+    });
+    const played = [
+      {
+        date: 'Friday, October 10, 2025', short: 'Fri 10 Oct',
+        fixtures: [
+          {
+            id: 'f1', time: '6:00 PM', status: 'Completed', home: 'All Stars', away: 'Credicon Mavericks', homeScore: 2, awayScore: 4,
+            matches: [
+              { category: "Men's Doubles", homePlayers: 'Sameer Varma / Akshath', awayPlayers: 'PUNNA VISHAL / Sreekar Mothukuri', homeScore: 7, awayScore: 15, winner: 'Credicon Mavericks' },
+              { category: "Women's Doubles", homePlayers: 'Veda Raju Prapurna / Lingampally Anmisha Reddy', awayPlayers: 'Sama Sathwika / Eshita Raju Kalidindi', homeScore: 11, awayScore: 15, winner: 'Credicon Mavericks' },
+              { category: "Men's Singles", homePlayers: 'Karunesh Reddy', awayPlayers: 'Yashwant pulumati', homeScore: 15, awayScore: 10, winner: 'All Stars' },
+              { category: "Women's Singles", homePlayers: 'Veda Raju Prapurna', awayPlayers: 'Sama Sathwika', homeScore: 12, awayScore: 15, winner: 'Credicon Mavericks' },
+              { category: "Men's Doubles (2)", homePlayers: 'Karunesh Reddy / N.I.Ravindra Varma', awayPlayers: 'GOPINATH REDDY / Kidambi Nandagopal', homeScore: 16, awayScore: 18, winner: 'Credicon Mavericks' },
+              { category: 'Mixed Doubles', homePlayers: 'Sameer Varma / Lingampally Anmisha Reddy', awayPlayers: 'Sreekar Mothukuri / Eshita Raju Kalidindi', homeScore: 15, awayScore: 13, winner: 'All Stars' },
+            ],
+          },
+          { id: 'f2', time: '6:00 PM', status: 'Completed', home: 'Nandi Chargers', away: 'Teramor Titans', homeScore: 4, awayScore: 3, matches: generic(7, 4, 'Nandi Chargers', 'Teramor Titans') },
+          { id: 'f3', time: '6:00 PM', status: 'Completed', home: 'Dasos Dynamos', away: 'The Raptors', homeScore: 4, awayScore: 3, matches: generic(7, 4, 'Dasos Dynamos', 'The Raptors') },
+          { id: 'f4', time: '6:00 PM', status: 'Completed', home: 'Keerthi Warriors', away: 'Starry Smashers', homeScore: 1, awayScore: 5, matches: generic(6, 1, 'Keerthi Warriors', 'Starry Smashers') },
+        ],
+      },
+      {
+        date: 'Friday, October 17, 2025', short: 'Fri 17 Oct',
+        fixtures: [
+          { id: 'f5', time: '6:00 PM', status: 'Completed', home: 'Dasos Dynamos', away: 'Teramor Titans', homeScore: 2, awayScore: 4, matches: generic(6, 2, 'Dasos Dynamos', 'Teramor Titans') },
+          { id: 'f6', time: '6:00 PM', status: 'Completed', home: 'Starry Smashers', away: 'All Stars', homeScore: 2, awayScore: 4, matches: generic(6, 2, 'Starry Smashers', 'All Stars') },
+        ],
+      },
+    ];
+    const upcoming = ['Fri 24 Oct', 'Fri 31 Oct', 'Fri 07 Nov', 'Fri 14 Nov', 'Fri 21 Nov'].map(short => ({ short, date: short, fixtures: [] }));
+    return played.concat(upcoming);
+  }
+
+  playoffs() {
+    return [
+      { label: 'Semi-finals', short: 'Fri 28 Nov', info: '1st v 4th / 2nd v 3rd', fixtures: [] },
+      { label: 'Final', short: 'Fri 05 Dec', info: 'Semi-final winners', fixtures: [] },
+    ];
+  }
+
+  days() { return this.state.stage === 'po' ? this.playoffs() : this.data(); }
+
+  pickStage(stage) {
+    const d = (stage === 'po' ? this.playoffs() : this.data())[0];
+    this.setState({ stage, md: 0, open: d.fixtures.length ? d.fixtures[0].id : null });
+  }
+
+  pickMd(i) {
+    const d = this.days()[i];
+    this.setState({ md: i, open: d && d.fixtures.length ? d.fixtures[0].id : null });
+  }
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#ee3a24';
+    const showScores = this.props.showScores ?? true;
+    const showTracker = this.props.showTracker ?? true;
+    const isMobile = this.state.isMobile;
+    const isPo = this.state.stage === 'po';
+    const days = this.days();
+    const mdIdx = this.state.md;
+    const day = days[mdIdx] || days[0];
+    const played = this.data().reduce((n, d) => n + d.fixtures.length, 0);
+    const total = 28;
+    const pad = n => String(n).padStart(2, '0');
+    const dim = 'rgba(255,255,255,0.75)';
+
+    const matchdays = days.map((d, i) => {
+      const active = i === mdIdx;
+      const has = d.fixtures.length > 0;
+      return {
+        code: d.label || 'Matchday ' + pad(i + 1),
+        date: d.short,
+        info: d.info || (has ? d.fixtures.length + ' battles / Final' : 'To be announced'),
+        bg: active ? '#141415' : 'transparent',
+        bar: active ? accentColor : 'transparent',
+        labelColor: active ? accentColor : 'rgba(255,255,255,0.75)',
+        opacity: has || active ? 1 : 0.72,
+        pick: () => this.pickMd(i),
+      };
+    });
+
+    const fixtures = day.fixtures.map((f, i) => {
+      const done = f.status === 'Completed' && showScores;
+      const homeWon = done && f.homeScore > f.awayScore;
+      const awayWon = done && f.awayScore > f.homeScore;
+      const isOpen = this.state.open === f.id;
+      return {
+        id: f.id, home: f.home, away: f.away,
+        homeSlot: this.slot(f.home), awaySlot: this.slot(f.away),
+        count: f.matches.length + ' matches',
+        status: done ? 'Full time' : f.status,
+        statusColor: done ? '#7fdba0' : dim,
+        statusBorder: done ? 'rgba(127,219,160,0.45)' : 'rgba(255,255,255,0.25)',
+        homeScoreText: done ? f.homeScore : '–', awayScoreText: done ? f.awayScore : '–',
+        homeColor: awayWon ? dim : '#fff', awayColor: homeWon ? dim : '#fff',
+        homeScoreColor: awayWon ? 'rgba(255,255,255,0.55)' : '#fff',
+        awayScoreColor: homeWon ? 'rgba(255,255,255,0.55)' : '#fff',
+        homeTag: homeWon ? 'Winner' : 'Home',
+        awayTag: awayWon ? 'Winner' : 'Away',
+        meta: 'Battle ' + pad(i + 1) + ' / ' + day.short + ' / ' + f.time,
+        isOpen,
+        tapLabel: isOpen ? 'Hide matches' : 'View matches',
+        chevron: isOpen ? 'rotate(180deg)' : 'none',
+        bg: isOpen ? '#111112' : '#0e0e0f',
+        borderColor: isOpen ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.16)',
+        delay: (0.45 + i * 0.06).toFixed(2) + 's',
+        toggle: () => this.setState(s => ({ open: s.open === f.id ? null : f.id })),
+        matches: f.matches.map((m, j) => {
+          const hw = m.winner === f.home;
+          const tot = m.homeScore + m.awayScore;
+          return {
+            num: 'Match ' + pad(j + 1),
+            code: this.code(m.category), category: m.category,
+            homePlayers: m.homePlayers, awayPlayers: m.awayPlayers,
+            homeScore: showScores ? m.homeScore : '–', awayScore: showScores ? m.awayScore : '–',
+            margin: 'Won by ' + Math.abs(m.homeScore - m.awayScore),
+            segColor: !showScores ? 'rgba(255,255,255,0.12)' : hw ? accentColor : '#fff',
+            edge: hw ? accentColor : '#fff',
+            codeColor: hw ? accentColor : '#fff',
+            homeColor: hw ? '#fff' : dim, awayColor: hw ? dim : '#fff',
+            homeWeight: hw ? '600' : '400', awayWeight: hw ? '400' : '600',
+            homeScoreColor: hw ? '#fff' : 'rgba(255,255,255,0.55)',
+            awayScoreColor: hw ? 'rgba(255,255,255,0.55)' : '#fff',
+            homePct: (m.homeScore / tot * 100).toFixed(1) + '%',
+            homeBar: hw ? accentColor : 'rgba(255,255,255,0.18)',
+            awayBar: hw ? 'rgba(255,255,255,0.18)' : '#fff',
+          };
+        }),
+      };
+    });
+
+    return {
+      accentColor, showTracker, matchdays, fixtures,
+      isUpcoming: !fixtures.length,
+      stages: [
+        { key: 'rr', label: 'Round Robin', meta: '7 matchdays' },
+        { key: 'po', label: 'Playoffs', meta: 'Top 4 qualify' },
+      ].map(s => {
+        const active = this.state.stage === s.key;
+        return {
+          label: s.label, meta: s.meta,
+          border: active ? accentColor : 'rgba(255,255,255,0.2)',
+          bg: active ? 'rgba(238,58,36,0.12)' : 'transparent',
+          color: active ? '#fff' : 'rgba(255,255,255,0.8)',
+          metaColor: active ? accentColor : 'rgba(255,255,255,0.72)',
+          pick: () => this.pickStage(s.key),
+        };
+      }),
+      stagePad: isMobile ? '12px 14px' : '14px 22px',
+      stageDir: isMobile ? 'column' : 'row',
+      stageAlign: isMobile ? 'flex-start' : 'center',
+      stageGap: isMobile ? '6px' : '12px',
+      stageFlex: isMobile ? '1 1 0' : '0 0 auto',
+      stageSize: isMobile ? '24px' : '32px',
+      emptyTitle: isPo ? 'Playoff pairings to be confirmed' : 'Pairings to be announced',
+      emptyText: isPo ? 'The top four teams in the table qualify. Pairings are set once the round robin is complete.' : 'Battles for this matchday are published once the previous round is complete.',
+      playedText: pad(played), totalText: pad(total),
+      progressPct: (played / total * 100).toFixed(1) + '%',
+      isMobile, isDesktop: !isMobile,
+      compactMatches: this.state.isCompact, wideMatches: !this.state.isCompact,
+      sectionPadding: isMobile ? '32px 6vw 56px' : '56px 6vw 88px',
+      topMetaMargin: isMobile ? '36px' : '52px',
+      headerGridCols: this.state.isCompact ? '1fr' : 'minmax(0,1fr) minmax(300px,380px)',
+      headerMargin: isMobile ? '36px' : '56px',
+      railCols: this.state.isCompact ? 'repeat(' + days.length + ',' + (isPo ? '240px' : '180px') + ')' : 'repeat(' + days.length + ',minmax(' + (isPo ? '240px' : '0') + ',1fr))',
+      railBleed: this.state.isCompact ? '-6vw' : '0',
+      railPad: this.state.isCompact ? '6vw' : '0',
+      railMargin: isMobile ? '24px' : '32px',
+      cardHeadPad: isMobile ? '14px 16px' : '16px 32px',
+      trackerPad: isMobile ? '0 16px 18px' : '0 32px 26px',
+      panelPad: isMobile ? '14px' : '24px 32px 32px',
+      matchGap: isMobile ? '10px' : '12px',
+      footerMargin: isMobile ? '44px' : '64px',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Schibsted+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#161616;font-family:'Schibsted Grotesk',sans-serif}
+a{color:#fff}a:hover{color:#E47E48}
+@keyframes drift1{0%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}50%{transform:translate(6%,4%) rotate(-6deg) scale(1.15)}100%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}}
+@keyframes drift2{0%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}50%{transform:translate(-6%,-4%) rotate(20deg) scale(0.95)}100%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1);opacity:.9}50%{transform:translate(-4%,6%) scale(1.25);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.9}}
+@keyframes sheen{0%{transform:translateX(-140%) skewX(-20deg)}100%{transform:translateX(240%) skewX(-20deg)}}
+@keyframes bolt{0%,7%,13%,100%{opacity:0}8%{opacity:.95}9%{opacity:.15}10%{opacity:.8}11%{opacity:.2}12%{opacity:.7}}
+@keyframes rays{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes corePulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes arcSpin{0%{transform:rotate(0)}100%{transform:rotate(-360deg)}}
+@keyframes flickerText{0%,100%{filter:drop-shadow(0 0 26px rgba(228,126,72,.75))}47%{filter:drop-shadow(0 0 26px rgba(228,126,72,.75))}48%{filter:drop-shadow(0 0 70px rgba(255,255,255,.95))}50%{filter:drop-shadow(0 0 10px rgba(228,126,72,.4))}52%{filter:drop-shadow(0 0 60px rgba(255,255,255,.8))}}
+@keyframes spark{0%{transform:translateY(0) scale(1);opacity:0}12%{opacity:1}100%{transform:translateY(-620px) scale(.3);opacity:0}}
+@keyframes strobe{0%,100%{opacity:.18}50%{opacity:.55}}
+</style>
+</helmet>
+<div data-screen-label="Match Preview" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#1a1a1a;color:#fff;font-family:'Schibsted Grotesk',sans-serif">
+  {{ backdrop }}
+  <div style="position:absolute;left:50%;top:46%;width:1500px;height:1500px;margin:-750px 0 0 -750px;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.09) 0deg 3deg,transparent 3deg 12deg);mask-image:radial-gradient(circle,rgba(0,0,0,.9) 0%,transparent 62%);-webkit-mask-image:radial-gradient(circle,rgba(0,0,0,.9) 0%,transparent 62%);animation:rays 70s linear infinite;pointer-events:none"></div>
+
+  <svg viewBox="0 0 1920 1080" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen">
+    <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" opacity=".9">
+      <polyline points="960,-20 905,180 1000,240 880,470 985,520 900,760" style="filter:drop-shadow(0 0 18px #6200E6);animation:bolt 6.5s linear infinite"></polyline>
+      <polyline points="330,0 385,150 300,215 400,330" stroke-width="3" style="filter:drop-shadow(0 0 16px #E47E48);animation:bolt 5.1s linear infinite 1.7s"></polyline>
+      <polyline points="1620,0 1560,170 1655,235 1575,360" stroke-width="3" style="filter:drop-shadow(0 0 16px #B18CFF);animation:bolt 7.3s linear infinite 3.1s"></polyline>
+      <polyline points="120,1080 175,900 90,830 190,700" stroke-width="2.5" style="filter:drop-shadow(0 0 14px #6200E6);animation:bolt 8.2s linear infinite 2.4s"></polyline>
+      <polyline points="1810,1080 1745,905 1830,835 1750,720" stroke-width="2.5" style="filter:drop-shadow(0 0 14px #E47E48);animation:bolt 6.9s linear infinite 4.6s"></polyline>
+    </g>
+  </svg>
+
+  {{ sparks }}
+
+  <img src="players/player-a.png" alt="" style="position:absolute;left:16px;bottom:-24px;height:820px;filter:drop-shadow(28px 0 60px rgba(0,0,0,.7)) drop-shadow(-18px 0 70px rgba(228,126,72,.55)) contrast(1.12) saturate(.9) brightness(1.02)">
+  <img src="players/player-b.png" alt="" style="position:absolute;right:14px;bottom:-18px;height:800px;transform:scaleX(-1);filter:drop-shadow(28px 0 60px rgba(0,0,0,.7)) drop-shadow(-18px 0 70px rgba(177,140,255,.5)) contrast(1.12) saturate(.9) brightness(1.02)">
+  <div style="position:absolute;left:0;right:0;bottom:0;height:420px;background:linear-gradient(180deg,rgba(26,26,26,0),rgba(26,26,26,.82) 55%,rgba(26,26,26,.97));pointer-events:none"></div>
+
+  <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.55) 30%,rgba(255,255,255,.15) 70%,transparent);box-shadow:0 0 40px rgba(98,0,230,.9);animation:strobe 3.4s ease-in-out infinite;pointer-events:none"></div>
+  <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px);mix-blend-mode:overlay;pointer-events:none"></div>
+
+  <div style="position:relative;display:grid;grid-template-rows:1fr auto;height:100%;width:100%;padding:44px 72px 44px;box-sizing:border-box">
+
+    <div style="position:relative;display:grid;grid-template-columns:minmax(0,760px);justify-content:center;align-content:center;gap:26px;padding:150px 0 24px">
+
+      <div style="position:absolute;left:-24px;top:-12px;width:540px;box-sizing:border-box;display:flex;align-items:center;gap:20px;padding:14px 24px 14px 14px;border-radius:28px;background:rgba(22,22,22,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);box-shadow:0 24px 70px rgba(0,0,0,.6),0 0 60px rgba(228,126,72,.18)">
+        <div style="flex:none;width:100px;height:100px;border-radius:20px;padding:4px;background:linear-gradient(135deg,#E47E48,#6200E6);box-shadow:0 0 50px rgba(228,126,72,.45)">
+          <div style="width:100%;height:100%;border-radius:16px;overflow:hidden;background:#262626">
+            <image-slot id="preview-logo-a" shape="rect" fit="contain" placeholder="Logo"></image-slot>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="flex:none;white-space:nowrap;font:500 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.6)">Home</div>
+            <div style="flex:none;white-space:nowrap;font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F2B48F">{{ teamA.record }}</div>
+          </div>
+          <div style="font:900 42px/1 'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-.035em;text-wrap:balance;filter:drop-shadow(0 0 26px rgba(228,126,72,.45))">{{ teamA.name }}</div>
+          <div style="font:800 19px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,.82)">{{ teamA.captain }}</div>
+        </div>
+      </div>
+
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;gap:34px;height:150px">
+        <div style="position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.32) 0%,rgba(98,0,230,.32) 35%,transparent 70%);filter:blur(10px);animation:corePulse 2.8s ease-in-out infinite;pointer-events:none"></div>
+        <div style="position:absolute;left:50%;top:50%;width:400px;height:400px;margin:-200px 0 0 -200px;border-radius:50%;border:2px dashed rgba(255,255,255,.26);animation:arcSpin 26s linear infinite;pointer-events:none"></div>
+        <div style="position:relative;flex:none;height:4px;width:150px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75));box-shadow:0 0 24px rgba(228,126,72,.9)"></div>
+        <div style="position:relative;flex:none;font:900 144px/.8 'Unbounded',sans-serif;letter-spacing:-.07em;background:linear-gradient(180deg,#fff 25%,#F2B48F 70%,#B18CFF);-webkit-background-clip:text;background-clip:text;color:transparent;animation:flickerText 4.6s ease-in-out infinite">VS</div>
+        <div style="position:relative;flex:none;height:4px;width:150px;background:linear-gradient(90deg,rgba(255,255,255,.75),transparent);box-shadow:0 0 24px rgba(177,140,255,.9)"></div>
+      </div>
+
+      <div style="position:absolute;right:-24px;top:-12px;width:540px;box-sizing:border-box;display:flex;align-items:center;gap:20px;text-align:right;padding:14px 14px 14px 24px;border-radius:28px;background:rgba(22,22,22,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);box-shadow:0 24px 70px rgba(0,0,0,.6),0 0 60px rgba(177,140,255,.16)">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0">
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="flex:none;white-space:nowrap;font:800 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#D4BEFF">{{ teamB.record }}</div>
+            <div style="flex:none;white-space:nowrap;font:500 17px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.6)">Away</div>
+          </div>
+          <div style="font:900 42px/1 'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-.035em;text-wrap:balance;filter:drop-shadow(0 0 26px rgba(177,140,255,.4))">{{ teamB.name }}</div>
+          <div style="font:800 19px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,.82)">{{ teamB.captain }}</div>
+        </div>
+        <div style="flex:none;width:100px;height:100px;border-radius:20px;padding:4px;background:linear-gradient(135deg,#B18CFF,#E47E48);box-shadow:0 0 50px rgba(177,140,255,.45)">
+          <div style="width:100%;height:100%;border-radius:16px;overflow:hidden;background:#262626">
+            <image-slot id="preview-logo-b" shape="rect" fit="contain" placeholder="Logo"></image-slot>
+          </div>
+        </div>
+      </div>
+
+      <div style="justify-self:center;padding:13px 30px;border-radius:14px;background:linear-gradient(180deg,rgba(20,20,20,.92),rgba(38,38,38,.92));border:1px solid rgba(255,255,255,.16);font:700 20px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#D4BEFF;white-space:nowrap;box-shadow:inset 0 0 50px rgba(98,0,230,.4)">{{ format }}</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <sc-if value="{{ showLineup }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px">
+          <sc-for list="{{ lineup }}" as="m" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-radius:18px;min-width:0;background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.16);box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.2);backdrop-filter:blur(8px)">
+              <div style="font:700 24px/1.05 'Unbounded',sans-serif;letter-spacing:.02em;text-transform:uppercase;background:linear-gradient(90deg,#F2B48F,#D4BEFF);-webkit-background-clip:text;background-clip:text;color:transparent">{{ m.label }}</div>
+              <div style="font:800 26px/1.25 'Schibsted Grotesk',sans-serif;color:#fff;text-wrap:balance">{{ m.playerA }}</div>
+              <div style="font:800 20px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.6)">vs</div>
+              <div style="font:800 26px/1.25 'Schibsted Grotesk',sans-serif;color:#fff;text-wrap:balance">{{ m.playerB }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;justify-content:center;flex-wrap:nowrap;gap:28px;font:800 22px/1 'Schibsted Grotesk',sans-serif;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.78)">
+        <span style="white-space:nowrap">{{ date }}</span>
+        <span style="flex:none;width:8px;height:8px;border-radius:50%;background:#E47E48"></span>
+        <span style="white-space:nowrap">{{ venue }}</span>
+        <span style="flex:none;width:8px;height:8px;border-radius:50%;background:#B18CFF"></span>
+        <span style="white-space:nowrap;color:#fff">First serve {{ firstServe }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;magma&quot;,&quot;ember&quot;,&quot;ice&quot;],&quot;default&quot;:&quot;magma&quot;,&quot;tsType&quot;:&quot;'magma'|'ember'|'ice'&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;glowIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0.3,&quot;max&quot;:1.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;showLineup&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+class Component extends DCLogic {
+  state = {
+    eventName: 'Game Breaker',
+    round: 'Semi-final',
+    format: 'Best of 5 · Games to 11',
+    date: 'Saturday 12 Oct',
+    venue: 'Riverside Arena',
+    firstServe: '7:30 PM',
+    teamA: { name: 'The Mavericks', record: '5-1 season', captain: 'Capt. K. Whitfield' },
+    teamB: { name: 'Starry Smashers', record: '4-2 season', captain: 'Capt. S. Petrov' },
+    lineup: [
+      { label: "Men's Singles", playerA: 'K. Whitfield', playerB: 'S. Petrov' },
+      { label: "Women's Singles", playerA: 'E. Tanaka', playerB: 'M. Alvarez' },
+      { label: "Men's Doubles", playerA: 'J. Reyes / M. Okafor', playerB: 'D. Kwan / T. Bello' },
+      { label: "Women's Doubles", playerA: 'A. Novak / R. Singh', playerB: 'L. Moreau / C. Diaz' },
+      { label: "Men's Doubles (2)", playerA: 'B. Achebe / N. Ford', playerB: 'V. Costa / H. Lindqvist' },
+    ],
+  };
+  renderVals() {
+    const theme = this.props.theme ?? 'magma';
+    const intensity = this.props.glowIntensity ?? 1;
+    const palettes = {
+      magma: ['#E47E48', '#6200E6', '#B18CFF', '#333333'],
+      ember: ['#E47E48', '#B4572A', '#F2B48F', '#262626'],
+      ice: ['#B18CFF', '#6200E6', '#B18CFF', '#262626'],
+    };
+    const [c1, c2, c3, c4] = palettes[theme] || palettes.magma;
+    const blob = (bg, w, h, x, y, anim, blur) => React.createElement('div', {
+      style: { position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: '50%', background: bg, filter: `blur(${blur}px)`, opacity: intensity, animation: anim, willChange: 'transform', mixBlendMode: 'screen' }
+    });
+    const backdrop = React.createElement('div', { key: 'bd', style: { position: 'absolute', inset: 0, overflow: 'hidden', background: `radial-gradient(ellipse at 50% 100%, ${c4} 0%, #1a1a1a 70%)` } },
+      blob(`radial-gradient(ellipse at center, ${c1} 0%, transparent 65%)`, 1400, 700, -200, -150, 'drift1 14s ease-in-out infinite', 70),
+      blob(`radial-gradient(ellipse at center, ${c2} 0%, transparent 65%)`, 1500, 800, 700, 350, 'drift2 18s ease-in-out infinite', 80),
+      blob(`radial-gradient(ellipse at center, ${c3} 0%, transparent 60%)`, 700, 350, 1200, -100, 'drift3 11s ease-in-out infinite', 60),
+      blob(`radial-gradient(ellipse at center, ${c1} 0%, transparent 60%)`, 900, 400, 300, 750, 'drift3 16s ease-in-out infinite reverse', 70),
+    );
+    const rnd = (s) => { const x = Math.sin(s * 127.1) * 43758.5453; return x - Math.floor(x); };
+    const sparks = React.createElement('div', { key: 'sp', style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', mixBlendMode: 'screen' } },
+      Array.from({ length: 26 }, (_, i) => {
+        const size = 3 + rnd(i + 1) * 5;
+        const col = [c1, c3, '#fff'][i % 3];
+        return React.createElement('span', {
+          key: i,
+          style: {
+            position: 'absolute', left: `${rnd(i + 11) * 100}%`, bottom: `${-5 + rnd(i + 31) * 25}%`,
+            width: size, height: size, borderRadius: '50%', background: col,
+            boxShadow: `0 0 ${10 + size * 3}px ${col}`, opacity: 0,
+            animation: `spark ${7 + rnd(i + 51) * 8}s linear infinite`, animationDelay: `${rnd(i + 71) * 9}s`,
+          }
+        });
+      })
+    );
+    return { ...this.state, showLineup: this.props.showLineup ?? true, backdrop, sparks };
+  }
+}
+</script>
+</body>
+</html>

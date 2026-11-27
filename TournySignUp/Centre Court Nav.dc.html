@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <style>
+    @font-face{font-family:'Zuume Cut';src:url('uploads/zuume-cut-black-italic.ttf') format('truetype');font-weight:900;font-style:italic;}
+    .cc-nav-link{position:relative;text-decoration:none;}
+    .cc-nav-link::after{content:'';position:absolute;left:0;right:100%;bottom:-4px;height:1px;background:{{accentColor}};transition:right .25s ease;}
+    .cc-nav-link:hover::after{right:0;}
+    .cc-league-tab{transition:background .2s ease,color .2s ease;}
+    .cc-league-tab:hover{background:rgba(255,255,255,0.85) !important;}
+    .cc-social{transition:background .2s ease;}
+    .cc-social:hover{background:#232324 !important;}
+  </style>
+</helmet>
+
+<div style="display:flex;align-items:stretch;background:{{accentColor}};box-sizing:border-box;height:50px;overflow-x:auto;">
+  <div style="display:flex;align-items:stretch;flex-shrink:0;">
+    <sc-for list="{{leagues}}" as="lg" hint-placeholder-count="2">
+      <a href="{{lg.href}}" class="cc-league-tab" style="display:flex;align-items:center;padding:0 26px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;text-decoration:none;background:{{lg.bg}};color:{{lg.color}};white-space:nowrap;">{{lg.label}}</a>
+    </sc-for>
+  </div>
+  <div style="flex:1;"></div>
+  <div style="display:flex;align-items:stretch;flex-shrink:0;">
+    <a href="{{instagramHref}}" class="cc-social" aria-label="Instagram" style="display:flex;align-items:center;justify-content:center;width:50px;background:#0b0b0c;color:#fff;text-decoration:none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+    </a>
+    <a href="{{youtubeHref}}" class="cc-social" aria-label="YouTube" style="display:flex;align-items:center;justify-content:center;width:50px;background:#0b0b0c;color:#fff;text-decoration:none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2c-.25-1-1-1.75-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4c-1 .25-1.75 1-2 2C2 8.9 2 12 2 12s0 3.1.4 4.8c.25 1 1 1.75 2 2 1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4c1-.25 1.75-1 2-2 .4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.2V8.8l6 3.2-6 3.2z"/></svg>
+    </a>
+  </div>
+</div>
+
+<nav style="position:sticky;top:0;z-index:50;background:#0b0b0c;border-bottom:1px solid rgba(255,255,255,0.14);box-sizing:border-box;">
+  <div style="display:flex;align-items:center;padding:0 6vw;max-width:1600px;margin:0 auto;font-family:'Montserrat',sans-serif;height:{{navHeight}};gap:{{navGap}};box-sizing:border-box;">
+
+    <a href="{{homeHref}}" style="display:flex;align-items:center;flex-shrink:0;text-decoration:none;">
+      <img src="uploads/Logo Version - White-f687a7c7.png" alt="Centre Court" style="height:{{logoHeight}};width:auto;display:block;"/>
+    </a>
+
+    <sc-if value="{{showDesktopLinks}}" hint-placeholder-val="{{true}}">
+      <div style="display:flex;align-items:center;gap:36px;flex:1;">
+        <sc-for list="{{links}}" as="link" hint-placeholder-count="3">
+          <a href="{{link.href}}" class="cc-nav-link" style="font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:{{link.color}};white-space:nowrap;">{{link.label}}</a>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isMobile}}" hint-placeholder-val="{{false}}">
+      <div style="flex:1;"></div>
+    </sc-if>
+
+    <a href="{{registerHref}}" style="padding:{{registerPad}};background:linear-gradient(180deg,{{accentColor}},{{accentColorDark}});color:#fff;font-size:{{registerFontSize}};letter-spacing:0.12em;text-transform:uppercase;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0;">{{registerLabel}}</a>
+
+    <sc-if value="{{isMobile}}" hint-placeholder-val="{{false}}">
+      <button type="button" onClick="{{toggleMenu}}" aria-label="Menu" style="width:36px;height:36px;flex-shrink:0;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;">
+        <span style="display:block;width:22px;height:2px;background:#fff;transition:transform .25s ease;transform:{{barTopTransform}};"></span>
+        <span style="display:block;width:22px;height:2px;background:#fff;transition:opacity .2s ease;opacity:{{barMidOpacity}};"></span>
+        <span style="display:block;width:22px;height:2px;background:#fff;transition:transform .25s ease;transform:{{barBotTransform}};"></span>
+      </button>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{showMobileMenu}}" hint-placeholder-val="{{false}}">
+    <div style="display:flex;flex-direction:column;background:#0b0b0c;border-top:1px solid rgba(255,255,255,0.14);padding:8px 6vw 20px;">
+      <sc-for list="{{links}}" as="link" hint-placeholder-count="3">
+        <a href="{{link.href}}" style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:{{link.color}};text-decoration:none;">{{link.label}}</a>
+      </sc-for>
+    </div>
+  </sc-if>
+
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:148},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ee3a24&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ee3a24&quot;,&quot;#ff5a3c&quot;,&quot;#b3001b&quot;]},&quot;current&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;teams&quot;,&quot;signup&quot;,&quot;rules&quot;]}}">
+class Component extends DCLogic {
+  state = {
+    isMobile: typeof window !== 'undefined' && window.innerWidth < 860,
+    menuOpen: false,
+  };
+
+  updateSize = () => {
+    const isMobile = window.innerWidth < 860;
+    this.setState(s => (s.isMobile === isMobile ? null : { isMobile, menuOpen: isMobile ? s.menuOpen : false }));
+  };
+
+  componentDidMount() {
+    window.addEventListener('resize', this.updateSize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.updateSize);
+  }
+
+  toggleMenu = () => this.setState(s => ({ menuOpen: !s.menuOpen }));
+
+  renderVals() {
+    const accentColor = this.props.accentColor ?? '#ee3a24';
+    const current = this.props.current ?? 'overview';
+    const isMobile = this.state.isMobile;
+    const menuOpen = this.state.menuOpen;
+    const items = [
+      { key: 'overview', label: 'Overview', href: 'Centre Court Signup.dc.html' },
+      { key: 'teams', label: 'Teams', href: 'Centre Court Teams.dc.html' },
+      { key: 'signup', label: 'Sign Up', href: 'Centre Court Player Signup.dc.html' },
+      { key: 'rules', label: 'Rules', href: 'Centre Court Player Rules.dc.html' },
+    ];
+    const links = items.map(it => ({
+      label: it.label,
+      href: it.href,
+      color: it.key === current ? '#fff' : 'rgba(255,255,255,0.6)',
+    }));
+    const leagues = [
+      { label: 'HPL', href: '#', active: false },
+      { label: 'HPL Clubs', href: '#', active: true },
+    ].map(lg => ({
+      label: lg.label,
+      href: lg.href,
+      bg: lg.active ? '#0b0b0c' : '#f1f1ee',
+      color: lg.active ? '#fff' : '#0b0b0c',
+    }));
+    return {
+      accentColor,
+      accentColorDark: '#7d0f0f',
+      homeHref: 'Centre Court Signup.dc.html',
+      registerHref: 'Centre Court Player Signup.dc.html',
+      links,
+      leagues,
+      instagramHref: '#',
+      youtubeHref: '#',
+      isMobile,
+      showDesktopLinks: !isMobile,
+      showMobileMenu: isMobile && menuOpen,
+      navHeight: isMobile ? '64px' : '96px',
+      navGap: isMobile ? '16px' : '56px',
+      logoHeight: isMobile ? '38px' : '64px',
+      registerPad: isMobile ? '9px 14px' : '11px 22px',
+      registerFontSize: isMobile ? '10px' : '12px',
+      registerLabel: isMobile ? 'Register' : 'Register Now',
+      toggleMenu: this.toggleMenu,
+      barTopTransform: menuOpen ? 'translateY(7px) rotate(45deg)' : 'none',
+      barBotTransform: menuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none',
+      barMidOpacity: menuOpen ? 0 : 1,
+    };
+  }
+}
+</script>
+</body>
+</html>
