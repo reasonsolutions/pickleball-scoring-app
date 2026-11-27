@@ -8,7 +8,43 @@ export default {
     extend: {
       fontFamily: {
         'sans': ['Manrope', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+        'urbanist': ['Urbanist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
+      // Courtside Admin tokens (defined in src/styles/admin-tokens.css, scoped to .admin-app)
+      colors: {
+        brand: {
+          50: 'var(--brand-50)', 100: 'var(--brand-100)', 200: 'var(--brand-200)', 500: 'var(--brand-500)',
+          600: 'var(--brand-600)', 700: 'var(--brand-700)', 800: 'var(--brand-800)',
+        },
+        ink: {
+          300: 'var(--ink-300)', 400: 'var(--ink-400)', 500: 'var(--ink-500)', 600: 'var(--ink-600)',
+          700: 'var(--ink-700)', 800: 'var(--ink-800)', 900: 'var(--ink-900)',
+        },
+        paper: {
+          0: 'var(--paper-0)', 50: 'var(--paper-50)', 100: 'var(--paper-100)', 200: 'var(--paper-200)', 300: 'var(--paper-300)',
+        },
+        line: {
+          100: 'var(--line-100)', 150: 'var(--line-150)', 200: 'var(--line-200)', 300: 'var(--line-300)',
+        },
+        ok: { 50: 'var(--success-50)', 500: 'var(--success-500)', 700: 'var(--success-700)' },
+        bad: { 50: 'var(--danger-50)', 100: 'var(--danger-100)', 500: 'var(--danger-500)', 600: 'var(--danger-600)' },
+        warn: { 50: 'var(--warning-50)', 500: 'var(--warning-500)', 700: 'var(--warning-700)' },
+      },
+      borderRadius: {
+        'ds-xs': 'var(--radius-xs)',
+        'ds-sm': 'var(--radius-sm)',
+        'ds-md': 'var(--radius-md)',
+        'ds-lg': 'var(--radius-lg)',
+        'ds-xl': 'var(--radius-xl)',
+        'ds-2xl': 'var(--radius-2xl)',
+      },
+      boxShadow: {
+        'ds-sm': 'var(--shadow-sm)',
+        'ds-md': 'var(--shadow-md)',
+        'ds-lg': 'var(--shadow-lg)',
+        'ds-focus': 'var(--focus-ring)',
+      },
+      transitionTimingFunction: { ds: 'cubic-bezier(.2,.7,.2,1)' },
     },
   },
   plugins: [

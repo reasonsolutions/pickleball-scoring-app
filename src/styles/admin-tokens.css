@@ -1,0 +1,157 @@
+/*
+ * Courtside Admin design tokens.
+ * Scoped to `.admin-app` so they never leak into the public CCPL site
+ * (daisyUI also defines --text-primary / --text-secondary on :root).
+ * Source: "League Dashboard design direction" package, tokens/*.css.
+ * The Urbanist font is imported at the top of src/index.css.
+ */
+
+.admin-app {
+  /* Brand — court orange */
+  --brand-50: #FEF4EC;
+  --brand-100: #FDEBDF;
+  --brand-200: #F9C9A8;
+  --brand-500: #F26A1B;
+  --brand-600: #D9570C;
+  --brand-700: #C2500E;
+  --brand-800: #9A3F09;
+
+  /* Ink (text) */
+  --ink-900: #17171A;
+  --ink-800: #2E2E33;
+  --ink-700: #3A3834;
+  --ink-600: #55524D;
+  --ink-500: #77746F;
+  --ink-400: #9A968F;
+  --ink-300: #B3AFA8;
+
+  /* Paper (warm neutrals) */
+  --paper-0: #FFFFFF;
+  --paper-50: #FAF9F7;
+  --paper-100: #F4F3F0;
+  --paper-200: #EBE9E5;
+  --paper-300: #E9E7E3;
+  --line-100: #EFEDEA;
+  --line-150: #ECE9E4;
+  --line-200: #E6E3DE;
+  --line-300: #E4E1DC;
+
+  /* Semantic */
+  --success-50: #E3F4EA;
+  --success-500: #1F9D55;
+  --success-700: #17733E;
+  --danger-50: #FCEDEB;
+  --danger-100: #F3D3CF;
+  --danger-500: #D93A2B;
+  --danger-600: #C8372A;
+  --warning-50: #FBF1DC;
+  --warning-500: #D9930D;
+  --warning-700: #8A5A06;
+
+  /* Aliases */
+  --bg-app: var(--paper-100);
+  --bg-canvas: var(--paper-300);
+  --surface-card: var(--paper-0);
+  --surface-muted: var(--paper-50);
+  --surface-sunken: var(--paper-200);
+  --surface-inverse: var(--ink-900);
+  --border-subtle: var(--line-100);
+  --border-default: var(--line-150);
+  --border-strong: var(--line-200);
+  --text-primary: var(--ink-900);
+  --text-body: var(--ink-700);
+  --text-secondary: var(--ink-500);
+  --text-tertiary: var(--ink-400);
+  --text-inverse: var(--paper-0);
+  --accent: var(--brand-500);
+  --accent-hover: var(--brand-600);
+  --accent-soft: var(--brand-100);
+  --accent-on-soft: var(--brand-700);
+  --dot-empty: var(--line-300);
+  --dot-mid: var(--brand-200);
+  --dot-full: var(--brand-500);
+  --focus-ring: 0 0 0 3px rgba(242, 106, 27, 0.28);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+
+  /* Sizing */
+  --control-sm: 32px;
+  --control-md: 42px;
+  --control-touch: 44px;
+  --sidebar-width: 264px;
+  --content-max: 1360px;
+  --page-pad: clamp(16px, 2.6vw, 32px);
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(23, 23, 26, 0.06);
+  --shadow-md: 0 4px 14px rgba(23, 23, 26, 0.08);
+  --shadow-lg: 0 16px 40px rgba(23, 23, 26, 0.14);
+  --scrim: rgba(23, 23, 26, 0.35);
+
+  /* Motion */
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+
+  /* Typography */
+  --font-sans: 'Urbanist', ui-sans-serif, system-ui, sans-serif;
+  --text-display: 40px;
+  --text-h1: 36px;
+  --text-metric: 30px;
+  --text-h2: 24px;
+  --text-h3: 18px;
+  --text-title: 16px;
+  --text-nav: 15px;
+  --text-body: 14px;
+  --text-small: 13px;
+  --text-caption: 12px;
+  --text-micro: 11px;
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-caps: 0.04em;
+  --leading-tight: 1.1;
+  --leading-body: 1.45;
+
+  /* Base */
+  min-height: 100vh;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-app button,
+.admin-app input,
+.admin-app select,
+.admin-app textarea {
+  font-family: inherit;
+}
+
+.admin-app :focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.admin-app .tabular {
+  font-variant-numeric: tabular-nums;
+}
