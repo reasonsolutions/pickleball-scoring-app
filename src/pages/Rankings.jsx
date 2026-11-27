@@ -1,37 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import NewHomeNavbar from '../components/NewHomeNavbar';
-import Footer from '../components/Footer';
+import CCPLNavbar from '../components/CCPLNavbar';
+import CCPLFooter from '../components/CCPLFooter';
+import CCPLPartners from '../components/CCPLPartners';
+import CCPLTopBar from '../components/CCPLTopBar';
 import OptimizedImage from '../components/OptimizedImage';
-import { shouldShowPlayerNames, parseDate, formatDateForDisplay } from '../utils/dateTimeUtils';
-import AvantiqueBoldFont from '../assets/fonts/Avantique/Avantique-Bold.woff';
-import AvantiqueRegularFont from '../assets/fonts/Avantique/Avantique-Regular.woff';
-import AvantiqueMediumFont from '../assets/fonts/Avantique/Avantique-Medium.woff';
-import AvantiqueSemiboldFont from '../assets/fonts/Avantique/Avantique-Semibold.woff';
+import { parseDate } from '../utils/dateTimeUtils';
 
-// Utility function to convert 24-hour time to 12-hour format with AM/PM
-const formatTimeTo12Hour = (time24) => {
-  if (!time24) return '';
-  
-  const [hours, minutes] = time24.split(':');
-  const hour = parseInt(hours, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 || 12;
-  
-  return `${hour12}:${minutes} ${ampm}`;
-};
+const ORANGE = '#e27b46';
+const INK = '#0b0b0c';
+const PAPER = '#f2f0ea';
+const MUTED = '#5f5b52';
+const ZUUME = "'Zuume Cut', sans-serif";
+const QUALIFY = 4; // top four make the playoffs
 
 export default function Rankings() {
   const [selectedTournament, setSelectedTournament] = useState('');
   const [tournaments, setTournaments] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [fixtures, setFixtures] = useState([]);
+  const [, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [teamsLoading, setTeamsLoading] = useState(false);
-  const [fixturesLoading, setFixturesLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('TEAM STANDINGS');
-  const [selectedFixture, setSelectedFixture] = useState(null);
+  const [, setFixturesLoading] = useState(false);
+  const [openRow, setOpenRow] = useState(-1); // expanded row on narrow screens
+  const [narrow, setNarrow] = useState(typeof window !== 'undefined' && window.innerWidth < 1040);
+
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 1040);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Fetch tournaments from Firebase
   useEffect(() => {
@@ -49,9 +49,17 @@ export default function Rankings() {
         );
         setTournaments(tournamentsList);
         
-        // Set first tournament as default if available
+        // Default to the active season (app settings), else the first tournament
         if (tournamentsList.length > 0) {
-          setSelectedTournament(tournamentsList[0].id);
+          let activeTournamentId = null;
+          try {
+            const settings = await getDoc(doc(db, 'app-settings', 'mobile-app'));
+            activeTournamentId = settings.exists() ? settings.data().activeTournamentId : null;
+          } catch (settingsError) {
+            console.error('Error fetching active tournament:', settingsError);
+          }
+          const active = tournamentsList.find(t => t.id === activeTournamentId);
+          setSelectedTournament((active || tournamentsList[0]).id);
         }
       } catch (error) {
         console.error('Error fetching tournaments:', error);
@@ -432,678 +440,215 @@ export default function Rankings() {
     fetchTeamsAndFixtures();
   }, [selectedTournament]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen" style={{backgroundColor: '#212121'}}>
-        <NewHomeNavbar />
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-white">Loading tournaments...</div>
-        </div>
-      </div>
-    );
-  }
+  const fmt = n => (n > 0 ? `+${n}` : String(n));
+  const selected = tournaments.find(t => t.id === selectedTournament);
+  const tournamentLabel = selected ? (selected.name || selected.tournamentName || 'Tournament') : 'CCPL Hyderabad';
+
+  // Until a battle is played the order is arbitrary, so no leader / playoff highlighting yet
+  const seasonStarted = teams.some(t => t.battleWins + t.battleLosses > 0);
+
+  // Presentation for each standings row (leader row is inverted to ink)
+  const rows = teams.map((t, k) => {
+    const lead = seasonStarted && k === 0;
+    const inTop = seasonStarted && k < QUALIFY;
+    const diffColor = n => (n > 0 ? (lead ? '#7fdba0' : '#1f7a45') : n < 0 ? (lead ? '#ff8a78' : '#b3261a') : (lead ? '#bdbdbd' : MUTED));
+    return {
+      ...t,
+      rank: String(k + 1),
+      played: t.battleWins + t.battleLosses,
+      tag: !seasonStarted ? 'Yet to play' : lead ? 'League Leader' : inTop ? 'Playoff spot' : `${t.battleWins}W · ${t.battleLosses}L`,
+      rowBg: lead ? INK : '#fff',
+      ink: lead ? '#fff' : INK,
+      subInk: lead ? '#bdbdbd' : MUTED,
+      divider: lead ? '#232324' : '#e4e1d8',
+      edge: inTop ? ORANGE : '#e4e1d8',
+      rankColor: lead ? ORANGE : inTop || !seasonStarted ? INK : '#b8b3a6',
+      ptsBg: lead ? ORANGE : '#f6e3de',
+      gd: fmt(t.gamesDifference),
+      pd: fmt(t.pointsDifference),
+      gdColor: diffColor(t.gamesDifference),
+      pdColor: diffColor(t.pointsDifference),
+    };
+  });
+
+  const wideCols = '90px minmax(0,1fr) repeat(6,82px) 120px';
+  const narrowCols = '40px minmax(0,1fr) 32px 32px 58px';
+  const statText = { textAlign: 'center', fontFamily: ZUUME, fontWeight: 700, fontStyle: 'italic', fontSize: '26px' };
+
+  const logo = (team, size) => team.logo?.url ? (
+    <OptimizedImage src={team.logo.url} alt={team.name} type={size > 40 ? 'logo' : 'logoSmall'} style={{ width: size, height: size, objectFit: 'contain', display: 'block' }} />
+  ) : (
+    <span style={{ display: 'block', width: size, height: size, background: '#e4e1d8' }}></span>
+  );
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#212121'}}>
+    <div className="cc-rank-page" style={{ background: INK, fontFamily: "'Montserrat', sans-serif" }}>
       <style>{`
-        @font-face {
-          font-family: 'Avantique';
-          src: url('${AvantiqueRegularFont}') format('woff');
-          font-weight: normal;
-          font-style: normal;
-        }
-        @font-face {
-          font-family: 'Avantique';
-          src: url('${AvantiqueMediumFont}') format('woff');
-          font-weight: 500;
-          font-style: normal;
-        }
-        @font-face {
-          font-family: 'Avantique';
-          src: url('${AvantiqueSemiboldFont}') format('woff');
-          font-weight: 600;
-          font-style: normal;
-        }
-        @font-face {
-          font-family: 'Avantique';
-          src: url('${AvantiqueBoldFont}') format('woff');
-          font-weight: bold;
-          font-style: normal;
-        }
+        .cc-rank-page ::selection { background: ${ORANGE}; color: ${INK}; }
+        /* A global stylesheet forces Manrope on spans; follow the parent's font instead */
+        .cc-rank-page span { font-family: inherit; }
+        .cc-rank-page button, .cc-rank-page select { font-family: 'Montserrat', sans-serif; }
+
+        @keyframes cc-fade-up { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+        @keyframes cc-slide-in { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+        .cc-in { opacity: 0; animation: cc-fade-up .8s cubic-bezier(.2,.7,.2,1) forwards; }
+        .cc-row-in { opacity: 0; animation: cc-slide-in .8s cubic-bezier(.2,.7,.2,1) forwards; }
+
+        .cc-rank-row { transition: background .2s ease; }
+        .cc-rank-row:hover { background: #fbf1ee !important; }
+        .cc-rank-row.is-lead:hover { background: #1a1a1b !important; }
+        .cc-seg-link { transition: background .2s ease; }
+        .cc-seg-link:hover { background: ${ORANGE} !important; color: ${INK} !important; }
       `}</style>
-      <NewHomeNavbar />
-      
-      <div className="mx-auto px-4 py-8 max-w-full sm:max-w-none lg:max-w-none xl:max-w-[1600px]">
-        {/* Tournament Dropdown */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <label htmlFor="tournament-select" className="text-lg font-semibold text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-              Tournament:
-            </label>
-            <select
-              id="tournament-select"
-              value={selectedTournament}
-              onChange={(e) => setSelectedTournament(e.target.value)}
-              className="px-4 py-2 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-w-64 bg-gray-800 text-white"
-              style={{fontFamily: 'Avantique, sans-serif'}}
-            >
-              {tournaments.map(tournament => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name || tournament.tournamentName || `Tournament ${tournament.id}`}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="flex space-x-2 bg-gray-800 rounded-lg p-1 shadow-lg">
-            {['SCHEDULE', 'TEAM STANDINGS'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 rounded-md font-semibold text-sm transition-colors ${
-                  activeTab === tab
-                    ? 'bg-orange-500 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-                style={{fontFamily: 'Avantique, sans-serif'}}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
+      <CCPLTopBar activeLeague="ccpl-s2" />
+      <CCPLNavbar activePage="rankings" />
 
-        {/* Team Standings Table */}
-        {activeTab === 'TEAM STANDINGS' && (
-          <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {teamsLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-lg text-white">Loading team standings...</div>
-              </div>
-            ) : teams.length === 0 ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-lg text-gray-400">No teams found for this tournament</div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-900">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Team Rank
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Battle Wins
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Battle Losses
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-orange-500 bg-opacity-20" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Points ↓
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Game Wins
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Game Losses
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Points Won
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Points Lost
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Games Diff
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        Points Diff
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {teams.map((team, index) => (
-                      <tr key={team.id} className="hover:bg-gray-700 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {team.logo?.url && (
-                              <OptimizedImage
-                                src={team.logo.url}
-                                alt={team.name}
-                                type="logoSmall"
-                                className="w-8 h-8 rounded-full mr-3"
-                              />
-                            )}
-                            <div>
-                              <div className="text-sm font-medium text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                {team.name}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-semibold" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.battleWins}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-400" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.battleLosses}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-400 font-bold bg-orange-500 bg-opacity-10" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.points}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.gameWins}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.gameLosses}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.pointsWon}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          {team.pointsLost}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          <span className={team.gamesDifference >= 0 ? 'text-green-400' : 'text-red-400'}>
-                            {team.gamesDifference > 0 ? '+' : ''}{team.gamesDifference}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm" style={{fontFamily: 'Avantique, sans-serif'}}>
-                          <span className={team.pointsDifference >= 0 ? 'text-green-400' : 'text-red-400'}>
-                            {team.pointsDifference > 0 ? '+' : ''}{team.pointsDifference}
-                          </span>
-                        </td>
-                      </tr>
+      <section style={{ position: 'relative', background: PAPER, color: INK, padding: 'clamp(56px,7vw,96px) 6vw clamp(80px,10vw,140px)', minHeight: '80vh', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '38%', height: '10px', background: ORANGE, clipPath: 'polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)' }}></div>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+
+          <div className="cc-in" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px 40px', marginBottom: 'clamp(28px,4vw,44px)' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: '#b3261a', marginBottom: '10px' }}>{tournamentLabel}</div>
+              <h1 style={{ margin: 0, fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', fontSize: 'clamp(64px,10vw,150px)', lineHeight: .84, letterSpacing: '-.01em' }}>Team Rankings</h1>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: '12px' }}>
+              {tournaments.length > 1 && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', border: `2px solid ${INK}`, background: '#fff', padding: '0 12px 0 16px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: MUTED }}>Season</span>
+                  <select
+                    value={selectedTournament}
+                    onChange={(e) => { setSelectedTournament(e.target.value); setOpenRow(-1); }}
+                    style={{ border: 0, background: 'transparent', padding: '12px 4px', fontSize: '14px', fontWeight: 700, color: INK, cursor: 'pointer', outline: 'none' }}
+                  >
+                    {tournaments.map(tournament => (
+                      <option key={tournament.id} value={tournament.id}>
+                        {tournament.name || tournament.tournamentName || `Tournament ${tournament.id}`}
+                      </option>
                     ))}
-                  </tbody>
-                </table>
+                  </select>
+                </label>
+              )}
+              <div style={{ display: 'flex', alignItems: 'stretch', border: `2px solid ${INK}` }}>
+                <span style={{ display: 'flex', alignItems: 'center', padding: '12px 22px', background: INK, color: '#fff', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '22px', letterSpacing: '.05em', textTransform: 'uppercase' }}>Team Standings</span>
+                <Link to="/ccpl-fixtures" className="cc-seg-link" style={{ display: 'flex', alignItems: 'center', padding: '12px 22px', color: INK, textDecoration: 'none', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '22px', letterSpacing: '.05em', textTransform: 'uppercase' }}>Fixtures</Link>
               </div>
-            )}
+            </div>
           </div>
-        )}
 
-        {/* Schedule Tab */}
-        {activeTab === 'SCHEDULE' && (
-          <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {fixturesLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-lg text-white">Loading fixtures...</div>
+          {loading || teamsLoading ? (
+            <Notice text="Loading standings..." />
+          ) : tournaments.length === 0 ? (
+            <Notice text="No tournaments available" />
+          ) : rows.length === 0 ? (
+            <Notice text="No teams found for this tournament" />
+          ) : !narrow ? (
+            <>
+              <div style={{ background: '#fff', border: `2px solid ${INK}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: wideCols, alignItems: 'center', background: INK, color: '#fff', fontSize: '12px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', height: '50px' }}>
+                  <span style={{ paddingLeft: '28px', color: ORANGE }}>Pos</span>
+                  <span style={{ paddingLeft: '12px' }}>Team</span>
+                  {['P', 'W', 'L', 'Games', 'GD', 'PD'].map(h => <span key={h} style={{ textAlign: 'center' }}>{h}</span>)}
+                  <span style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: ORANGE, color: INK }}>Pts</span>
+                </div>
+                {rows.map((t, k) => (
+                  <div key={t.id} className={`cc-rank-row cc-row-in${t.rowBg === INK ? ' is-lead' : ''}`} style={{ position: 'relative', display: 'grid', gridTemplateColumns: wideCols, alignItems: 'center', height: '84px', borderTop: '1px solid #e4e1d8', background: t.rowBg, color: t.ink, animationDelay: `${(k % 8) * 0.06}s` }}>
+                    <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '8px', background: t.edge }}></span>
+                    <span style={{ paddingLeft: '28px', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '46px', lineHeight: 1, color: t.rankColor }}>{t.rank}</span>
+                    <Link to={`/ccpl-teams/${t.id}`} style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0, paddingLeft: '12px', color: 'inherit', textDecoration: 'none' }}>
+                      <span style={{ flex: 'none' }}>{logo(t, 56)}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '30px', lineHeight: 1, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', marginTop: '6px', color: t.subInk }}>{t.tag}</div>
+                      </div>
+                    </Link>
+                    <span style={statText}>{t.played}</span>
+                    <span style={statText}>{t.battleWins}</span>
+                    <span style={statText}>{t.battleLosses}</span>
+                    <span style={{ ...statText, fontSize: '24px', color: t.subInk }}>{t.gameWins}-{t.gameLosses}</span>
+                    <span style={{ ...statText, fontWeight: 900, color: t.gdColor }}>{t.gd}</span>
+                    <span style={{ ...statText, fontWeight: 900, color: t.pdColor }}>{t.pd}</span>
+                    <span style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '46px', color: INK, background: t.ptsBg }}>{t.points}</span>
+                  </div>
+                ))}
               </div>
-            ) : fixtures.length === 0 ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-lg text-gray-400">No fixtures found for this tournament</div>
-              </div>
-            ) : (
-              <div className="p-6" style={{backgroundColor: '#212121'}}>
-                {(() => {
-                  // Group fixtures by date
-                  const fixturesByDate = {};
-                  fixtures.forEach(fixture => {
-                    let dateKey = 'No Date';
-                    if (fixture.date) {
-                      try {
-                        // Handle different date formats
-                        let dateObj;
-                        if (typeof fixture.date === 'string') {
-                          // Try parsing as ISO string first, then as other formats
-                          dateObj = new Date(fixture.date);
-                          if (isNaN(dateObj.getTime())) {
-                            // Try parsing as DD/MM/YYYY or MM/DD/YYYY
-                            const parts = fixture.date.split(/[-/]/);
-                            if (parts.length === 3) {
-                              // Assume DD/MM/YYYY format first
-                              dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
-                              if (isNaN(dateObj.getTime())) {
-                                // Try MM/DD/YYYY format
-                                dateObj = new Date(parts[2], parts[0] - 1, parts[1]);
-                              }
-                            }
-                          }
-                        } else if (fixture.date.toDate) {
-                          // Firestore Timestamp
-                          dateObj = fixture.date.toDate();
-                        } else {
-                          dateObj = new Date(fixture.date);
-                        }
-                        
-                        if (!isNaN(dateObj.getTime())) {
-                          dateKey = dateObj.toDateString();
-                        }
-                      } catch (error) {
-                        console.warn('Error parsing date:', fixture.date, error);
-                      }
-                    }
-                    
-                    if (!fixturesByDate[dateKey]) {
-                      fixturesByDate[dateKey] = [];
-                    }
-                    fixturesByDate[dateKey].push(fixture);
-                  });
-
-                  return Object.entries(fixturesByDate).map(([date, dateFixtures]) => (
-                    <div key={date} className="mb-8">
-                      <h3 className="text-lg font-semibold text-white mb-4 pb-2 border-b border-gray-700" style={{fontFamily: 'Avantique, sans-serif'}}>
-                        {date === 'No Date' ? 'Unscheduled' : formatDateForDisplay(date)}
-                      </h3>
-                      <div className="grid gap-4">
-                        {dateFixtures.map(fixture => (
-                          <div key={fixture.id} className="border border-gray-700 rounded-lg overflow-hidden bg-gray-700 bg-opacity-50">
-                            <div
-                              className="p-4 hover:bg-gray-700 cursor-pointer transition-colors"
-                              onClick={() => setSelectedFixture(selectedFixture?.id === fixture.id ? null : fixture)}
-                            >
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                              <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
-                                {/* Team 1 */}
-                                <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                  {fixture.team1Details?.logo?.url && (
-                                    <OptimizedImage
-                                      src={fixture.team1Details.logo.url}
-                                      alt={fixture.team1Details.name}
-                                      type="logoSmall"
-                                      className="w-8 h-8 rounded-full flex-shrink-0"
-                                    />
-                                  )}
-                                  <span className="font-medium text-white truncate" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                    {fixture.team1Details?.name || fixture.team1Name || 'Team 1'}
-                                  </span>
-                                </div>
-                                
-                                {/* VS */}
-                                <div className="text-gray-400 font-semibold flex-shrink-0" style={{fontFamily: 'Avantique, sans-serif'}}>VS</div>
-                                
-                                {/* Team 2 */}
-                                <div className="flex items-center space-x-2 flex-1 justify-end min-w-0">
-                                  <span className="font-medium text-white truncate" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                    {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
-                                  </span>
-                                  {fixture.team2Details?.logo?.url && (
-                                    <OptimizedImage
-                                      src={fixture.team2Details.logo.url}
-                                      alt={fixture.team2Details.name}
-                                      type="logoSmall"
-                                      className="w-8 h-8 rounded-full flex-shrink-0"
-                                    />
-                                  )}
-                                </div>
+              <Legend />
+            </>
+          ) : (
+            <>
+              <div style={{ background: '#fff', border: `2px solid ${INK}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: narrowCols, alignItems: 'center', gap: '0 6px', background: INK, color: '#fff', height: '42px', paddingLeft: '14px', fontSize: '11px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase' }}>
+                  <span style={{ color: ORANGE }}>Pos</span>
+                  <span>Team</span>
+                  <span style={{ textAlign: 'center' }}>W</span>
+                  <span style={{ textAlign: 'center' }}>L</span>
+                  <span style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: ORANGE, color: INK }}>Pts</span>
+                </div>
+                {rows.map((t, k) => {
+                  const open = openRow === k;
+                  return (
+                    <div key={t.id} className="cc-row-in" style={{ position: 'relative', borderTop: `1px solid ${t.divider}`, background: t.rowBg, color: t.ink, animationDelay: `${(k % 8) * 0.06}s` }}>
+                      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '5px', background: t.edge }}></span>
+                      <button type="button" onClick={() => setOpenRow(open ? -1 : k)} aria-expanded={open} style={{ width: '100%', display: 'grid', gridTemplateColumns: narrowCols, alignItems: 'center', gap: '0 6px', padding: '0 0 0 14px', minHeight: '66px', background: 'none', border: 0, cursor: 'pointer', textAlign: 'left', color: 'inherit' }}>
+                        <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '32px', color: t.rankColor }}>{t.rank}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <span style={{ flex: 'none' }}>{logo(t, 34)}</span>
+                          <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '22px', lineHeight: 1.02, textTransform: 'uppercase' }}>{t.name}</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ flex: 'none', transition: 'transform .3s ease', transform: `rotate(${open ? 180 : 0}deg)` }}><path d="M6 9l6 6 6-6" /></svg>
+                        </span>
+                        <span style={{ ...statText, fontSize: '22px' }}>{t.battleWins}</span>
+                        <span style={{ ...statText, fontSize: '22px' }}>{t.battleLosses}</span>
+                        <span style={{ height: '100%', minHeight: '66px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '34px', color: INK, background: t.ptsBg }}>{t.points}</span>
+                      </button>
+                      <div style={{ display: 'grid', transition: 'grid-template-rows .35s ease', gridTemplateRows: open ? '1fr' : '0fr' }}>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', borderTop: `1px solid ${t.divider}`, marginLeft: '5px' }}>
+                            {[
+                              ['Games', `${t.gameWins}-${t.gameLosses}`],
+                              ['Points', `${t.pointsWon}-${t.pointsLost}`],
+                              ['GD', t.gd, t.gdColor],
+                              ['PD', t.pd, t.pdColor],
+                            ].map(([label, value, color]) => (
+                              <div key={label} style={{ padding: '10px 8px 10px 12px', minWidth: 0 }}>
+                                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: t.subInk }}>{label}</div>
+                                <div style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '22px', whiteSpace: 'nowrap', color: color || 'inherit' }}>{value}</div>
                               </div>
-                              
-                              {/* Fixture Info and Status */}
-                              <div className="flex items-center justify-between sm:justify-end sm:ml-6 sm:text-right sm:flex-col sm:items-end space-x-2 sm:space-x-0 sm:space-y-1">
-                                <div className="flex items-center space-x-2 sm:flex-col sm:space-x-0 sm:space-y-1">
-                                  {fixture.time && (
-                                    <div className="text-sm text-gray-300" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                      {fixture.time}
-                                    </div>
-                                  )}
-                                  
-                                  {/* Match count */}
-                                  <div className="text-xs text-gray-400" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                    {fixture.matches?.length || 0} match{(fixture.matches?.length || 0) !== 1 ? 'es' : ''}
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center space-x-2 sm:flex-col sm:space-x-0 sm:space-y-1 sm:items-end">
-                                  <div className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                                    fixture.status === 'completed'
-                                      ? 'bg-green-500 bg-opacity-20 text-green-400'
-                                      : fixture.status === 'in-progress'
-                                      ? 'bg-yellow-500 bg-opacity-20 text-yellow-400'
-                                      : 'bg-gray-600 text-gray-300'
-                                  }`}
-                                  style={{fontFamily: 'Avantique, sans-serif'}}>
-                                    {fixture.status === 'completed' ? 'Completed' :
-                                     fixture.status === 'in-progress' ? 'In Progress' : 'Scheduled'}
-                                  </div>
-                                  
-                                  {/* Show overall fixture result if completed */}
-                                  {fixture.status === 'completed' && fixture.matches && (
-                                    <div className="text-sm font-semibold text-orange-400" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                      {(() => {
-                                        let team1Wins = 0;
-                                        let team2Wins = 0;
-                                        
-                                        fixture.matches.forEach(match => {
-                                          if (match.scores && match.status === 'completed') {
-                                            const team1Scores = match.scores.player1 || {};
-                                            const team2Scores = match.scores.player2 || {};
-                                            let team1Games = 0;
-                                            let team2Games = 0;
-                                            
-                                            for (let i = 1; i <= (match.gamesCount || 3); i++) {
-                                              const gameKey = `game${i}`;
-                                              const team1Score = parseInt(team1Scores[gameKey]) || 0;
-                                              const team2Score = parseInt(team2Scores[gameKey]) || 0;
-                                              
-                                              if (team1Score > team2Score) {
-                                                team1Games++;
-                                              } else if (team2Score > team1Score) {
-                                                team2Games++;
-                                              }
-                                            }
-                                            
-                                            if (team1Games > team2Games) {
-                                              team1Wins++;
-                                            } else if (team2Games > team1Games) {
-                                              team2Wins++;
-                                            }
-                                          }
-                                        });
-                                        
-                                        return `${team1Wins} - ${team2Wins}`;
-                                      })()}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              </div>
-                            </div>
-                            
-                            {/* Detailed matches view */}
-                            {selectedFixture?.id === fixture.id && (
-                              <div className="border-t border-gray-700 bg-gray-700 bg-opacity-30 p-4">
-                                <div className="mb-3">
-                                  <h4 className="text-lg font-semibold text-white mb-2" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                    Matches in this Fixture
-                                  </h4>
-                                  <div className="text-sm text-gray-400" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                    Click on a fixture to collapse this view
-                                  </div>
-                                </div>
-                                
-                                <div className="space-y-3">
-                                  {(() => {
-                                    // Define the correct match order
-                                    const matchOrder = {
-                                      'Men\'s Doubles': 1,
-                                      'Women\'s Doubles': 2,
-                                      'Men\'s Singles': 3,
-                                      'Women\'s Singles': 4,
-                                      'Men\'s Doubles (2)': 5,
-                                      'Mixed Doubles': 6,
-                                      'Game Breaker': 7,
-                                      'Dream Breaker': 7 // Alternative name for Game Breaker
-                                    };
-                                    
-                                    // Sort matches according to the defined order
-                                    const sortedMatches = [...(fixture.matches || [])].sort((a, b) => {
-                                      const aOrder = matchOrder[a.matchTypeLabel] || 999;
-                                      const bOrder = matchOrder[b.matchTypeLabel] || 999;
-                                      return aOrder - bOrder;
-                                    });
-                                    
-                                    return sortedMatches.map((match, matchIndex) => (
-                                    <div key={match.id} className="bg-gray-700 bg-opacity-50 border border-gray-600 rounded-lg p-4">
-                                      <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-sm font-medium text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                            Match {matchIndex + 1}
-                                          </span>
-                                          {match.matchTypeLabel && (
-                                            <span className="text-xs px-2 py-1 bg-orange-500 bg-opacity-20 text-orange-400 rounded-full" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                              {match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className={`text-xs px-2 py-1 rounded-full ${
-                                          match.status === 'completed'
-                                            ? 'bg-green-500 bg-opacity-20 text-green-400'
-                                            : match.status === 'in-progress'
-                                            ? 'bg-yellow-500 bg-opacity-20 text-yellow-400'
-                                            : 'bg-gray-600 text-gray-300'
-                                        }`}
-                                        style={{fontFamily: 'Avantique, sans-serif'}}>
-                                          {match.status === 'completed' ? 'Completed' :
-                                           match.status === 'in-progress' ? 'In Progress' : 'Scheduled'}
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-4 flex-1">
-                                          {/* Team 1 Players */}
-                                          <div className="space-y-2 flex-1">
-                                            <div className="flex items-center space-x-2">
-                                              {fixture.team1Details?.logo?.url && (
-                                                <OptimizedImage
-                                                  src={fixture.team1Details.logo.url}
-                                                  alt={fixture.team1Details.name}
-                                                  type="logoSmall"
-                                                  className="w-6 h-6 rounded-full"
-                                                />
-                                              )}
-                                              <span className="font-medium text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                                {fixture.team1Details?.name || fixture.team1Name || 'Team 1'}
-                                              </span>
-                                            </div>
-                                            <div className="text-sm text-gray-300 ml-8" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                              {(() => {
-                                                // Check if we should show player names using utility function
-                                                const showPlayerNames = shouldShowPlayerNames(match, fixture);
-                                                
-                                                // If it's too early to show player names
-                                                if (!showPlayerNames) {
-                                                  return (
-                                                    <div className="text-gray-400 italic">Players will be revealed at 5:05PM Matchday</div>
-                                                  );
-                                                }
-                                                
-                                                const isSinglesMatch = match.matchTypeLabel?.includes('Singles');
-                                                
-                                                if (isSinglesMatch) {
-                                                  // For Singles matches, show only player1Team1
-                                                  return match.player1Team1 ? (
-                                                    <div>{match.player1Team1}</div>
-                                                  ) : (
-                                                    <div className="text-gray-400 italic">Player not assigned</div>
-                                                  );
-                                                } else {
-                                                  // For Doubles matches, show both players
-                                                  return match.player1Team1 && match.player2Team1 ? (
-                                                    <>
-                                                      <div>{match.player1Team1}</div>
-                                                      <div>{match.player2Team1}</div>
-                                                    </>
-                                                  ) : (
-                                                    <div className="text-gray-400 italic">Players not assigned</div>
-                                                  );
-                                                }
-                                              })()}
-                                            </div>
-                                          </div>
-                                          
-                                          {/* Game Scores in center */}
-                                          <div className="text-center px-4">
-                                            {match.scores && match.status === 'completed' ? (
-                                              <div className="flex flex-col space-y-1">
-                                                {(() => {
-                                                   const team1Scores = match.scores.player1 || {};
-                                                   const team2Scores = match.scores.player2 || {};
-                                                   const gamesCount = match.gamesCount || 3;
-                                                   const games = [];
-                                                   
-                                                   for (let i = 1; i <= gamesCount; i++) {
-                                                     const gameKey = `game${i}`;
-                                                     const team1Score = team1Scores[gameKey] || 0;
-                                                     const team2Score = team2Scores[gameKey] || 0;
-                                                     
-                                                     // Only show games that have been played (non-zero scores)
-                                                     if (team1Score > 0 || team2Score > 0) {
-                                                       games.push(
-                                                         <div key={i} className="text-lg font-bold text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                                           <span>{team1Score}</span>
-                                                           <span className="text-gray-400 mx-2">-</span>
-                                                           <span>{team2Score}</span>
-                                                         </div>
-                                                       );
-                                                     }
-                                                   }
-                                                   
-                                                   return games.length > 0 ? games : (
-                                                     <div className="text-gray-400 font-semibold" style={{fontFamily: 'Avantique, sans-serif'}}>VS</div>
-                                                   );
-                                                 })()}
-                                               </div>
-                                             ) : (
-                                               <div className="text-gray-400 font-semibold" style={{fontFamily: 'Avantique, sans-serif'}}>VS</div>
-                                             )}
-                                           </div>
-                                           
-                                           {/* Team 2 Players */}
-                                           <div className="space-y-2 flex-1 text-right">
-                                             <div className="flex items-center space-x-2 justify-end">
-                                               <span className="font-medium text-white" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                                 {fixture.team2Details?.name || fixture.team2Name || 'Team 2'}
-                                               </span>
-                                               {fixture.team2Details?.logo?.url && (
-                                                <OptimizedImage
-                                                  src={fixture.team2Details.logo.url}
-                                                  alt={fixture.team2Details.name}
-                                                  type="logoSmall"
-                                                   className="w-6 h-6 rounded-full"
-                                                 />
-                                               )}
-                                             </div>
-                                             <div className="text-sm text-gray-300 mr-8" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                              {(() => {
-                                                // Check if we should show player names using utility function
-                                                const showPlayerNames = shouldShowPlayerNames(match, fixture);
-                                                
-                                                // If it's too early to show player names
-                                                if (!showPlayerNames) {
-                                                  return (
-                                                    <div className="text-gray-400 italic">Players will be revealed at 5:05PM Matchday</div>
-                                                  );
-                                                }
-                                                
-                                                const isSinglesMatch = match.matchTypeLabel?.includes('Singles');
-                                                
-                                                if (isSinglesMatch) {
-                                                  // For Singles matches, show only player1Team2
-                                                  return match.player1Team2 ? (
-                                                    <div>{match.player1Team2}</div>
-                                                  ) : (
-                                                    <div className="text-gray-400 italic">Player not assigned</div>
-                                                  );
-                                                } else {
-                                                  // For Doubles matches, show both players
-                                                  return match.player1Team2 && match.player2Team2 ? (
-                                                    <>
-                                                      <div>{match.player1Team2}</div>
-                                                      <div>{match.player2Team2}</div>
-                                                    </>
-                                                  ) : (
-                                                    <div className="text-gray-400 italic">Players not assigned</div>
-                                                  );
-                                                }
-                                              })()}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Detailed Game Scores - Show individual game scores below */}
-                                      {match.scores && match.status === 'completed' && (
-                                        <div className="mt-4 pt-3 border-t border-gray-600">
-                                          <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-300" style={{fontFamily: 'Avantique, sans-serif'}}>Game Scores:</span>
-                                            <div className="flex space-x-4">
-                                              {(() => {
-                                                 const team1Scores = match.scores.player1 || {};
-                                                 const team2Scores = match.scores.player2 || {};
-                                                 const gamesCount = match.gamesCount || 3;
-                                                 const games = [];
-                                                 
-                                                 for (let i = 1; i <= gamesCount; i++) {
-                                                   const gameKey = `game${i}`;
-                                                   const team1Score = team1Scores[gameKey] || 0;
-                                                   const team2Score = team2Scores[gameKey] || 0;
-                                                   games.push(
-                                                     <div key={i} className="text-sm" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                                       <span className="font-medium text-white">{team1Score}</span>
-                                                       <span className="text-gray-400 mx-1">-</span>
-                                                       <span className="font-medium text-white">{team2Score}</span>
-                                                     </div>
-                                                   );
-                                                 }
-                                                 
-                                                 return games;
-                                               })()}
-                                             </div>
-                                           </div>
-                                         </div>
-                                       )}
-                                       
-                                       {/* Match Winner - Show for incomplete matches */}
-                                       {match.status !== 'completed' && (
-                                         <div className="mt-2 text-center">
-                                           <div className="text-sm text-gray-400 italic" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                             {match.status === 'in-progress' ? 'Match in progress' : 'Match not started'}
-                                           </div>
-                                         </div>
-                                       )}
-                                       
-                                       {/* Show winner for completed matches */}
-                                       {match.scores && match.status === 'completed' && (
-                                         <div className="mt-2 text-center">
-                                           {(() => {
-                                             const team1Scores = match.scores.player1 || {};
-                                             const team2Scores = match.scores.player2 || {};
-                                             let team1Games = 0;
-                                             let team2Games = 0;
-                                             
-                                             for (let i = 1; i <= (match.gamesCount || 3); i++) {
-                                               const gameKey = `game${i}`;
-                                               const team1Score = parseInt(team1Scores[gameKey]) || 0;
-                                               const team2Score = parseInt(team2Scores[gameKey]) || 0;
-                                               
-                                               if (team1Score > team2Score) {
-                                                 team1Games++;
-                                               } else if (team2Score > team1Score) {
-                                                 team2Games++;
-                                               }
-                                             }
-                                             
-                                             const winner = team1Games > team2Games
-                                               ? (fixture.team1Details?.name || fixture.team1Name || 'Team 1')
-                                               : team2Games > team1Games
-                                               ? (fixture.team2Details?.name || fixture.team2Name || 'Team 2')
-                                               : null;
-                                             
-                                             return winner ? (
-                                               <div className="text-sm font-medium text-green-400" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                                 Winner: {winner}
-                                               </div>
-                                             ) : (
-                                               <div className="text-sm text-gray-400" style={{fontFamily: 'Avantique, sans-serif'}}>
-                                                 Draw
-                                               </div>
-                                             );
-                                           })()}
-                                         </div>
-                                       )}
-                                    </div>
-                                    ));
-                                  })()}
-                                </div>
-                              </div>
-                            )}
+                            ))}
                           </div>
-                        ))}
+                          <Link to={`/ccpl-teams/${t.id}`} style={{ display: 'block', padding: '0 12px 12px 17px', fontSize: '11px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: ORANGE, textDecoration: 'none' }}>View team →</Link>
+                        </div>
                       </div>
                     </div>
-                  ));
-                })()}
+                  );
+                })}
               </div>
-            )}
-          </div>
-        )}
+              <Legend />
+            </>
+          )}
+        </div>
+      </section>
 
-      </div>
-      
-      {/* Footer */}
-      <Footer />
+      <CCPLPartners divider={false} />
+      <CCPLFooter />
+    </div>
+  );
+}
+
+function Notice({ text }) {
+  return (
+    <div style={{ background: '#fff', border: `2px solid ${INK}`, padding: '48px 24px', textAlign: 'center', fontSize: '16px', fontWeight: 600, color: MUTED }}>
+      {text}
+    </div>
+  );
+}
+
+function Legend() {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px 24px', marginTop: '16px' }}>
+      <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: MUTED }}>
+        P Played · W/L Battles won/lost · GD Games diff · PD Points diff · 3 pts per battle win · Top {QUALIFY} qualify
+      </span>
     </div>
   );
 }

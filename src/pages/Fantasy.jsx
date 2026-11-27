@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import MainLayout from '../components/MainLayout';
@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 
 export default function Fantasy() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -14,13 +15,84 @@ export default function Fantasy() {
   const [tournamentName, setTournamentName] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'fantasyPoints', direction: 'desc' });
   const [lastSyncTime, setLastSyncTime] = useState(null);
-  const [activeTab, setActiveTab] = useState('points');
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'points');
   const [playerCosts, setPlayerCosts] = useState({});
   const fileInputRef = useRef(null);
+  const [fantasyTeams, setFantasyTeams] = useState([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+  const [teamsLoaded, setTeamsLoaded] = useState(false);
+  const [teamSearch, setTeamSearch] = useState('');
 
   useEffect(() => {
     fetchFantasyData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'teams' && activeTournamentId && !teamsLoaded) {
+      fetchFantasyTeams();
+    }
+  }, [activeTab, activeTournamentId, teamsLoaded]);
+
+  // Load every fantasy team for the active tournament, with its owner from ccpl-users
+  const fetchFantasyTeams = async () => {
+    try {
+      setTeamsLoading(true);
+      const snap = await getDocs(query(
+        collection(db, 'fantasy-teams'),
+        where('tournamentId', '==', activeTournamentId)
+      ));
+      const teams = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const userIds = [...new Set(teams.map(t => t.userId).filter(Boolean))];
+      const owners = {};
+      await Promise.all(userIds.map(async (uid) => {
+        try {
+          const userSnap = await getDoc(doc(db, 'ccpl-users', uid));
+          if (userSnap.exists()) {
+            const u = userSnap.data();
+            owners[uid] = {
+              name: u.name || '',
+              phone: u.phone || u.phoneNumber || '',
+              email: u.email || '',
+            };
+          }
+        } catch (err) {
+          console.error('Error fetching owner', uid, err);
+        }
+      }));
+
+      const toDate = (v) => {
+        if (!v) return null;
+        if (typeof v.toDate === 'function') return v.toDate();
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;
+      };
+
+      const rows = teams.map(t => {
+        const gameweeks = Object.values(t.gameweeks || {});
+        const latestSquad = gameweeks
+          .filter(gw => gw && Array.isArray(gw.playerIds) && gw.playerIds.length)
+          .sort((a, b) => (b.gameweekNumber || 0) - (a.gameweekNumber || 0))[0];
+        return {
+          id: t.id,
+          teamName: t.teamName || 'Unnamed Team',
+          userId: t.userId || '',
+          owner: owners[t.userId] || null,
+          totalPoints: Number(t.totalPoints) || 0,
+          squadSize: (latestSquad?.playerIds || t.playerIds || []).length,
+          createdAt: toDate(t.createdAt),
+        };
+      }).sort((a, b) => b.totalPoints - a.totalPoints || a.teamName.localeCompare(b.teamName));
+
+      setFantasyTeams(rows);
+      setTeamsLoaded(true);
+    } catch (error) {
+      console.error('Error fetching fantasy teams:', error);
+      alert('Error loading fantasy teams: ' + error.message);
+    } finally {
+      setTeamsLoading(false);
+    }
+  };
 
   const fetchFantasyData = async () => {
     try {
@@ -54,6 +126,44 @@ export default function Fantasy() {
         id: doc.id,
         ...doc.data()
       }));
+
+      // Fetch all teams for this tournament to get teamId and teamName mapping
+      const teamsQuery = query(
+        collection(db, 'teams'),
+        where('tournamentId', '==', tournamentId)
+      );
+      const teamsSnapshot = await getDocs(teamsQuery);
+      const teamsMap = {};
+      
+      console.log('📊 Fetched teams:', teamsSnapshot.docs.length);
+      
+      teamsSnapshot.docs.forEach(teamDoc => {
+        const teamData = teamDoc.data();
+        const playerIds = teamData.playerIds || [];
+        const teamName = teamData.name || teamData.teamName || '';
+        
+        console.log(`Team: ${teamName} (ID: ${teamDoc.id}), Players: ${playerIds.length}`);
+        
+        playerIds.forEach(playerId => {
+          teamsMap[playerId] = {
+            teamId: teamDoc.id,
+            teamName: teamName
+          };
+        });
+      });
+
+      console.log('👥 Players before team mapping:', playersData.length);
+      
+      // Add teamId and teamName to players (always override to ensure consistency)
+      playersData.forEach(player => {
+        if (teamsMap[player.id]) {
+          player.teamId = teamsMap[player.id].teamId;
+          player.teamName = teamsMap[player.id].teamName;
+          console.log(`✅ Mapped player ${player.name} to team ${player.teamName}`);
+        } else {
+          console.log(`⚠️ No team found for player ${player.name} (ID: ${player.id})`);
+        }
+      });
 
       // Fetch existing fantasy player data (including costs)
       const tournamentDocRef = doc(db, 'fantasy-players', tournamentId);
@@ -260,6 +370,7 @@ export default function Fantasy() {
           playerId: player.id,
           playerName: player.name,
           teamName: player.teamName || '',
+          teamId: player.teamId || '',
           tournamentId: tournamentId,
           fantasyPoints: player.fantasyPoints,
           matchesPlayed: player.matchesPlayed,
@@ -303,6 +414,7 @@ export default function Fantasy() {
           playerId: player.id,
           playerName: player.name,
           teamName: player.teamName || '',
+          teamId: player.teamId || '',
           tournamentId: activeTournamentId,
           fantasyPoints: player.fantasyPoints,
           matchesPlayed: player.matchesPlayed,
@@ -335,7 +447,19 @@ export default function Fantasy() {
 
   const updateFantasyTeamsPoints = async (tournamentId, playersData) => {
     try {
-      // Create a map of player ID to player data (including match details) for quick lookup
+      // Local calendar day as YYYY-MM-DD, comparable with gameweekDate strings
+      const toDateKey = (date) => {
+        let d = null;
+        if (!date) return null;
+        if (date.seconds) d = new Date(date.seconds * 1000);
+        else if (date.toDate) d = date.toDate();
+        else d = new Date(date);
+        if (isNaN(d.getTime())) return null;
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      };
+
+      // Create a map of player ID to match details for quick lookup
       const playerDataMap = {};
       playersData.forEach(player => {
         playerDataMap[player.id] = {
@@ -353,101 +477,75 @@ export default function Fantasy() {
       
       console.log(`Found ${teamsSnapshot.docs.length} fantasy teams to update`);
 
+      // Build the gameweek schedule from every team's gameweeks. A gameweek covers
+      // matches from its gameweekDate up to (not including) the next gameweek's date.
+      const gameweekStarts = new Set();
+      teamsSnapshot.docs.forEach(teamDoc => {
+        Object.values(teamDoc.data().gameweeks || {}).forEach(gameweek => {
+          if (gameweek && gameweek.gameweekDate) gameweekStarts.add(gameweek.gameweekDate);
+        });
+      });
+      const sortedStarts = [...gameweekStarts].sort();
+      const getGameweekStart = (dateKey) => {
+        let start = null;
+        sortedStarts.forEach(s => {
+          if (s <= dateKey) start = s;
+        });
+        return start;
+      };
+
+      console.log('Gameweek start dates:', sortedStarts);
+
       // Update each team's points
       for (const teamDoc of teamsSnapshot.docs) {
         const teamData = teamDoc.data();
         const teamRef = doc(db, 'fantasy-teams', teamDoc.id);
         
         console.log(`\n🔍 Processing team: ${teamData.teamName}`);
-        console.log('Gameweeks data:', teamData.gameweeks);
-        
-        // Calculate total points from all players in the team
-        let totalPoints = 0;
-        const playerIds = teamData.playerIds || [];
-        
-        playerIds.forEach(playerId => {
-          const playerData = playerDataMap[playerId];
-          const playerPoints = playerData ? playerData.fantasyPoints : 0;
-          totalPoints += playerPoints;
-        });
 
-        // Update gameweeks points if they exist
-        const updatedGameweeks = { ...teamData.gameweeks };
-        
-        if (updatedGameweeks) {
-          Object.keys(updatedGameweeks).forEach(gameweekKey => {
-            const gameweek = updatedGameweeks[gameweekKey];
-            console.log(`\n📅 Processing gameweek: ${gameweekKey}`, gameweek);
-            
-            if (gameweek && gameweek.playerIds) {
-              let gameweekPoints = 0;
-              
-              // Get the gameweek date - it's stored as a single date string (gameweekDate)
-              let gameweekDate = null;
-              if (gameweek.gameweekDate) {
-                gameweekDate = new Date(gameweek.gameweekDate);
-                // Set to start of day for comparison
-                gameweekDate.setHours(0, 0, 0, 0);
-              }
-              
-              console.log(`Gameweek date: ${gameweekDate}`);
-              
-              gameweek.playerIds.forEach(playerId => {
-                const playerData = playerDataMap[playerId];
-                if (!playerData) {
-                  console.log(`⚠️ No data found for player: ${playerId}`);
-                  return;
-                }
-                
-                // Calculate points only from matches within this gameweek's date range
-                let playerGameweekPoints = 0;
-                console.log(`Player ${playerId} has ${playerData.matchDetails.length} matches`);
-                
-                playerData.matchDetails.forEach(match => {
-                  // Handle both Timestamp objects and regular date strings
-                  let matchDate = null;
-                  if (match.date) {
-                    if (match.date.seconds) {
-                      matchDate = new Date(match.date.seconds * 1000);
-                    } else if (match.date.toDate) {
-                      matchDate = match.date.toDate();
-                    } else {
-                      matchDate = new Date(match.date);
-                    }
-                  }
-                  
-                  console.log(`Match date: ${matchDate}, Points: ${match.totalFantasyPoints}`);
-                  
-                  // Check if match date matches the gameweek date (same day)
-                  if (matchDate && gameweekDate) {
-                    // Set match date to start of day for comparison
-                    const matchDateOnly = new Date(matchDate);
-                    matchDateOnly.setHours(0, 0, 0, 0);
-                    
-                    if (matchDateOnly.getTime() === gameweekDate.getTime()) {
-                      playerGameweekPoints += match.totalFantasyPoints || 0;
-                      console.log(`✅ Match included! Player gameweek points now: ${playerGameweekPoints}`);
-                    } else {
-                      console.log(`❌ Match on different date - Match: ${matchDateOnly.toDateString()}, Gameweek: ${gameweekDate.toDateString()}`);
-                    }
-                  } else {
-                    console.log(`⚠️ Missing date info - matchDate: ${matchDate}, gameweekDate: ${gameweekDate}`);
-                  }
-                });
-                
-                console.log(`Player ${playerId} gameweek points: ${playerGameweekPoints}`);
-                gameweekPoints += playerGameweekPoints;
-              });
-              
-              console.log(`Total gameweek ${gameweekKey} points: ${gameweekPoints}`);
-              
-              updatedGameweeks[gameweekKey] = {
-                ...gameweek,
-                points: gameweekPoints
-              };
+        const updatedGameweeks = { ...(teamData.gameweeks || {}) };
+        let totalPoints = 0;
+
+        Object.keys(updatedGameweeks).forEach(gameweekKey => {
+          const gameweek = updatedGameweeks[gameweekKey];
+          if (!gameweek || !gameweek.playerIds) return;
+
+          let gameweekPoints = 0;
+
+          gameweek.playerIds.forEach(playerId => {
+            const playerData = playerDataMap[playerId];
+            if (!playerData) {
+              console.log(`⚠️ No data found for player: ${playerId}`);
+              return;
             }
+
+            // Only count matches that fall within this gameweek
+            let playerGameweekPoints = 0;
+            playerData.matchDetails.forEach(match => {
+              const matchDateKey = toDateKey(match.date);
+              if (matchDateKey && getGameweekStart(matchDateKey) === gameweek.gameweekDate) {
+                playerGameweekPoints += match.totalFantasyPoints || 0;
+              }
+            });
+
+            // Captain earns 2x, vice-captain 1.5x
+            if (playerId === gameweek.captainId) {
+              playerGameweekPoints *= 2;
+            } else if (playerId === gameweek.viceCaptainId) {
+              playerGameweekPoints *= 1.5;
+            }
+
+            gameweekPoints += playerGameweekPoints;
           });
-        }
+
+          console.log(`Gameweek ${gameweekKey} (${gameweek.gameweekDate}): ${gameweekPoints} points`);
+
+          updatedGameweeks[gameweekKey] = {
+            ...gameweek,
+            points: gameweekPoints
+          };
+          totalPoints += gameweekPoints;
+        });
 
         // Update the team document
         await updateDoc(teamRef, {
@@ -472,6 +570,31 @@ export default function Fantasy() {
       ...prev,
       [playerId]: cost
     }));
+  };
+
+  // Export fantasy teams (respecting the current search) with owner name and phone
+  const handleExportTeams = () => {
+    const q = teamSearch.trim().toLowerCase();
+    const rows = q
+      ? fantasyTeams.filter(t =>
+          [t.teamName, t.owner?.name, t.owner?.phone, t.owner?.email]
+            .some(v => (v || '').toString().toLowerCase().includes(q)))
+      : fantasyTeams;
+    if (rows.length === 0) {
+      alert('No teams to export.');
+      return;
+    }
+    const exportData = rows.map(t => ({
+      'Team Name': t.teamName,
+      'Owner Name': t.owner?.name || '',
+      'Phone Number': t.owner?.phone || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!cols'] = [{ wch: 30 }, { wch: 28 }, { wch: 18 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Teams');
+    const fileName = `Fantasy_Teams_${(tournamentName || 'Tournament').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   const handleExportPlayers = () => {
@@ -665,7 +788,46 @@ export default function Fantasy() {
                   >
                     Players
                   </button>
+                  <button
+                    onClick={() => setActiveTab('teams')}
+                    className={`${
+                      activeTab === 'teams'
+                        ? 'border-orange-500 text-orange-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                  >
+                    Teams
+                  </button>
                 </nav>
+
+                {activeTab === 'teams' && activeTournamentId && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={teamSearch}
+                      onChange={(e) => setTeamSearch(e.target.value)}
+                      placeholder="Search team, owner, phone…"
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <button
+                      onClick={handleExportTeams}
+                      disabled={teamsLoading || fantasyTeams.length === 0}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export to Excel
+                    </button>
+                    <button
+                      onClick={fetchFantasyTeams}
+                      disabled={teamsLoading}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      {teamsLoading ? 'Loading…' : 'Refresh'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Export/Import buttons - only show in Players tab */}
                 {activeTab === 'players' && players.length > 0 && (
@@ -729,6 +891,69 @@ export default function Fantasy() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Tournament</h3>
                 <p className="text-gray-600">Please set an active tournament in App Settings first.</p>
               </div>
+            ) : activeTab === 'teams' ? (
+              teamsLoading && !teamsLoaded ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                </div>
+              ) : fantasyTeams.length === 0 ? (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Fantasy Teams Yet</h3>
+                  <p className="text-gray-600">No one has created a fantasy team for this tournament.</p>
+                </div>
+              ) : (() => {
+                const q = teamSearch.trim().toLowerCase();
+                const filtered = q
+                  ? fantasyTeams.filter(t =>
+                      [t.teamName, t.owner?.name, t.owner?.phone, t.owner?.email]
+                        .some(v => (v || '').toString().toLowerCase().includes(q)))
+                  : fantasyTeams;
+                return (
+                  <div className="overflow-x-auto">
+                    <div className="px-6 py-3 text-sm text-gray-600 border-b border-gray-200">
+                      {filtered.length === fantasyTeams.length
+                        ? `${fantasyTeams.length} team${fantasyTeams.length === 1 ? '' : 's'}`
+                        : `${filtered.length} of ${fantasyTeams.length} teams`}
+                    </div>
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Squad</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filtered.map((t, i) => (
+                          <tr
+                            key={t.id}
+                            onClick={() => navigate(`/admin/fantasy/team/${t.id}`)}
+                            className="hover:bg-orange-50 cursor-pointer"
+                          >
+                            <td className="px-6 py-4 text-sm text-gray-500">{i + 1}</td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{t.teamName}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {t.owner?.name || <span className="text-gray-400 italic">Unknown ({t.userId || 'no user'})</span>}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{t.owner?.phone || '—'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{t.owner?.email || '—'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-700">{t.squadSize}</td>
+                            <td className="px-6 py-4 text-sm font-semibold text-orange-600">{t.totalPoints}</td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {t.createdAt ? t.createdAt.toLocaleDateString() : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()
             ) : players.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -877,6 +1102,9 @@ export default function Fantasy() {
                         Player Name
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Team
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Cost
                       </th>
                     </tr>
@@ -907,9 +1135,11 @@ export default function Fantasy() {
                           <div className="text-sm font-medium text-gray-900">
                             {player.name}
                           </div>
-                          {player.teamName && (
-                            <div className="text-sm text-gray-500">{player.teamName}</div>
-                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-600">
+                            {player.teamName || '-'}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <input

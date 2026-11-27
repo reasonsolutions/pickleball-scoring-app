@@ -2284,6 +2284,26 @@ export default function AddFixtures() {
                   <span className="hidden sm:inline">API</span>
                   <span className="sm:hidden">API</span>
                 </button>
+
+                {false && (
+                  <button
+                    className="btn btn-sm sm:btn-md flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                    style={{
+                      background: 'linear-gradient(135deg, #FF5252 0%, #D32F2F 100%)',
+                      color: 'white',
+                      fontWeight: '700',
+                      boxShadow: '0 4px 15px rgba(255, 82, 82, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    onClick={handleDeleteAllFixtures}
+                    title="Delete ALL fixtures for this tournament. This action cannot be undone."
+                  >
+                    <span className="hidden sm:inline">🗑️ Delete All Fixtures</span>
+                    <span className="sm:hidden">Delete All</span>
+                  </button>
+                )}
                 
               </div>
             )}

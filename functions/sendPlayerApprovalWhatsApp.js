@@ -73,7 +73,7 @@ exports.sendPlayerApprovalWhatsAppHttp = onRequest({cors: true}, async (request,
             code: "en",
             policy: "deterministic"
           },
-          namespace: "60ab4863_e450_4055_9286_45084fb4e9bc",
+          namespace: "4a46062d_772c_4791_a468_d2355a43e5d4",
           to_and_components: toAndComponents
         }
       }

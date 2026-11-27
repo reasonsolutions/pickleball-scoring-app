@@ -21,6 +21,66 @@ function handlePreflight(request, response) {
   return false;
 }
 
+// Sends the 'otpverify1' WhatsApp template via MSG91. Accepts numbers like
+// "9876543210", "919876543210" or "+91 98765 43210".
+async function sendOtpWhatsApp(phoneNumber, otp) {
+  const digits = String(phoneNumber).replace(/\D/g, '');
+  const formattedNumber = digits.length === 10 ? `91${digits}` : digits;
+
+  console.log('Formatted number for MSG91:', formattedNumber);
+
+  const payload = {
+    integrated_number: INTEGRATED_NUMBER,
+    content_type: "template",
+    payload: {
+      messaging_product: "whatsapp",
+      type: "template",
+      template: {
+        name: "otpverify1",
+        language: {
+          code: "en_US",
+          policy: "deterministic"
+        },
+        namespace: "4a46062d_772c_4791_a468_d2355a43e5d4",
+        to_and_components: [
+          {
+            to: [formattedNumber],
+            components: {
+              body_1: {
+                type: "text",
+                value: otp
+              },
+              button_1: {
+                subtype: "url",
+                type: "text",
+                value: otp
+              }
+            }
+          }
+        ]
+      }
+    }
+  };
+
+  console.log('Sending WhatsApp OTP to:', formattedNumber);
+
+  const msg91Response = await axios.post(
+    'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/',
+    payload,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'authkey': MSG91_AUTH_KEY
+      }
+    }
+  );
+
+  console.log('MSG91 Response:', msg91Response.data);
+  return msg91Response.data;
+}
+
+exports.sendOtpWhatsApp = sendOtpWhatsApp;
+
 exports.sendWhatsAppOtpHttp = onRequest({cors: true}, async (request, response) => {
   try {
     setCorsHeaders(response);
@@ -41,60 +101,7 @@ exports.sendWhatsAppOtpHttp = onRequest({cors: true}, async (request, response) 
       return;
     }
 
-    // Ensure phone number is in correct format (with country code)
-    const formattedNumber = phoneNumber.startsWith('91')
-      ? phoneNumber
-      : `91${phoneNumber}`;
-    
-    console.log('Formatted number for MSG91:', formattedNumber);
-
-    const payload = {
-      integrated_number: INTEGRATED_NUMBER,
-      content_type: "template",
-      payload: {
-        messaging_product: "whatsapp",
-        type: "template",
-        template: {
-          name: "otpverify",
-          language: {
-            code: "en",
-            policy: "deterministic"
-          },
-          namespace: "60ab4863_e450_4055_9286_45084fb4e9bc",
-          to_and_components: [
-            {
-              to: [formattedNumber],
-              components: {
-                body_1: {
-                  type: "text",
-                  value: otp
-                },
-                button_1: {
-                  subtype: "url",
-                  type: "text",
-                  value: otp
-                }
-              }
-            }
-          ]
-        }
-      }
-    };
-
-    console.log('Sending WhatsApp OTP to:', formattedNumber);
-    
-    const msg91Response = await axios.post(
-      'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/',
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'authkey': MSG91_AUTH_KEY
-        }
-      }
-    );
-
-    console.log('MSG91 Response:', msg91Response.data);
+    await sendOtpWhatsApp(phoneNumber, otp);
     
     response.status(200).json({
       status: 'success',

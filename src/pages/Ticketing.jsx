@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllMatchDays, deleteMatchDay, getActiveTournamentId, createOrder } from '../services/ticketingService';
 import { Timestamp } from 'firebase/firestore';
+import TicketingTabs from '../components/TicketingTabs';
 
 export default function Ticketing() {
   const navigate = useNavigate();
@@ -147,6 +148,8 @@ export default function Ticketing() {
 
   return (
     <div className="p-6">
+      <TicketingTabs />
+
       {/* Header */}
       <div className="mb-6 flex justify-between items-center">
         <div>

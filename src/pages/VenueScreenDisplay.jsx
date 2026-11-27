@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { resolveDisplayLogos, useMatchLogoOverride } from '../utils/matchLogos';
 import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
 
 // Import background image
@@ -29,6 +30,7 @@ export default function VenueScreenDisplay() {
   // Dynamic logos state
   const [displayLogos, setDisplayLogos] = useState([]);
   const [bottomLogos, setBottomLogos] = useState([]);
+  const [logosDocData, setLogosDocData] = useState({});
   const [showAdsMedia, setShowAdsMedia] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [imageTimer, setImageTimer] = useState(null);
@@ -453,36 +455,27 @@ export default function VenueScreenDisplay() {
     }
   }, [tournamentId, loadMediaItems]);
 
-  // Load display logos when component mounts
+  // Live tournament logos; the current match's own logos override the defaults
   useEffect(() => {
-    const loadDisplayLogos = async () => {
-      if (!tournamentId) return;
-      
-      try {
-        const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
-        if (logosDoc.exists()) {
-          const data = logosDoc.data();
-          const topLogos = data.displayLogos || [];
-          const bottomLogosData = data.bottomLogos || [];
-          const sortedTopLogos = topLogos.sort((a, b) => a.rank - b.rank);
-          const sortedBottomLogos = bottomLogosData.sort((a, b) => a.rank - b.rank);
-          setDisplayLogos(sortedTopLogos);
-          setBottomLogos(sortedBottomLogos);
-        } else {
-          setDisplayLogos([]);
-          setBottomLogos([]);
-        }
-      } catch (error) {
+    if (!tournamentId) return;
+    const unsubscribe = onSnapshot(
+      doc(db, 'tournament_logos', tournamentId),
+      (logosDoc) => setLogosDocData(logosDoc.exists() ? logosDoc.data() : {}),
+      (error) => {
         console.error('Error loading display logos:', error);
-        setDisplayLogos([]);
-        setBottomLogos([]);
+        setLogosDocData({});
       }
-    };
-
-    if (tournamentId) {
-      loadDisplayLogos();
-    }
+    );
+    return () => unsubscribe();
   }, [tournamentId]);
+
+  const matchLogoOverride = useMatchLogoOverride(tournamentId, dateString, currentFixture);
+
+  useEffect(() => {
+    const resolved = resolveDisplayLogos(logosDocData, dateString, currentFixture, matchLogoOverride);
+    setDisplayLogos(resolved.displayLogos);
+    setBottomLogos(resolved.bottomLogos);
+  }, [logosDocData, matchLogoOverride, dateString, currentFixture?.fixtureGroupId, currentFixture?.team1Name, currentFixture?.team2Name]);
 
   // Fetch team logos when live match changes
   useEffect(() => {

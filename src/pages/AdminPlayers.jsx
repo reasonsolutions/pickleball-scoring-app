@@ -632,6 +632,7 @@ export default function AdminPlayers() {
         { header: 'Date of Birth', key: 'dob', width: 15 },
         { header: 'City', key: 'city', width: 20 },
         { header: 'Admin Verified', key: 'status', width: 15 },
+        { header: 'Dominant Hand', key: 'dominantHand', width: 15 },
         { header: 'DUPR Profile', key: 'duprProfile', width: 30 },
         { header: 'DUPR Doubles', key: 'duprDoubles', width: 12 },
         { header: 'DUPR Singles', key: 'duprSingles', width: 12 },
@@ -646,6 +647,7 @@ export default function AdminPlayers() {
         { header: 'Bio', key: 'bio', width: 50 },
         { header: 'Contribution', key: 'contribution', width: 40 },
         { header: 'Match Day Availability', key: 'matchDayAvailability', width: 30 },
+        { header: 'Post Season Availability', key: 'postSeasonAvailability', width: 30 },
         { header: 'Practice Commitment', key: 'practiceCommitment', width: 30 },
         { header: 'Practice Days', key: 'practiceDays', width: 30 },
         { header: 'Practice Times', key: 'practiceTimes', width: 30 },
@@ -698,6 +700,15 @@ export default function AdminPlayers() {
           if (regData.step8.practiceTimes[2]) times.push('Evening');
           practiceTimes = times.length > 0 ? times.join(', ') : 'None';
         }
+        
+        // Calculate post season availability
+        let postSeasonAvailability = 'N/A';
+        if (regData.step7?.postseasonDates) {
+          const available = [];
+          if (regData.step7.postseasonDates.playoffs) available.push('Playoffs');
+          if (regData.step7.postseasonDates.final) available.push('Final');
+          postSeasonAvailability = available.length > 0 ? available.join(', ') : 'Not Available';
+        }
 
         worksheet.addRow({
           name: player.name || player.displayName || 'N/A',
@@ -709,6 +720,7 @@ export default function AdminPlayers() {
           dob: player.dateOfBirth || 'N/A',
           city: player.city || 'N/A',
           status: player.admin_verify ? 'Verified' : 'Not Verified',
+          dominantHand: regData.step5?.dominantHand || 'N/A',
           duprProfile: regData.step5?.duprProfile || 'N/A',
           duprDoubles: regData.step5?.duprDoubles || 'N/A',
           duprSingles: regData.step5?.duprSingles || 'N/A',
@@ -723,6 +735,7 @@ export default function AdminPlayers() {
           bio: regData.step6?.bio || 'N/A',
           contribution: regData.step6?.contribution || 'N/A',
           matchDayAvailability: matchDayAvailability,
+          postSeasonAvailability: postSeasonAvailability,
           practiceCommitment: regData.step8?.practiceCommit || 'N/A',
           practiceDays: practiceDays,
           practiceTimes: practiceTimes,

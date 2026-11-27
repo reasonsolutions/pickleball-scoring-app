@@ -119,7 +119,23 @@ export default function ScreenDisplay() {
       <div className="container mx-auto px-4 py-8">
         {/* Header with Display Controller */}
         <div className="mb-8">
-          <div className="flex justify-end items-start mb-4">
+          <div className="flex justify-end items-start gap-2 mb-4">
+            {/* Remote Button */}
+            <button
+              className="btn btn-outline btn-primary"
+              onClick={() => {
+                const remoteUrl = `${window.location.origin}/remote/${tournamentId}`;
+                window.open(remoteUrl, '_blank');
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <rect x="7" y="2" width="10" height="20" rx="2" strokeWidth="2" />
+                <circle cx="12" cy="8" r="2" strokeWidth="2" />
+                <path strokeLinecap="round" strokeWidth="2" d="M10 14h4M10 17h4" />
+              </svg>
+              Remote
+            </button>
+
             {/* Display Controller Button */}
             <button
               className="btn btn-primary"
@@ -211,7 +227,7 @@ export default function ScreenDisplay() {
                         </button>
                       </div>
                       
-                      <div className="flex gap-2 w-full">
+                      <div className="flex flex-wrap gap-2 w-full">
                         <button
                           className="btn btn-accent btn-sm flex-1"
                           onClick={() => {
@@ -220,6 +236,26 @@ export default function ScreenDisplay() {
                           }}
                         >
                           Outside Display
+                        </button>
+
+                        <button
+                          className="btn btn-info btn-sm flex-1"
+                          onClick={() => {
+                            const url = `${window.location.origin}/main-court-perimeter/${tournamentId}/${dateString}`;
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          Main Court Perimeter
+                        </button>
+
+                        <button
+                          className="btn btn-warning btn-sm flex-1"
+                          onClick={() => {
+                            const url = `${window.location.origin}/side-court-perimeter/${tournamentId}/${dateString}`;
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          Side Court Perimeter
                         </button>
                       </div>
                     </div>

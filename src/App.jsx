@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { UserAuthProvider } from './contexts/UserAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import MainLayout from './components/MainLayout';
 import UserProtectedRoute from './components/UserProtectedRoute';
 import HybridProtectedRoute from './components/HybridProtectedRoute';
 import Login from './pages/Login';
@@ -47,6 +48,7 @@ import TVDisplay from './pages/TVDisplay';
 import BasicScore from './pages/BasicScore';
 import MatchDetails from './pages/MatchDetails';
 import XmlFeed from './pages/XmlFeed';
+import WebmSqueezer from './pages/WebmSqueezer';
 import StreamingOverlay from './pages/StreamingOverlay';
 import StreamingOverlayController from './pages/StreamingOverlayController';
 import StreamingVenueOverlay from './pages/StreamingVenueOverlay';
@@ -70,14 +72,17 @@ import MainDisplay from './pages/MainDisplay';
 import MainDisplay1 from './pages/MainDisplay1';
 import SideDisplay from './pages/SideDisplay';
 import OutsideDisplay from './pages/OutsideDisplay';
+import PerimeterDisplay from './pages/PerimeterDisplay';
 import ExcitementDisplay from './pages/ExcitementDisplay';
 import ExcitementDisplay2 from './pages/ExcitementDisplay2';
 import DisplayController from './pages/DisplayController';
+import DisplayRemote from './pages/DisplayRemote';
 import FirebaseDebug from './pages/FirebaseDebug';
 import LogosManager from './pages/LogosManager';
 import CloudinaryTest from './pages/CloudinaryTest';
 import Players from './pages/Players';
 import DownloadTeamLogos from './pages/DownloadTeamLogos';
+import GreenScreen from './pages/GreenScreen';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import RefundPolicy from './pages/RefundPolicy';
@@ -85,11 +90,14 @@ import ShippingPolicy from './pages/ShippingPolicy';
 import DuprApi from './pages/DuprApi';
 import Shop from './pages/Shop';
 import Ticketing from './pages/Ticketing';
+import TicketingAnalysis from './pages/TicketingAnalysis';
 import CreateMatchDay from './pages/CreateMatchDay';
 import MatchDayOrders from './pages/MatchDayOrders';
+import PassScanner from './pages/PassScanner';
 import Draft from './pages/Draft';
 import Fantasy from './pages/Fantasy';
 import FantasyPlayerDetail from './pages/FantasyPlayerDetail';
+import FantasyTeamDetail from './pages/FantasyTeamDetail';
 import AppUsers from './pages/AppUsers';
 
 import AdminDraftView from './pages/AdminDraftView';
@@ -108,7 +116,16 @@ import CcplTeamProfile from './pages/CcplTeamProfile';
 import CcplTeams from './pages/CcplTeams';
 import CcplTeamDetails from './pages/CcplTeamDetails';
 import CcplNewsArticle from './pages/CcplNewsArticle';
+import CcplFixtures from './pages/CcplFixtures';
+import CcplPasses from './pages/CcplPasses';
+import CcplFantasy from './pages/CcplFantasy';
 import TeamAdminSetupPassword from './pages/TeamAdminSetupPassword';
+import Careers from './pages/Careers';
+import CareerDetail from './pages/CareerDetail';
+import AdminCareers from './pages/AdminCareers';
+import CreateCareer from './pages/CreateCareer';
+import CareerApplications from './pages/CareerApplications';
+import Support from './pages/Support';
 
 function App() {
   // Debug logging for routing
@@ -144,6 +161,9 @@ function App() {
             <Route path="/ccpl-teamprofile/:teamId" element={<CcplTeamProfile />} />
             <Route path="/ccpl-teams" element={<CcplTeams />} />
             <Route path="/ccpl-teams/:teamSlug" element={<CcplTeamDetails />} />
+            <Route path="/ccpl-fixtures" element={<CcplFixtures />} />
+            <Route path="/ccpl-passes" element={<CcplPasses />} />
+            <Route path="/ccplfantasy" element={<CcplFantasy />} />
             <Route path="/clubs" element={<Clubs />} />
             <Route path="/club-info/:clubId" element={<ClubInfo />} />
             <Route path="/clubs-results" element={<ClubsResults />} />
@@ -164,12 +184,16 @@ function App() {
             <Route path="/hpl-player-rankings" element={<HplPlayerRankings />} />
             <Route path="/clubs-table" element={<ClubsTable />} />
             <Route path="/download-team-logos" element={<DownloadTeamLogos />} />
+            <Route path="/greenscreen" element={<GreenScreen />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/:id" element={<CcplNewsArticle />} />
             <Route path="/results" element={<Results />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/teams/:tournamentId/:teamId" element={<TeamDetail />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/careers/:id" element={<CareerDetail />} />
+            <Route path="/support" element={<Support />} />
             
             {/* Policy Pages - Public Routes */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -321,6 +345,12 @@ function App() {
                 <FantasyPlayerDetail />
               </ProtectedRoute>
             } />
+
+            <Route path="/admin/fantasy/team/:teamId" element={
+              <ProtectedRoute>
+                <FantasyTeamDetail />
+              </ProtectedRoute>
+            } />
             
             <Route path="/admin/shop" element={
               <ProtectedRoute>
@@ -328,29 +358,62 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/careers" element={
+              <ProtectedRoute>
+                <MainLayout><AdminCareers /></MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/careers/create" element={
+              <ProtectedRoute>
+                <MainLayout><CreateCareer /></MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/careers/edit/:id" element={
+              <ProtectedRoute>
+                <MainLayout><CreateCareer /></MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/careers/:id/applications" element={
+              <ProtectedRoute>
+                <MainLayout><CareerApplications /></MainLayout>
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/ticketing" element={
               <ProtectedRoute>
-                <Ticketing />
+                <MainLayout><Ticketing /></MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/ticketing/analysis" element={
+              <ProtectedRoute>
+                <MainLayout><TicketingAnalysis /></MainLayout>
               </ProtectedRoute>
             } />
 
             <Route path="/admin/ticketing/create" element={
               <ProtectedRoute>
-                <CreateMatchDay />
+                <MainLayout><CreateMatchDay /></MainLayout>
               </ProtectedRoute>
             } />
 
             <Route path="/admin/ticketing/edit/:id" element={
               <ProtectedRoute>
-                <CreateMatchDay />
+                <MainLayout><CreateMatchDay /></MainLayout>
               </ProtectedRoute>
             } />
 
             <Route path="/admin/ticketing/orders/:id" element={
               <ProtectedRoute>
-                <MatchDayOrders />
+                <MainLayout><MatchDayOrders /></MainLayout>
               </ProtectedRoute>
             } />
+
+            {/* Gate scanner - public so gate staff can scan without logging in */}
+            <Route path="/admin/ticketing/scan/:id" element={<PassScanner />} />
 
             <Route path="/admin/vendors" element={
               <ProtectedRoute>
@@ -448,6 +511,10 @@ function App() {
             
             {/* Outside Display Route - Public access for outside display */}
             <Route path="/outside-display/:tournamentId/:dateString" element={<OutsideDisplay />} />
+
+            {/* Court perimeter LED boards (Millumin output) - Public access */}
+            <Route path="/main-court-perimeter/:tournamentId/:dateString" element={<PerimeterDisplay court="main" />} />
+            <Route path="/side-court-perimeter/:tournamentId/:dateString" element={<PerimeterDisplay court="side" />} />
             
             {/* Excitement Display Route - Public access for excitement display (80ft x 6ft) */}
             <Route path="/excitement-display/:tournamentId/:dateString" element={<ExcitementDisplay />} />
@@ -457,9 +524,15 @@ function App() {
             
             {/* Display Controller Route - Public access for display management */}
             <Route path="/display-controller/:tournamentId" element={<DisplayController />} />
+
+            {/* Remote Route - Phone-friendly control for main and side displays */}
+            <Route path="/remote/:tournamentId" element={<DisplayRemote />} />
             
             {/* Basic Score JSON API Route - Public access for JSON API endpoint */}
             <Route path="/basic-score/:matchId" element={<BasicScore />} />
+            
+            {/* WebM Squeezer - Public in-browser MP4 to WebM converter */}
+            <Route path="/webm" element={<WebmSqueezer />} />
             
             {/* XML Feed Route - Public access for external applications */}
             <Route path="/xml-feed/:matchId" element={<XmlFeed />} />

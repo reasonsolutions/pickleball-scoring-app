@@ -4,6 +4,21 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '../utils/firebase';
 import CCPLNavbar from '../components/CCPLNavbar';
 import CCPLFooter from '../components/CCPLFooter';
+import CCPLTopBar from '../components/CCPLTopBar';
+import { parseDate } from '../utils/dateTimeUtils';
+
+const ORANGE = '#e27b46';
+const INK = '#0b0b0c';
+const PAPER = '#f2f0ea';
+const MUTED = '#5f5b52';
+const ZUUME = "'Zuume Cut', sans-serif";
+// Same exclusions the rankings page uses to tell playoffs from league ties
+const PLAYOFF_TYPES = ['playoff', 'qualifier', 'qualifier 1', 'qualifier 2', 'eliminator', 'final'];
+
+const formatShortDate = (date) =>
+  date && date.getTime() > 0
+    ? date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    : 'TBD';
 
 export default function CcplTeamDetails() {
   const { teamSlug } = useParams();
@@ -15,14 +30,11 @@ export default function CcplTeamDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const accentColor = '#ee3a24';
-  const accentColorDark = '#7d0f0f';
-
   useEffect(() => {
     const updateSize = () => {
       setIsMobile(window.innerWidth < 860);
     };
-    
+
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
@@ -33,6 +45,8 @@ export default function CcplTeamDetails() {
       try {
         setLoading(true);
         setError(null);
+        setPlayers([]);
+        setFixtures([]);
 
         // Fetch active tournament ID from app-settings
         const appSettingsRef = doc(db, 'app-settings', 'mobile-app');
@@ -51,7 +65,7 @@ export default function CcplTeamDetails() {
           collection(db, 'teams'),
           where('tournamentId', '==', activeTournamentId)
         );
-        
+
         const teamsSnapshot = await getDocs(teamsQuery);
         const teamsData = teamsSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -63,7 +77,7 @@ export default function CcplTeamDetails() {
 
         // Find the current team
         const currentTeam = teamsData.find(t => t.id === teamSlug);
-        
+
         if (!currentTeam) {
           setError('Team not found');
           setLoading(false);
@@ -78,7 +92,7 @@ export default function CcplTeamDetails() {
             collection(db, 'players'),
             where('tournamentId', '==', activeTournamentId)
           );
-          
+
           const playersSnapshot = await getDocs(playersQuery);
           const allPlayers = playersSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -98,43 +112,36 @@ export default function CcplTeamDetails() {
           collection(db, 'fixtures'),
           where('tournamentId', '==', activeTournamentId)
         );
-        
+
         const fixturesSnapshot = await getDocs(fixturesQuery);
         const allFixtures = fixturesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
 
-        // Filter fixtures where this team is involved (either home or away)
-        const teamFixtures = allFixtures
-          .filter(fixture =>
-            fixture.homeTeamId === teamSlug || fixture.awayTeamId === teamSlug
-          )
-          .sort((a, b) => {
-            // Sort by date if available
-            if (a.date && b.date) {
-              return new Date(a.date) - new Date(b.date);
-            }
-            return 0;
-          })
-          .slice(0, 3); // Get next 3 fixtures
-
-        // Map fixtures with opponent team names
-        const fixturesWithTeams = teamFixtures.map(fixture => {
-          const isHome = fixture.homeTeamId === teamSlug;
-          const opponentId = isHome ? fixture.awayTeamId : fixture.homeTeamId;
-          const opponent = teamsData.find(t => t.id === opponentId);
-          
-          return {
-            id: fixture.id,
-            opponent: opponent?.name || 'TBD',
+        // Each fixture doc is one match; matches sharing a fixtureGroupId make up one tie.
+        // Ties store the sides as team1/team2 (older docs may use homeTeamId/awayTeamId).
+        const groups = {};
+        allFixtures.forEach(match => {
+          const side1 = match.team1 ?? match.homeTeamId;
+          const side2 = match.team2 ?? match.awayTeamId;
+          if (side1 !== teamSlug && side2 !== teamSlug) return;
+          const groupId = match.fixtureGroupId || match.id;
+          if (groups[groupId]) return;
+          const isHome = side1 === teamSlug;
+          const opponentId = isHome ? side2 : side1;
+          const opponentName = isHome ? match.team2Name : match.team1Name;
+          groups[groupId] = {
+            id: groupId,
+            opponent: teamsData.find(t => t.id === opponentId)?.name || opponentName || 'TBD',
             isHome,
-            matchday: fixture.matchday || 'TBD',
-            date: fixture.date || null,
-            venue: fixture.venue || null
+            date: parseDate(match.date),
+            fixtureType: (match.fixtureType || 'league').toLowerCase().trim(),
+            venue: match.venue || null
           };
         });
 
+        const fixturesWithTeams = Object.values(groups).sort((a, b) => a.date - b.date);
         setFixtures(fixturesWithTeams);
 
       } catch (err) {
@@ -147,6 +154,7 @@ export default function CcplTeamDetails() {
 
     if (teamSlug) {
       fetchTeamData();
+      window.scrollTo(0, 0);
     }
   }, [teamSlug]);
 
@@ -155,26 +163,54 @@ export default function CcplTeamDetails() {
     if (!url) return null;
     if (url.includes('cloudinary.com')) {
       // Insert q_auto transformation for automatic quality optimization
-      return url.replace('/upload/', '/upload/q_auto/');
+      // Auto quality/format, capped at 600px wide (cards and logo render well under that)
+      return url.replace('/upload/', '/upload/q_auto,f_auto,w_600/');
     }
     return url;
   };
 
-  // Prepare display data
-  const squad = players.map((player, i) => {
-    // Handle both string URLs and object with url property
-    const photoUrl = typeof player.photo === 'string' ? player.photo : (player.photo?.url || player.photoUrl || null);
-    
-    return {
-      num: String(i + 1).padStart(2, '0'),
-      name: player.name || 'Unknown Player',
-      role: player.role || player.category || 'Player',
-      photo: optimizeCloudinaryUrl(photoUrl),
-      gender: player.gender || ''
-    };
-  });
+  // Prepare display data - reorder to show captain first
+  const squad = (() => {
+    // Find the captain
+    const captainId = team?.captain;
+    const captainIndex = captainId ? players.findIndex(p => p.id === captainId) : -1;
+
+    // Reorder players array to put captain first
+    let orderedPlayers = [...players];
+    if (captainIndex > 0) {
+      const captain = orderedPlayers.splice(captainIndex, 1)[0];
+      orderedPlayers.unshift(captain);
+    }
+
+    return orderedPlayers.map((player, i) => {
+      // Prefer the action photo; fall back to the profile photo (string URL or { url })
+      const actionPhotoUrl = typeof player.actionPhoto === 'string' ? player.actionPhoto : (player.actionPhoto?.url || null);
+      const profilePhotoUrl = typeof player.photo === 'string' ? player.photo : (player.photo?.url || player.photoUrl || null);
+      const photoUrl = actionPhotoUrl || profilePhotoUrl;
+      const name = player.name || 'Unknown Player';
+
+      return {
+        id: player.id,
+        num: String(i + 1).padStart(2, '0'),
+        name,
+        initials: name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase(),
+        role: player.id === captainId ? 'Captain' : (player.role || player.category || 'Player'),
+        photo: optimizeCloudinaryUrl(photoUrl),
+        gender: player.gender || ''
+      };
+    });
+  })();
+
+  // Upcoming = ties from today onwards (undated ties go last)
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const upcoming = fixtures.filter(fx => fx.date.getTime() === 0 || fx.date >= startOfToday).slice(0, 3);
+  const nextFixture = upcoming.find(fx => fx.date.getTime() > 0);
 
   const stats = team ? [
+    { value: String(players.length || team.playerIds?.length || 0), label: 'Contracted players' },
+    { value: String(fixtures.filter(fx => !PLAYOFF_TYPES.includes(fx.fixtureType)).length || '—'), label: 'League fixtures' },
+    { value: nextFixture ? nextFixture.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—', label: 'Next match' },
     { value: '—', label: 'League position' },
   ] : [];
 
@@ -182,565 +218,240 @@ export default function CcplTeamDetails() {
     { label: 'Owner group', value: team.adminEmail || 'To be announced' },
     { label: 'Home venue', value: team.venue || 'To be announced' },
     { label: 'Head coach', value: 'To be announced' },
-    { label: 'Captain', value: players[0]?.name || 'To be announced' },
+    { label: 'Captain', value: (() => {
+      if (team.captain) {
+        const captain = players.find(p => p.id === team.captain);
+        return captain?.name || 'To be announced';
+      }
+      return 'To be announced';
+    })() },
   ] : [];
+  const visibleFacts = facts.filter(fact => fact.value !== 'To be announced');
 
-  const sectionPadding = isMobile ? '28px 6vw 56px' : '48px 6vw 88px';
-  const backMargin = isMobile ? '28px' : '40px';
-  const heroCols = isMobile ? '1fr' : 'auto 1fr';
-  const heroGap = isMobile ? '28px' : '48px';
-  const heroPadBottom = isMobile ? '36px' : '52px';
+  const teamIndex = team ? allTeams.findIndex(t => t.id === team.id) : -1;
+  const teamNum = String(teamIndex + 1).padStart(2, '0');
+  const prevTeam = allTeams.length > 1 ? allTeams[(teamIndex - 1 + allTeams.length) % allTeams.length] : null;
+  const nextTeam = allTeams.length > 1 ? allTeams[(teamIndex + 1) % allTeams.length] : null;
+
+  const nameWords = (team?.name || '').trim().split(/\s+/);
+  const teamLast = nameWords.length > 1 ? nameWords.pop() : '';
+  const teamFirst = nameWords.join(' ');
+  const logoUrl = optimizeCloudinaryUrl(team?.logo?.url);
+
+  const heroCols = isMobile ? '1fr' : 'auto minmax(0,1fr)';
   const logoBox = isMobile ? '140px' : '220px';
-  const statGap = isMobile ? '24px' : '44px';
-  const squadCols = isMobile ? '1fr 1fr' : 'repeat(4, 1fr)';
-  const squadGap = isMobile ? '10px' : '14px';
-  const bodyCols = isMobile ? '1fr' : '2fr 1fr';
-  const bodyGap = isMobile ? '36px' : '56px';
-  const bodyPadTop = isMobile ? '36px' : '56px';
+  const statCols = isMobile ? 'repeat(2,minmax(0,1fr))' : 'repeat(4,minmax(0,1fr))';
+  const bodyCols = isMobile ? '1fr' : 'minmax(0,2fr) minmax(300px,1fr)';
+  const squadCols = isMobile ? 'repeat(2,minmax(0,1fr))' : 'repeat(auto-fill,minmax(180px,1fr))';
+  const squadGap = isMobile ? '10px' : '16px';
+
+  const backLink = (
+    <Link to="/ccpl-teams" className="cc-back" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '12px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,.7)', textDecoration: 'none' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square"><path d="M20 12H5M11 6l-6 6 6 6" /></svg>
+      All franchises
+    </Link>
+  );
 
   return (
     <>
       <style>{`
-        @font-face {
-          font-family: 'Zuume Cut';
-          src: url('/fonts/zuume-cut-black.ttf') format('truetype');
-          font-weight: 900;
-          font-style: normal;
-        }
-        @font-face {
-          font-family: 'Zuume Cut';
-          src: url('/fonts/zuume-cut-black-italic.ttf') format('truetype');
-          font-weight: 900;
-          font-style: italic;
-        }
-        @font-face {
-          font-family: 'Zuume Cut';
-          src: url('/fonts/zuume-cut-bold.ttf') format('truetype');
-          font-weight: 700;
-          font-style: normal;
-        }
-        
-        body {
-          margin: 0;
-          background: #0b0b0c;
-        }
-        
-        a {
-          color: ${accentColor};
-        }
-        
-        a:hover {
-          color: #ffffff;
-        }
-        
-        ::selection {
-          background: ${accentColor};
-          color: #0b0b0c;
-        }
-        
-        @keyframes cc-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.35; }
-        }
-        
-        @keyframes cc-fade-up {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .cc-in {
-          opacity: 0;
-          animation: cc-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        
-        .cc-player {
-          transition: background 0.25s ease;
-        }
-        
-        .cc-player:hover {
-          background: #131314 !important;
-        }
-        
-        .cc-back {
-          transition: gap 0.25s ease;
-        }
-        
-        .cc-back:hover {
-          gap: 14px !important;
-        }
+        .cc-team-page ::selection { background: ${ORANGE}; color: ${INK}; }
+        /* A global stylesheet forces Manrope on spans; follow the parent's font instead */
+        .cc-team-page span { font-family: inherit; }
+
+        @keyframes cc-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+        @keyframes cc-fade-up { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+        .cc-in { opacity: 0; animation: cc-fade-up .8s cubic-bezier(.2,.7,.2,1) forwards; }
+
+        .cc-back { transition: color .2s ease; }
+        .cc-back:hover { color: ${ORANGE} !important; }
+
+        .cc-player { transition: background .3s ease, color .3s ease; }
+        .cc-player:hover { background: ${INK} !important; color: #fff !important; }
+        .cc-player .cc-player-edge { transition: transform .35s cubic-bezier(.2,.7,.2,1); transform-origin: bottom; transform: scaleY(0); }
+        .cc-player:hover .cc-player-edge { transform: scaleY(1); }
+        .cc-player .cc-player-role { transition: color .3s ease; }
+        .cc-player:hover .cc-player-role { color: ${ORANGE} !important; }
+        .cc-player img { transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+        .cc-player:hover img { transform: scale(1.04); }
+
+        .cc-fixtures-link { transition: color .2s ease; }
+        .cc-fixtures-link:hover { color: #fff !important; }
+
+        .cc-pager { transition: background .25s ease, color .25s ease; }
+        .cc-pager:hover { background: ${INK} !important; color: #fff !important; }
       `}</style>
 
-      <CCPLNavbar activePage="teams" />
+      <div className="cc-team-page" style={{ background: INK, fontFamily: "'Montserrat', sans-serif" }}>
+        <CCPLTopBar activeLeague="ccpl-s2" />
+        <CCPLNavbar activePage="teams" />
 
-      {loading ? (
-        <section style={{
-          position: 'relative',
-          background: '#0b0b0c',
-          color: '#fff',
-          fontFamily: "'Montserrat', sans-serif",
-          padding: sectionPadding,
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-          minHeight: '60vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            fontSize: '16px',
-            color: 'rgba(255,255,255,0.6)'
-          }}>
-            Loading team details...
-          </div>
-        </section>
-      ) : error || !team ? (
-        <section style={{
-          position: 'relative',
-          background: '#0b0b0c',
-          color: '#fff',
-          fontFamily: "'Montserrat', sans-serif",
-          padding: sectionPadding,
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-          minHeight: '60vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '20px'
-        }}>
-          <div style={{
-            fontSize: '16px',
-            color: accentColor,
-            textAlign: 'center'
-          }}>
-            {error || 'Team not found'}
-          </div>
-          <Link to="/ccpl-teams" style={{
-            fontSize: '12px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.6)',
-            textDecoration: 'underline'
-          }}>
-            ← Back to all teams
-          </Link>
-        </section>
-      ) : (
-        <section style={{
-          position: 'relative',
-          background: '#0b0b0c',
-          color: '#fff',
-          fontFamily: "'Montserrat', sans-serif",
-          padding: sectionPadding,
-          boxSizing: 'border-box',
-          overflow: 'hidden'
-        }}>
-          {/* Back link */}
-          <Link to="/ccpl-teams" className="cc-back cc-in" style={{
-            position: 'relative',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '9px',
-            fontSize: '11px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.55)',
-            textDecoration: 'none',
-            marginBottom: backMargin,
-            animationDelay: '0.05s'
-          }}>
-            <span style={{ fontSize: '14px' }}>←</span> All franchises
-          </Link>
-
-          {/* Hero section */}
-          <div style={{
-            position: 'relative',
-            display: 'grid',
-            gridTemplateColumns: heroCols,
-            gap: heroGap,
-            alignItems: 'center',
-            paddingBottom: heroPadBottom,
-            borderBottom: '1px solid rgba(255,255,255,0.14)'
-          }}>
-            {/* Logo */}
-            <div className="cc-in" style={{
-              position: 'relative',
-              width: logoBox,
-              height: logoBox,
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: '#0e0e0f',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '18px',
-              boxSizing: 'border-box',
-              animationDelay: '0.15s'
-            }}>
-              {/* Corner decorations */}
-              <div style={{
-                position: 'absolute',
-                top: '-1px',
-                left: '-1px',
-                width: '14px',
-                height: '14px',
-                borderTop: '2px solid #fff',
-                borderLeft: '2px solid #fff'
-              }}></div>
-              <div style={{
-                position: 'absolute',
-                bottom: '-1px',
-                right: '-1px',
-                width: '14px',
-                height: '14px',
-                borderBottom: '2px solid #fff',
-                borderRight: '2px solid #fff'
-              }}></div>
-              
-              {/* Logo */}
-              <div style={{
-                width: '100%',
-                height: '100%',
-                background: 'rgba(255,255,255,0.05)',
-                border: team.logo?.url ? 'none' : '1px dashed rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden'
-              }}>
-                {team.logo?.url ? (
-                  <img
-                    src={optimizeCloudinaryUrl(team.logo.url)}
-                    alt={`${team.name} logo`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain'
-                    }}
-                  />
-                ) : (
-                  <span style={{
-                    fontSize: '14px',
-                    color: 'rgba(255,255,255,0.3)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em'
-                  }}>Logo</span>
-                )}
-              </div>
+        {loading ? (
+          <section style={{ background: INK, color: 'rgba(255,255,255,.6)', minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 600 }}>
+            Loading team...
+          </section>
+        ) : error || !team ? (
+          <section style={{ background: INK, color: '#fff', minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '28px', padding: '64px 6vw', textAlign: 'center' }}>
+            <div style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(44px,6vw,80px)', lineHeight: .9, textTransform: 'uppercase' }}>
+              {error || 'Team not found'}
             </div>
-
-            {/* Team info */}
-            <div className="cc-in" style={{ animationDelay: '0.25s' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                marginBottom: '16px'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: accentColor,
-                  animation: 'cc-pulse 2s ease-in-out infinite'
-                }}></div>
-                <span style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.22em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.55)'
-                }}>{team.venue || 'Franchise'} — CCPL Hyderabad</span>
+            {backLink}
+          </section>
+        ) : (
+          <>
+            {/* ===== Team header ===== */}
+            <section style={{ position: 'relative', background: INK, color: '#fff', padding: 'clamp(40px,5vw,72px) 6vw calc(5vw + clamp(56px,7vw,96px))', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', right: '-1vw', bottom: '2vw', pointerEvents: 'none', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(200px,32vw,520px)', lineHeight: .8, color: 'transparent', WebkitTextStroke: '2px rgba(255,255,255,.14)' }}>
+                {teamNum}
               </div>
-              
-              <h1 style={{
-                fontFamily: "'Zuume Cut', sans-serif",
-                fontWeight: 900,
-                fontStyle: 'italic',
-                fontSize: 'clamp(48px, 7vw, 110px)',
-                lineHeight: '0.88',
-                margin: '0 0 20px',
-                textTransform: 'uppercase'
-              }}>{team.name}</h1>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '38%', height: '10px', background: ORANGE, clipPath: 'polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)' }}></div>
 
-              {/* Stats */}
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: statGap
-              }}>
-                {stats.map((stat, i) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}>
-                    <span style={{
-                      fontFamily: "'Zuume Cut', sans-serif",
-                      fontWeight: 700,
-                      fontSize: '30px',
-                      lineHeight: 1,
-                      color: '#fff'
-                    }}>{stat.value}</span>
-                    <span style={{
-                      fontSize: '10px',
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.4)'
-                    }}>{stat.label}</span>
+              <div style={{ position: 'relative', maxWidth: '1400px', margin: '0 auto' }}>
+                <div className="cc-in" style={{ marginBottom: 'clamp(28px,4vw,48px)' }}>{backLink}</div>
+
+                <div className="cc-in" style={{ display: 'grid', gridTemplateColumns: heroCols, gap: 'clamp(28px,4vw,56px)', alignItems: 'end', animationDelay: '.08s' }}>
+                  <div style={{ position: 'relative', width: logoBox, height: logoBox, background: '#fff', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box' }}>
+                    <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '8px', background: ORANGE }}></span>
+                    {logoUrl ? (
+                      <img src={logoUrl} alt={`${team.name} logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '64px', color: INK }}>{teamNum}</span>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Body section */}
-          <div style={{
-            position: 'relative',
-            display: 'grid',
-            gridTemplateColumns: bodyCols,
-            gap: bodyGap,
-            paddingTop: bodyPadTop
-          }}>
-            {/* Squad section */}
-            <div className="cc-in" style={{ animationDelay: '0.4s' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                marginBottom: '24px'
-              }}>
-                <h2 style={{
-                  fontFamily: "'Zuume Cut', sans-serif",
-                  fontWeight: 900,
-                  fontStyle: 'italic',
-                  fontSize: '34px',
-                  lineHeight: 1,
-                  margin: 0,
-                  textTransform: 'uppercase'
-                }}>Squad</h2>
-                <span style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.4)'
-                }}>Season 2 roster</span>
-              </div>
-
-              {/* Player grid */}
-              {squad.length === 0 ? (
-                <div style={{
-                  padding: '40px',
-                  textAlign: 'center',
-                  color: 'rgba(255,255,255,0.4)',
-                  border: '1px solid rgba(255,255,255,0.14)'
-                }}>
-                  No players assigned to this team yet
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
+                      <span style={{ display: 'inline-flex', flex: 'none', transform: 'skewX(-14deg)', background: ORANGE, padding: '8px 16px' }}>
+                        <span style={{ transform: 'skewX(14deg)', fontWeight: 800, fontSize: '13px', letterSpacing: '.14em', textTransform: 'uppercase', color: INK, whiteSpace: 'nowrap' }}>
+                          {team.venue || `Franchise ${teamNum}`}
+                        </span>
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.8)', whiteSpace: 'nowrap' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: ORANGE, animation: 'cc-pulse 2s ease-in-out infinite' }}></span>
+                        CCPL Hyderabad / Season 2
+                      </span>
+                    </div>
+                    <h1 style={{ margin: 0, fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', fontSize: 'clamp(64px,10vw,160px)', lineHeight: .84, letterSpacing: '-.01em' }}>
+                      {teamFirst} {teamLast && <span style={{ color: ORANGE }}>{teamLast}</span>}
+                    </h1>
+                  </div>
                 </div>
-              ) : (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: squadCols,
-                  gap: squadGap
-                }}>
-                  {squad.map((player, i) => (
-                    <div key={i} className="cc-player" style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      border: '1px solid rgba(255,255,255,0.14)'
-                    }}>
-                      {/* Player photo */}
-                      <div style={{
-                        position: 'relative',
-                        aspectRatio: '3/4',
-                        background: '#131314',
-                        overflow: 'hidden'
-                      }}>
-                        {player.photo ? (
-                          <img 
-                            src={player.photo} 
-                            alt={player.name}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover'
-                            }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: '100%',
-                            height: '100%',
-                            background: 'rgba(255,255,255,0.03)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <span style={{
-                              fontSize: '10px',
-                              color: 'rgba(255,255,255,0.2)',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.1em'
-                            }}>Photo</span>
-                          </div>
-                        )}
-                        <span style={{
-                          position: 'absolute',
-                          top: '10px',
-                          left: '12px',
-                          fontFamily: "'Zuume Cut', sans-serif",
-                          fontStyle: 'italic',
-                          fontWeight: 900,
-                          fontSize: '15px',
-                          color: accentColor
-                        }}>{player.num}</span>
-                      </div>
 
-                      {/* Player info */}
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        padding: '14px 14px 16px'
-                      }}>
-                        <span style={{
-                          fontSize: '15px',
-                          fontWeight: 600,
-                          letterSpacing: '0.03em',
-                          textTransform: 'uppercase',
-                          color: '#fff',
-                          lineHeight: 1.25
-                        }}>{player.name}</span>
-                        <span style={{
-                          fontSize: '10px',
-                          letterSpacing: '0.14em',
-                          textTransform: 'uppercase',
-                          color: 'rgba(255,255,255,0.45)'
-                        }}>{player.role}</span>
-                      </div>
+                <div className="cc-in" style={{ display: 'grid', gridTemplateColumns: statCols, marginTop: 'clamp(36px,5vw,64px)', borderTop: '2px solid rgba(255,255,255,.18)', animationDelay: '.16s' }}>
+                  {stats.map(stat => (
+                    <div key={stat.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '22px 20px 0 0' }}>
+                      <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(40px,4.5vw,64px)', lineHeight: .9, color: '#fff', textTransform: 'uppercase' }}>{stat.value}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,.6)' }}>{stat.label}</span>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            </section>
 
-            {/* Sidebar */}
-            <div className="cc-in" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '22px',
-              animationDelay: '0.5s'
-            }}>
-              {/* Franchise info - only show if there's actual data */}
-              {facts.some(fact => fact.value !== 'To be announced') && (
-                <div style={{
-                  border: '1px solid rgba(255,255,255,0.16)',
-                  padding: '24px'
-                }}>
-                  <span style={{
-                    fontSize: '11px',
-                    letterSpacing: '0.2em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.5)'
-                  }}>Franchise</span>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    marginTop: '18px'
-                  }}>
-                    {facts.filter(fact => fact.value !== 'To be announced').map((fact, i) => (
-                      <div key={i} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: '16px',
-                        borderTop: '1px solid rgba(255,255,255,0.1)',
-                        paddingTop: '12px'
-                      }}>
-                        <span style={{
-                          fontSize: '11px',
-                          letterSpacing: '0.14em',
-                          textTransform: 'uppercase',
-                          color: 'rgba(255,255,255,0.45)'
-                        }}>{fact.label}</span>
-                        <span style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: '#fff',
-                          textAlign: 'right'
-                        }}>{fact.value}</span>
-                      </div>
-                    ))}
+            {/* ===== Squad + sidebar ===== */}
+            <section style={{ position: 'relative', background: PAPER, color: INK, marginTop: '-5vw', padding: 'calc(5vw + clamp(40px,5vw,64px)) 6vw clamp(64px,8vw,110px)', clipPath: 'polygon(0 5vw,100% 0,100% 100%,0 100%)' }}>
+              <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: bodyCols, gap: 'clamp(36px,4vw,56px)', alignItems: 'start' }}>
+
+                <div>
+                  <div className="cc-in" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                    <h2 style={{ margin: 0, fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', fontSize: 'clamp(44px,5vw,72px)', lineHeight: .85 }}>
+                      The <span style={{ color: ORANGE }}>Squad.</span>
+                    </h2>
+                    <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: MUTED }}>
+                      Season 2 roster / {squad.length} {squad.length === 1 ? 'player' : 'players'}
+                    </span>
                   </div>
-                </div>
-              )}
 
-              {/* Next matchday */}
-              <div style={{
-                border: '1px solid rgba(255,255,255,0.16)',
-                padding: '24px'
-              }}>
-                <span style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.2em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.5)'
-                }}>Next matchday</span>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  marginTop: '18px'
-                }}>
-                  {fixtures.length > 0 ? (
-                    fixtures.map((fx, i) => (
-                      <div key={i} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        borderTop: '1px solid rgba(255,255,255,0.1)',
-                        paddingTop: '12px'
-                      }}>
-                        <span style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: '#fff'
-                        }}>
-                          {fx.isHome ? 'vs' : '@'} {fx.opponent}
-                        </span>
-                        <span style={{
-                          fontSize: '11px',
-                          letterSpacing: '0.1em',
-                          textTransform: 'uppercase',
-                          color: 'rgba(255,255,255,0.45)'
-                        }}>
-                          {fx.matchday !== 'TBD' ? `MD ${fx.matchday}` : 'TBD'}
-                        </span>
-                      </div>
-                    ))
+                  {squad.length === 0 ? (
+                    <div style={{ border: `2px dashed rgba(11,11,12,.25)`, padding: '48px 24px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: MUTED }}>
+                      Squad will be announced after the auction.
+                    </div>
                   ) : (
-                    <div style={{
-                      borderTop: '1px solid rgba(255,255,255,0.1)',
-                      paddingTop: '12px',
-                      textAlign: 'center',
-                      color: 'rgba(255,255,255,0.45)',
-                      fontSize: '13px',
-                      fontStyle: 'italic'
-                    }}>
-                      Schedule will be coming out soon
+                    <div style={{ display: 'grid', gridTemplateColumns: squadCols, gap: squadGap }}>
+                      {squad.map((player, i) => (
+                        <div key={player.id} className="cc-player cc-in" style={{ position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: `2px solid ${INK}`, background: '#fff', color: INK, animationDelay: `${(i % 4) * 0.08}s` }}>
+                          <div style={{ position: 'relative', aspectRatio: '4/5', background: '#e4e1d8', borderBottom: `2px solid ${INK}`, overflow: 'hidden' }}>
+                            {player.photo ? (
+                              <img src={player.photo} alt={player.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '72px', color: 'rgba(11,11,12,.18)' }}>
+                                {player.initials}
+                              </div>
+                            )}
+                            <span style={{ position: 'absolute', top: 0, left: 0, display: 'inline-flex', background: INK, padding: '6px 10px', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '20px', lineHeight: 1, color: ORANGE }}>
+                              {player.num}
+                            </span>
+                          </div>
+                          <span className="cc-player-edge" style={{ position: 'absolute', left: 0, bottom: 0, height: '84px', width: '8px', background: ORANGE }}></span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '14px 16px 16px' }}>
+                            <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '26px', lineHeight: .95, textTransform: 'uppercase' }}>{player.name}</span>
+                            <span className="cc-player-role" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: MUTED }}>{player.role}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {visibleFacts.length > 0 && (
+                    <div className="cc-in" style={{ position: 'relative', background: '#fff', border: `2px solid ${INK}`, padding: '26px 24px 22px' }}>
+                      <span style={{ position: 'absolute', top: 0, left: 0, width: '40%', height: '6px', background: ORANGE }}></span>
+                      <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '30px', lineHeight: 1, textTransform: 'uppercase' }}>Franchise</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', marginTop: '14px' }}>
+                        {visibleFacts.map(fact => (
+                          <div key={fact.label} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', borderTop: '1px solid #d8d4ca', padding: '12px 0' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: MUTED }}>{fact.label}</span>
+                            <span style={{ fontSize: '14px', fontWeight: 600, textAlign: 'right', wordBreak: 'break-word' }}>{fact.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="cc-in" style={{ position: 'relative', background: INK, color: '#fff', border: `2px solid ${INK}`, padding: '26px 24px 22px', overflow: 'hidden', animationDelay: '.08s' }}>
+                    <span style={{ position: 'absolute', right: '-6px', top: '-14px', pointerEvents: 'none', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '120px', lineHeight: .8, color: 'transparent', WebkitTextStroke: '2px rgba(226,123,70,.4)' }}>VS</span>
+                    <span style={{ position: 'relative', fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: '30px', lineHeight: 1, textTransform: 'uppercase' }}>Upcoming</span>
+                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', marginTop: '14px' }}>
+                      {upcoming.length > 0 ? upcoming.map((fx, i) => (
+                        <div key={fx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', borderTop: '1px solid rgba(255,255,255,.16)', padding: '12px 0' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 600 }}>{fx.isHome ? 'vs' : '@'} {fx.opponent}</span>
+                          <span style={{ display: 'inline-flex', flex: 'none', transform: 'skewX(-14deg)', background: i === 0 ? ORANGE : 'rgba(255,255,255,.12)', padding: '4px 10px' }}>
+                            <span style={{ transform: 'skewX(14deg)', fontSize: '10px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: i === 0 ? INK : '#fff', whiteSpace: 'nowrap' }}>
+                              {formatShortDate(fx.date)}
+                            </span>
+                          </span>
+                        </div>
+                      )) : (
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,.16)', padding: '12px 0', fontSize: '13px', fontStyle: 'italic', color: 'rgba(255,255,255,.55)' }}>
+                          Schedule will be coming out soon
+                        </div>
+                      )}
+                    </div>
+                    <Link to="/ccpl-fixtures" className="cc-fixtures-link" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '10px', marginTop: '10px', fontSize: '12px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: ORANGE, textDecoration: 'none' }}>
+                      Full fixtures
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square"><path d="M4 12h15M13 6l6 6-6 6" /></svg>
+                    </Link>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-      )}
-      <CCPLFooter />
+
+              {prevTeam && nextTeam && (
+                <div className="cc-in" style={{ maxWidth: '1400px', margin: 'clamp(48px,6vw,80px) auto 0', display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', border: `2px solid ${INK}` }}>
+                  <Link to={`/ccpl-teams/${prevTeam.id}`} className="cc-pager" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '20px 22px', background: '#fff', color: INK, borderRight: `2px solid ${INK}`, textDecoration: 'none' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: ORANGE }}>&larr; Previous</span>
+                    <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(24px,3vw,38px)', lineHeight: .95, textTransform: 'uppercase' }}>{prevTeam.name}</span>
+                  </Link>
+                  <Link to={`/ccpl-teams/${nextTeam.id}`} className="cc-pager" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', padding: '20px 22px', background: '#fff', color: INK, textAlign: 'right', textDecoration: 'none' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: ORANGE }}>Next &rarr;</span>
+                    <span style={{ fontFamily: ZUUME, fontWeight: 900, fontStyle: 'italic', fontSize: 'clamp(24px,3vw,38px)', lineHeight: .95, textTransform: 'uppercase' }}>{nextTeam.name}</span>
+                  </Link>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </div>
+      <CCPLFooter above={loading || error || !team ? INK : PAPER} />
     </>
   );
 }

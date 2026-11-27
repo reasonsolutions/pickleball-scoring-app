@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { resolveDisplayLogos, useMatchLogoOverride } from '../utils/matchLogos';
 import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
 import paddleLogo from '../assets/paddle.png';
 import clubsLogo from '../assets/CLUBS.png';
@@ -21,10 +22,10 @@ export default function MainDisplay1() {
   const [mediaItems, setMediaItems] = useState([]);
   const [displayLogos, setDisplayLogos] = useState([]);
   const [bottomLogos, setBottomLogos] = useState([]);
+  const [logosDocData, setLogosDocData] = useState({});
   const [slidingImages, setSlidingImages] = useState([]);
   const [slidingImagesStartAfter, setSlidingImagesStartAfter] = useState(0);
   const [slidingImagesDuration, setSlidingImagesDuration] = useState(5);
-  const [slidingImagesGradientColor, setSlidingImagesGradientColor] = useState('#FF5722');
   const [currentSlidingImageIndex, setCurrentSlidingImageIndex] = useState(0);
   const [showSlidingImage, setShowSlidingImage] = useState(false);
   const [slidingImageAnimationState, setSlidingImageAnimationState] = useState('hidden'); // 'hidden', 'slideUp', 'slideDown'
@@ -278,42 +279,30 @@ export default function MainDisplay1() {
     if (tournamentId) loadMediaItems();
   }, [tournamentId, loadMediaItems]);
 
+  // Live tournament logos; the current match's own logos override the defaults
   useEffect(() => {
-    const loadDisplayLogos = async () => {
-      if (!tournamentId) return;
-      try {
-        const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
-        if (logosDoc.exists()) {
-          const data = logosDoc.data();
-          const topLogos = data.displayLogos || [];
-          const bottomLogosData = data.bottomLogos || [];
-          const slidingImagesData = data.slidingImages || [];
-          setDisplayLogos(topLogos.sort((a, b) => a.rank - b.rank));
-          setBottomLogos(bottomLogosData.sort((a, b) => a.rank - b.rank));
-          setSlidingImages(slidingImagesData.sort((a, b) => a.rank - b.rank));
-          setSlidingImagesStartAfter(data.slidingImagesStartAfter || 0);
-          setSlidingImagesDuration(data.slidingImagesDuration || 5);
-          setSlidingImagesGradientColor(data.slidingImagesGradientColor || '#FF5722');
-        } else {
-          setDisplayLogos([]);
-          setBottomLogos([]);
-          setSlidingImages([]);
-          setSlidingImagesStartAfter(0);
-          setSlidingImagesDuration(5);
-          setSlidingImagesGradientColor('#FF5722');
-        }
-      } catch (error) {
+    if (!tournamentId) return;
+    const unsubscribe = onSnapshot(
+      doc(db, 'tournament_logos', tournamentId),
+      (logosDoc) => setLogosDocData(logosDoc.exists() ? logosDoc.data() : {}),
+      (error) => {
         console.error('Error loading display logos:', error);
-        setDisplayLogos([]);
-        setBottomLogos([]);
-        setSlidingImages([]);
-        setSlidingImagesStartAfter(0);
-        setSlidingImagesDuration(5);
-        setSlidingImagesGradientColor('#FF5722');
+        setLogosDocData({});
       }
-    };
-    if (tournamentId) loadDisplayLogos();
+    );
+    return () => unsubscribe();
   }, [tournamentId]);
+
+  const matchLogoOverride = useMatchLogoOverride(tournamentId, dateString, currentFixture);
+
+  useEffect(() => {
+    const resolved = resolveDisplayLogos(logosDocData, dateString, currentFixture, matchLogoOverride);
+    setDisplayLogos(resolved.displayLogos);
+    setBottomLogos(resolved.bottomLogos);
+    setSlidingImages(resolved.slidingImages);
+    setSlidingImagesStartAfter(logosDocData.slidingImagesStartAfter || 0);
+    setSlidingImagesDuration(logosDocData.slidingImagesDuration || 5);
+  }, [logosDocData, matchLogoOverride, dateString, currentFixture?.fixtureGroupId, currentFixture?.team1Name, currentFixture?.team2Name]);
 
   useEffect(() => {
     if (!liveMatch) return;
@@ -878,7 +867,7 @@ export default function MainDisplay1() {
           className="sliding-image-container fixed bottom-0 left-0 right-0 z-30 flex items-center justify-center overflow-hidden"
           style={{
             height: '42%',
-            backgroundColor: slidingImages[currentSlidingImageIndex]?.gradientColor || '#FF5722',
+            backgroundColor: '#000',
             animation: slidingImageAnimationState === 'slideUp' ? 'slideUp 2s ease-in-out forwards' : slidingImageAnimationState === 'slideDown' ? 'slideDown 2s ease-in-out forwards' : 'none'
           }}
         >

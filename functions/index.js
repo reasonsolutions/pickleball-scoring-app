@@ -27,6 +27,17 @@ exports.verifyRazorpayPaymentByEmail = razorpayVerificationModule.verifyRazorpay
 const ccplResetPasswordModule = require('./ccplResetPassword');
 exports.ccplResetPassword = ccplResetPasswordModule.ccplResetPassword;
 
+// Import and export website pass approval/sending (one PDF + WhatsApp message per pass).
+// Note: generatePassPDF (mobile app, merged PDF) is deployed from the app's project, not here.
+const passPDFsModule = require('./passPDFs');
+exports.generateIndividualPassPDFs = passPDFsModule.generateIndividualPassPDFs;
+exports.deliverQueuedPasses = passPDFsModule.deliverQueuedPasses;
+
+// Import and export website pass request OTP (pass is only created once the WhatsApp OTP is verified)
+const passOtpModule = require('./passOtp');
+exports.requestPassOtp = passOtpModule.requestPassOtp;
+exports.verifyPassOtp = passOtpModule.verifyPassOtp;
+
 // Initialize Firebase Admin
 initializeApp();
 const db = getFirestore();

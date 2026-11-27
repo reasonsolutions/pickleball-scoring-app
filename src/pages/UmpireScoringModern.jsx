@@ -961,7 +961,7 @@ export default function UmpireScoringModern() {
         timeoutInProgress: {
           team: team,
           startTime: serverTimestamp(),
-          duration: 90000
+          duration: 60000 // displays run team (10s) -> sponsor slides (40s) -> countdown (10s)
         }
       });
       
@@ -974,7 +974,7 @@ export default function UmpireScoringModern() {
         } catch (error) {
           console.error('Error ending timeout:', error);
         }
-      }, 90000);
+      }, 60000);
     } catch (error) {
       console.error('Error starting timeout:', error);
       alert('Error starting timeout: ' + error.message);

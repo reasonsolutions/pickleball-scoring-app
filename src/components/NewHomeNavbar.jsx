@@ -195,6 +195,9 @@ export default function NewHomeNavbar() {
                 >
                   CCPL Clubs
                 </Link>
+                <Link to="/careers" className="new-nav-link">
+                  Careers
+                </Link>
               </>
             )}
           </div>
@@ -310,6 +313,13 @@ export default function NewHomeNavbar() {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     CCPL Clubs
+                  </Link>
+                  <Link
+                    to="/careers"
+                    className="block px-3 py-2 text-white hover:text-orange-300 transition-colors font-figtree"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Careers
                   </Link>
                 </>
               )}

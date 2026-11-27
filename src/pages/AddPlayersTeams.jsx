@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import MainLayout from '../components/MainLayout';
 import CloudinaryImageUpload from '../components/CloudinaryImageUpload';
 import OptimizedImage from '../components/OptimizedImage';
+import ActionPhotoCropModal from '../components/ActionPhotoCropModal';
 import * as XLSX from 'xlsx';
 
 export default function AddPlayersTeams() {
@@ -40,6 +41,7 @@ export default function AddPlayersTeams() {
   });
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [tablePlayerSearch, setTablePlayerSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
   // Team modal state
@@ -62,7 +64,9 @@ export default function AddPlayersTeams() {
     selectedPlayers: [],
     logo: null,
     adminEmail: '',
-    playerImages: []
+    playerImages: [],
+    sponsorLogos: [],
+    captain: ''
   });
 
   // Edit player modal state
@@ -75,6 +79,8 @@ export default function AddPlayersTeams() {
     duprId: '',
     photo: null,
     playerPortrait: null,
+    actionPhoto: null,
+    actionVideo: null,
     doublesRating: '',
     doublesWins: '',
     doublesLosses: '',
@@ -82,6 +88,8 @@ export default function AddPlayersTeams() {
     singlesWins: '',
     singlesLosses: ''
   });
+  const [actionMediaUploading, setActionMediaUploading] = useState({ photo: null, video: null }); // upload % or null
+  const [actionPhotoCropSrc, setActionPhotoCropSrc] = useState(null); // image URL being cropped
 
   useEffect(() => {
     const fetchTournament = async () => {
@@ -145,6 +153,22 @@ export default function AddPlayersTeams() {
       fetchTeams();
     }
   }, [format, id]);
+
+  // Map each player to the team(s) they're on, for the players table
+  const playerTeamNames = {};
+  teams.forEach(team => {
+    (team.playerIds || []).forEach(playerId => {
+      (playerTeamNames[playerId] ||= []).push(team.name);
+    });
+  });
+
+  const tableSearchTerm = tablePlayerSearch.trim().toLowerCase();
+  const filteredTablePlayers = tableSearchTerm
+    ? players.filter(player =>
+        [player.name, player.duprId, ...(playerTeamNames[player.id] || [])]
+          .some(value => value && value.toString().toLowerCase().includes(tableSearchTerm))
+      )
+    : players;
 
   const fetchPlayers = async () => {
     try {
@@ -343,6 +367,63 @@ export default function AddPlayersTeams() {
       ...prev,
       playerPortrait: portraitData
     }));
+  };
+
+  const handleEditPlayerActionMediaUpload = async (e, kind) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const isVideo = kind === 'video';
+    if (!file.type.startsWith(isVideo ? 'video/' : 'image/')) {
+      alert(`Please select ${isVideo ? 'a video' : 'an image'} file`);
+      return;
+    }
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`File size must be less than ${isVideo ? '100MB' : '10MB'}`);
+      return;
+    }
+
+    if (!isVideo) {
+      // Photos go through the 1440×1600 cropper before upload
+      setActionPhotoCropSrc(URL.createObjectURL(file));
+      return;
+    }
+
+    await uploadEditPlayerActionMedia(file, kind);
+  };
+
+  const closeActionPhotoCrop = () => {
+    if (actionPhotoCropSrc?.startsWith('blob:')) URL.revokeObjectURL(actionPhotoCropSrc);
+    setActionPhotoCropSrc(null);
+  };
+
+  const handleActionPhotoCropConfirm = async (croppedFile) => {
+    closeActionPhotoCrop();
+    await uploadEditPlayerActionMedia(croppedFile, 'photo');
+  };
+
+  const uploadEditPlayerActionMedia = async (file, kind) => {
+    const isVideo = kind === 'video';
+    try {
+      setActionMediaUploading(prev => ({ ...prev, [kind]: 0 }));
+      const { uploadPlayerActionMedia } = await import('../utils/cloudinary');
+      const result = await uploadPlayerActionMedia(file, (percent) => {
+        setActionMediaUploading(prev => ({ ...prev, [kind]: percent }));
+      });
+      setEditPlayerForm(prev => ({
+        ...prev,
+        [isVideo ? 'actionVideo' : 'actionPhoto']: isVideo
+          ? { url: result.url, publicId: result.publicId, thumbnailUrl: result.thumbnailUrl, duration: result.duration }
+          : { url: result.url, publicId: result.publicId }
+      }));
+    } catch (error) {
+      console.error(`Error uploading action ${kind}:`, error);
+      alert(`Failed to upload action ${kind}: ${error.message}`);
+    } finally {
+      setActionMediaUploading(prev => ({ ...prev, [kind]: null }));
+    }
   };
 
   const handleAddPlayer = async (e) => {
@@ -702,6 +783,64 @@ export default function AddPlayersTeams() {
     }));
   };
 
+  // Handle multiple sponsor logo uploads for a team (stored in the team's Firestore document)
+  const handleSponsorLogoUpload = async (files) => {
+    const fileList = Array.from(files || []);
+    if (fileList.length === 0) return;
+
+    try {
+      setSubmitting(true);
+
+      const { uploadSponsorLogo } = await import('../utils/cloudinary');
+
+      const uploadResults = [];
+      for (const file of fileList) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          alert(`Skipping "${file.name}": not an image file`);
+          continue;
+        }
+
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`Skipping "${file.name}": file size must be less than 5MB`);
+          continue;
+        }
+
+        try {
+          const result = await uploadSponsorLogo(file, 'teams');
+          uploadResults.push({
+            url: result.url,
+            publicId: result.publicId
+          });
+          console.log('Sponsor logo uploaded successfully:', result);
+        } catch (uploadError) {
+          console.error(`Error uploading sponsor logo "${file.name}":`, uploadError);
+          alert(`Failed to upload "${file.name}": ${uploadError.message}`);
+        }
+      }
+
+      if (uploadResults.length > 0) {
+        setEditTeamForm(prev => ({
+          ...prev,
+          sponsorLogos: [...(prev.sponsorLogos || []), ...uploadResults]
+        }));
+      }
+    } catch (error) {
+      console.error('Error uploading sponsor logos:', error);
+      alert('Failed to upload sponsor logos: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRemoveSponsorLogo = (index) => {
+    setEditTeamForm(prev => ({
+      ...prev,
+      sponsorLogos: (prev.sponsorLogos || []).filter((_, i) => i !== index)
+    }));
+  };
+
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     if (!teamForm.name.trim()) {
@@ -781,7 +920,9 @@ export default function AddPlayersTeams() {
       selectedPlayers: team.playerIds || [],
       logo: team.logo || null,
       adminEmail: team.adminEmail || '',
-      playerImages: team.playerImages || []
+      playerImages: team.playerImages || [],
+      sponsorLogos: team.sponsorLogos || [],
+      captain: team.captain || ''
     });
     setShowEditTeamModal(true);
   };
@@ -795,12 +936,21 @@ export default function AddPlayersTeams() {
   };
 
   const handleEditPlayerSelection = (playerId) => {
-    setEditTeamForm(prev => ({
-      ...prev,
-      selectedPlayers: prev.selectedPlayers.includes(playerId)
+    setEditTeamForm(prev => {
+      const isRemoving = prev.selectedPlayers.includes(playerId);
+      const newSelectedPlayers = isRemoving
         ? prev.selectedPlayers.filter(id => id !== playerId)
-        : [...prev.selectedPlayers, playerId]
-    }));
+        : [...prev.selectedPlayers, playerId];
+      
+      // Clear captain if they are being removed from the team
+      const newCaptain = isRemoving && prev.captain === playerId ? '' : prev.captain;
+      
+      return {
+        ...prev,
+        selectedPlayers: newSelectedPlayers,
+        captain: newCaptain
+      };
+    });
   };
 
   const handleUpdateTeam = async (e) => {
@@ -857,8 +1007,13 @@ export default function AddPlayersTeams() {
           publicId: editTeamForm.logo.publicId
         } : null,
         playerImages: editTeamForm.playerImages || [],
+        sponsorLogos: (editTeamForm.sponsorLogos || []).map(sponsor => ({
+          url: sponsor.url,
+          publicId: sponsor.publicId || null
+        })),
         adminEmail: newAdminEmail,
         adminUid: adminUid, // Store the admin user ID
+        captain: editTeamForm.captain || null,
         updatedAt: serverTimestamp()
       };
 
@@ -873,7 +1028,9 @@ export default function AddPlayersTeams() {
         selectedPlayers: [],
         logo: null,
         adminEmail: '',
-        playerImages: []
+        playerImages: [],
+        sponsorLogos: [],
+        captain: ''
       });
       setShowEditTeamModal(false);
       setEditingTeam(null);
@@ -976,6 +1133,8 @@ export default function AddPlayersTeams() {
       duprId: player.duprId || '',
       photo: player.photo || null,
       playerPortrait: player.playerPortrait || null,
+      actionPhoto: player.actionPhoto || null,
+      actionVideo: player.actionVideo || null,
       doublesRating: player.doublesRating || '',
       doublesWins: player.doublesWins || '',
       doublesLosses: player.doublesLosses || '',
@@ -986,10 +1145,29 @@ export default function AddPlayersTeams() {
     setShowEditPlayerModal(true);
   };
 
+  // Normalise stored media (older records may be a plain URL string, use secure_url/public_id,
+  // or be missing fields) so Firestore never receives undefined values.
+  const toMediaField = (media, isVideo = false) => {
+    if (!media) return null;
+    if (typeof media === 'string') return { url: media, publicId: null };
+    const url = media.url || media.secure_url;
+    if (!url) return null;
+    const field = { url, publicId: media.publicId || media.public_id || null };
+    if (isVideo) {
+      field.thumbnailUrl = media.thumbnailUrl || null;
+      field.duration = media.duration || null;
+    }
+    return field;
+  };
+
   const handleUpdatePlayer = async (e) => {
     e.preventDefault();
     if (!editPlayerForm.name.trim()) {
       setError('Player name is required');
+      return;
+    }
+    if (actionMediaUploading.photo !== null || actionMediaUploading.video !== null) {
+      alert('Please wait for the action media upload to finish');
       return;
     }
 
@@ -1001,14 +1179,10 @@ export default function AddPlayersTeams() {
         age: editPlayerForm.age ? parseInt(editPlayerForm.age) : null,
         gender: editPlayerForm.gender,
         duprId: editPlayerForm.duprId.trim(),
-        photo: editPlayerForm.photo ? {
-          url: editPlayerForm.photo.url,
-          publicId: editPlayerForm.photo.publicId
-        } : null,
-        playerPortrait: editPlayerForm.playerPortrait ? {
-          url: editPlayerForm.playerPortrait.url,
-          publicId: editPlayerForm.playerPortrait.publicId
-        } : null,
+        photo: toMediaField(editPlayerForm.photo),
+        playerPortrait: toMediaField(editPlayerForm.playerPortrait),
+        actionPhoto: toMediaField(editPlayerForm.actionPhoto),
+        actionVideo: toMediaField(editPlayerForm.actionVideo, true),
         doublesRating: editPlayerForm.doublesRating ? parseFloat(editPlayerForm.doublesRating) : null,
         doublesWins: editPlayerForm.doublesWins ? parseInt(editPlayerForm.doublesWins) : null,
         doublesLosses: editPlayerForm.doublesLosses ? parseInt(editPlayerForm.doublesLosses) : null,
@@ -1016,7 +1190,7 @@ export default function AddPlayersTeams() {
         singlesWins: editPlayerForm.singlesWins ? parseInt(editPlayerForm.singlesWins) : null,
         singlesLosses: editPlayerForm.singlesLosses ? parseInt(editPlayerForm.singlesLosses) : null,
         tournamentId: id, // Ensure tournamentId is included
-        createdBy: editingPlayer.createdBy, // Preserve the original creator
+        createdBy: editingPlayer.createdBy ?? null, // Preserve the original creator
         updatedAt: serverTimestamp()
       };
 
@@ -1030,6 +1204,8 @@ export default function AddPlayersTeams() {
         duprId: '',
         photo: null,
         playerPortrait: null,
+        actionPhoto: null,
+        actionVideo: null,
         doublesRating: '',
         doublesWins: '',
         doublesLosses: '',
@@ -2179,7 +2355,18 @@ export default function AddPlayersTeams() {
                   <div className="lg:col-span-2">
                     <div className="card bg-base-100 shadow-xl">
                       <div className="card-body">
-                        <h3 className="card-title mb-4">Added Players ({players.length})</h3>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                          <h3 className="card-title">
+                            Added Players ({tableSearchTerm ? `${filteredTablePlayers.length} of ${players.length}` : players.length})
+                          </h3>
+                          <input
+                            type="search"
+                            placeholder="Search by name, DUPR ID or team..."
+                            className="input input-bordered input-sm w-full sm:w-72"
+                            value={tablePlayerSearch}
+                            onChange={(e) => setTablePlayerSearch(e.target.value)}
+                          />
+                        </div>
                         <div className="overflow-x-auto">
                           <table className="table table-zebra">
                             <thead>
@@ -2189,11 +2376,19 @@ export default function AddPlayersTeams() {
                                 <th>Age</th>
                                 <th>Gender</th>
                                 <th>DUPR ID</th>
+                                <th>Team</th>
                                 <th>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {players.map((player) => (
+                              {filteredTablePlayers.length === 0 && (
+                                <tr>
+                                  <td colSpan={7} className="text-center text-base-content/60 py-6">
+                                    No players match "{tablePlayerSearch}"
+                                  </td>
+                                </tr>
+                              )}
+                              {filteredTablePlayers.map((player) => (
                                 <tr key={player.id}>
                                   <td>
                                     {player.photo?.url ? (
@@ -2214,6 +2409,17 @@ export default function AddPlayersTeams() {
                                   <td>{player.age || '-'}</td>
                                   <td>{player.gender || '-'}</td>
                                   <td>{player.duprId || '-'}</td>
+                                  <td>
+                                    {playerTeamNames[player.id]?.length ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {playerTeamNames[player.id].map(teamName => (
+                                          <span key={teamName} className="badge badge-outline badge-sm whitespace-nowrap">{teamName}</span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-base-content/50">Unassigned</span>
+                                    )}
+                                  </td>
                                   <td>
                                     <div className="flex gap-2">
                                       <button
@@ -2809,6 +3015,73 @@ export default function AddPlayersTeams() {
                   )}
                 </div>
 
+                {/* Sponsor Logos Section */}
+                <div className="form-control mb-6">
+                  <label className="label">
+                    <span className="label-text font-medium">Sponsor Logos</span>
+                    <span className="label-text-alt text-xs">Multiple logos allowed</span>
+                  </label>
+
+                  {/* Upload sponsor logos (multiple) */}
+                  <div className="mb-4">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          handleSponsorLogoUpload(files);
+                          // Reset the input so the same files can be selected again if needed
+                          e.target.value = '';
+                        }
+                      }}
+                      className="file-input file-input-bordered file-input-primary w-full"
+                      disabled={submitting}
+                    />
+                    <div className="text-xs text-base-content/60 mt-1">
+                      Select one or more sponsor logo images at once. Max 5MB per image.
+                    </div>
+                  </div>
+
+                  {/* Display existing sponsor logos */}
+                  {(editTeamForm.sponsorLogos || []).length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium text-base-content/70">
+                        Current Sponsor Logos ({editTeamForm.sponsorLogos.length}):
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {editTeamForm.sponsorLogos.map((logo, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={logo.url}
+                              alt={`Sponsor ${index + 1}`}
+                              className="w-full h-24 object-contain bg-base-200 rounded-lg border border-base-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSponsorLogo(index)}
+                              className="absolute -top-2 -right-2 btn btn-circle btn-xs btn-error opacity-0 group-hover:opacity-100 transition-opacity"
+                              disabled={submitting}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {submitting && (
+                    <div className="flex items-center justify-center mt-2">
+                      <span className="loading loading-spinner loading-sm mr-2"></span>
+                      <span className="text-sm">Uploading sponsor logo(s)...</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text font-medium">Select Players *</span>
@@ -2862,6 +3135,31 @@ export default function AddPlayersTeams() {
                   )}
                 </div>
 
+                {/* Captain Selection */}
+                {editTeamForm.selectedPlayers.length > 0 && (
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Team Captain (Optional)</span>
+                    </label>
+                    <select
+                      name="captain"
+                      className="select select-bordered"
+                      value={editTeamForm.captain}
+                      onChange={handleEditTeamFormChange}
+                    >
+                      <option value="">Select a captain</option>
+                      {editTeamForm.selectedPlayers.map((playerId) => {
+                        const player = players.find(p => p.id === playerId);
+                        return player ? (
+                          <option key={playerId} value={playerId}>
+                            {player.name}
+                          </option>
+                        ) : null;
+                      })}
+                    </select>
+                  </div>
+                )}
+
                 <div className="modal-action">
                   <button
                     type="button"
@@ -2875,7 +3173,9 @@ export default function AddPlayersTeams() {
                         selectedPlayers: [],
                         logo: null,
                         adminEmail: '',
-                        playerImages: []
+                        playerImages: [],
+                        sponsorLogos: [],
+                        captain: ''
                       });
                       setPlayerSearch('');
                     }}
@@ -3077,6 +3377,71 @@ export default function AddPlayersTeams() {
                   uploadType="player"
                 />
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { kind: 'photo', field: 'actionPhoto', label: 'Action Photo', accept: 'image/*', hint: 'PNG, JPG up to 10MB · cropped to 1440×1600' },
+                    { kind: 'video', field: 'actionVideo', label: 'Action Video', accept: 'video/*', hint: 'MP4, MOV up to 100MB' }
+                  ].map(({ kind, field, label, accept, hint }) => {
+                    const media = editPlayerForm[field];
+                    const progress = actionMediaUploading[kind];
+                    const isUploading = progress !== null;
+                    return (
+                      <div key={kind} className="form-control w-full">
+                        <label className="label">
+                          <span className="label-text font-medium">{label} (Optional)</span>
+                        </label>
+                        {media?.url ? (
+                          <div className="rounded-lg overflow-hidden border border-base-300 bg-base-200">
+                            {kind === 'video' ? (
+                              <video src={media.url} poster={media.thumbnailUrl || undefined} controls className="w-full h-40 object-contain bg-black" />
+                            ) : (
+                              <img src={media.url} alt="Action photo" className="w-full h-40 object-contain" />
+                            )}
+                          </div>
+                        ) : (
+                          <label className={`h-40 border-2 border-dashed border-base-300 rounded-lg flex flex-col items-center justify-center ${isUploading ? 'cursor-wait' : 'cursor-pointer hover:border-primary'} transition-colors`}>
+                            <p className="text-xs text-center text-base-content/60">{isUploading ? 'Uploading...' : 'Click to upload'}</p>
+                            <p className="text-xs text-center text-base-content/40 mt-1">{hint}</p>
+                            <input type="file" className="hidden" accept={accept} onChange={(e) => handleEditPlayerActionMediaUpload(e, kind)} disabled={isUploading} />
+                          </label>
+                        )}
+                        {media?.url && (
+                          <div className="flex justify-center gap-2 mt-2">
+                            {kind === 'photo' && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-secondary"
+                                onClick={() => setActionPhotoCropSrc(media.url)}
+                                disabled={isUploading}
+                              >
+                                Crop
+                              </button>
+                            )}
+                            <label className={`btn btn-sm btn-primary ${isUploading ? 'btn-disabled' : ''}`}>
+                              Change
+                              <input type="file" className="hidden" accept={accept} onChange={(e) => handleEditPlayerActionMediaUpload(e, kind)} disabled={isUploading} />
+                            </label>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-error"
+                              onClick={() => setEditPlayerForm(prev => ({ ...prev, [field]: null }))}
+                              disabled={isUploading}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                        {isUploading && (
+                          <div className="mt-2">
+                            <progress className="progress progress-primary w-full" value={progress} max="100"></progress>
+                            <p className="text-xs text-center mt-1">Uploading {kind}... {progress}%</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <div className="modal-action">
                   <button
                     type="button"
@@ -3091,6 +3456,8 @@ export default function AddPlayersTeams() {
                         duprId: '',
                         photo: null,
                         playerPortrait: null,
+                        actionPhoto: null,
+                        actionVideo: null,
                         doublesRating: '',
                         doublesWins: '',
                         doublesLosses: '',
@@ -3105,7 +3472,7 @@ export default function AddPlayersTeams() {
                   <button
                     type="submit"
                     className={`btn btn-primary ${submitting ? 'loading' : ''}`}
-                    disabled={submitting}
+                    disabled={submitting || actionMediaUploading.photo !== null || actionMediaUploading.video !== null}
                   >
                     {submitting ? 'Updating Player...' : 'Update Player'}
                   </button>
@@ -3113,6 +3480,14 @@ export default function AddPlayersTeams() {
               </form>
             </div>
           </div>
+        )}
+
+        {actionPhotoCropSrc && (
+          <ActionPhotoCropModal
+            src={actionPhotoCropSrc}
+            onCancel={closeActionPhotoCrop}
+            onConfirm={handleActionPhotoCropConfirm}
+          />
         )}
       </div>
     </MainLayout>

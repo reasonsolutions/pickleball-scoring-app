@@ -26,6 +26,7 @@ export default function AdminNavbar() {
     { name: 'Super Admins', path: '/admin/super-admins' },
     { name: 'Draft', path: '/admin/draft' },
     { name: 'Content', path: '/admin/content' },
+    { name: 'Careers', path: '/admin/careers' },
     { name: 'Settings', path: '/admin/settings' }
   ];
 

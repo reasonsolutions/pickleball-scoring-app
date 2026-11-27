@@ -1,374 +1,288 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 
-// Import logo assets
-import hplLogoWhite from '../assets/hpllogo_white.png';
-import keerthiWhite from '../assets/keerthi_white.png';
-import vijayaWhite from '../assets/vijaya_white.png';
-import centreCourtLogo from '../assets/centrecourt_logo.png';
-import naturalsWhite from '../assets/naturals_white.png';
-import anvitaWhite from '../assets/Anvita_white.png';
-import scuziWhite from '../assets/scuzi_white.png';
-import pickloutWhite from '../assets/picklout_white.png';
-import studio318 from '../assets/studio318.png';
+// Outside display ("Center Screen" design, 1920x1080 scaled to fit):
+//   top bar    -> the match currently on /main-display (centre court)
+//   bottom bar -> the match currently on /side-display (side court)
+//   middle     -> fully transparent (sits over the venue feed)
 
-// Import changing logos
-import apDental from '../assets/changinglogos/AP Dental - associate - 5 seconds.png';
-import bagelBrigade from '../assets/changinglogos/Bagel Brigade - Associate - 5 seconds.png';
-import continental from '../assets/changinglogos/Continental - principal - 10 seconds-1.png';
-import dasosPrincipal from '../assets/changinglogos/Dasos_-_Principal_-_10_seconds_j6svw1.png';
-import fewl from '../assets/changinglogos/Fewl - associate 5 seconds.png';
-import greendhobi from '../assets/changinglogos/Greendhobi - associate - 5 seconds-2.png';
-import hisensePrincipal from '../assets/changinglogos/Hisense_new_logo_-_Principal_-_10_seconds_e72wup.png';
-import keerthEstates from '../assets/changinglogos/KEERTH_ESTATES_LOGO-_Principal_10_seconds_lr6jhf.png';
-import lionCharge from '../assets/changinglogos/LionCharge-associate - 5 seconds.png';
-import mahiPrincipal from '../assets/changinglogos/mahi Principal - 10 seconds.png';
-import malle from '../assets/changinglogos/Malle - associate - 5 seconds.png';
-import mercedesBenz from '../assets/changinglogos/Mercedes-Benz Silver Star Logo - Principal 10 seconds.png';
-import musterWhitePrincipal from '../assets/changinglogos/muster_white_principal.png';
-import principleMuster from '../assets/changinglogos/Principle Muster Logo (white).png';
-import priyaCement from '../assets/changinglogos/Priya Cement - Principal - 10 seconds.png';
-import sindhuWhitePrincipal from '../assets/changinglogos/sindhu_white_principal.png';
-import sitharaPrincipal from '../assets/changinglogos/Sithara_Logo_Principal_-_10_seconds_ukdqho.png';
-import skillTyroPrincipal from '../assets/changinglogos/SkillTyro_HD_Logo_Prinicipal_-_10_seconds_cliqpe.png';
-import snapbot from '../assets/changinglogos/Snapbot - Associate - 5 seconds.png';
-import studio318Principal from '../assets/changinglogos/studio318logo_principal.png';
-import teramorPrincipal from '../assets/changinglogos/Teramor_-_Principal_-_10_seconds_wgtpii.png';
-import tv5 from '../assets/changinglogos/TV5 - Associate - 5 seconds.png';
+const isCenterCourt = (match) => {
+  const courtName = match.court?.toLowerCase() || '';
+  return courtName.includes('center') || courtName.includes('centre');
+};
 
-// Define the changing logos array with their durations
-const changingLogos = [
-  { src: apDental, name: 'AP Dental - associate - 5 seconds.png', duration: 5000 },
-  { src: bagelBrigade, name: 'Bagel Brigade - Associate - 5 seconds.png', duration: 5000 },
-  { src: continental, name: 'Continental - principal - 10 seconds-1.png', duration: 10000 },
-  { src: dasosPrincipal, name: 'Dasos_-_Principal_-_10_seconds_j6svw1.png', duration: 10000 },
-  { src: fewl, name: 'Fewl - associate 5 seconds.png', duration: 5000 },
-  { src: greendhobi, name: 'Greendhobi - associate - 5 seconds-2.png', duration: 5000 },
-  { src: hisensePrincipal, name: 'Hisense_new_logo_-_Principal_-_10_seconds_e72wup.png', duration: 10000 },
-  { src: keerthEstates, name: 'KEERTH_ESTATES_LOGO-_Principal_10_seconds_lr6jhf.png', duration: 10000 },
-  { src: lionCharge, name: 'LionCharge-associate - 5 seconds.png', duration: 5000 },
-  { src: mahiPrincipal, name: 'mahi Principal - 10 seconds.png', duration: 10000 },
-  { src: malle, name: 'Malle - associate - 5 seconds.png', duration: 5000 },
-  { src: mercedesBenz, name: 'Mercedes-Benz Silver Star Logo - Principal 10 seconds.png', duration: 10000 },
-  { src: musterWhitePrincipal, name: 'muster_white_principal.png', duration: 10000 },
-  { src: principleMuster, name: 'Principle Muster Logo (white).png', duration: 10000 },
-  { src: priyaCement, name: 'Priya Cement - Principal - 10 seconds.png', duration: 10000 },
-  { src: sindhuWhitePrincipal, name: 'sindhu_white_principal.png', duration: 10000 },
-  { src: sitharaPrincipal, name: 'Sithara_Logo_Principal_-_10_seconds_ukdqho.png', duration: 10000 },
-  { src: skillTyroPrincipal, name: 'SkillTyro_HD_Logo_Prinicipal_-_10_seconds_cliqpe.png', duration: 10000 },
-  { src: snapbot, name: 'Snapbot - Associate - 5 seconds.png', duration: 5000 },
-  { src: studio318Principal, name: 'studio318logo_principal.png', duration: 10000 },
-  { src: teramorPrincipal, name: 'Teramor_-_Principal_-_10_seconds_wgtpii.png', duration: 10000 },
-  { src: tv5, name: 'TV5 - Associate - 5 seconds.png', duration: 5000 }
-];
+const matchDateString = (match) => {
+  const matchDate = match.date?.toDate ? match.date.toDate() : new Date(match.date || '1970-01-01');
+  return matchDate.toISOString().split('T')[0];
+};
 
-// ChangingLogo component with fade effects
-const ChangingLogo = ({ className, style }) => {
-  const [currentLogoIndex, setCurrentLogoIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
-  const timeoutRef = useRef(null);
+const getScore = (match, side) => {
+  const key = side === 'a' ? 'player1' : 'player2';
+  return match.scores?.[key]?.game1 ||
+    match.scores?.[key]?.total ||
+    (side === 'a' ? match.team1Score || match.score1 : match.team2Score || match.score2) ||
+    0;
+};
 
-  useEffect(() => {
-    const cycleLogo = () => {
-      const currentLogo = changingLogos[currentLogoIndex];
-      
-      // Start fade out
-      setIsVisible(false);
-      
-      // After fade out completes, change logo and fade in
-      setTimeout(() => {
-        setCurrentLogoIndex((prevIndex) => (prevIndex + 1) % changingLogos.length);
-        setIsVisible(true);
-      }, 300); // 300ms fade transition
-    };
+// Same live-match priority as MainDisplay / SideDisplay
+const pickFixtureState = (selectedFixture, matches) => {
+  const fixtureMatches = matches
+    .filter(match => match.fixtureGroupId === selectedFixture.fixtureGroupId)
+    .sort((a, b) => (a.matchOrder || a.sequence || a.matchNumber || 0) - (b.matchOrder || b.sequence || b.matchNumber || 0));
 
-    // Set timeout for current logo duration
-    const currentLogo = changingLogos[currentLogoIndex];
-    timeoutRef.current = setTimeout(cycleLogo, currentLogo.duration);
+  const completed = fixtureMatches.filter(match => match.status === 'completed');
+  const inProgress = fixtureMatches.filter(match => match.status === 'live' || match.status === 'in_progress');
+  const upcoming = fixtureMatches.filter(match => !match.status || match.status === 'scheduled');
 
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [currentLogoIndex]);
+  const team1Wins = completed.filter(match => getScore(match, 'a') > getScore(match, 'b')).length;
+  const team2Wins = completed.filter(match => getScore(match, 'b') > getScore(match, 'a')).length;
 
-  const currentLogo = changingLogos[currentLogoIndex];
+  let liveMatch = null;
+  // Game Breaker scenario (3-3 on recorded winners)
+  const team1Winners = completed.filter(m => m.winner === 'team1').length;
+  const team2Winners = completed.filter(m => m.winner === 'team2').length;
+  if (team1Winners === 3 && team2Winners === 3) {
+    liveMatch = fixtureMatches.find(match =>
+      match.matchTypeLabel === 'Game Breaker' ||
+      match.matchTypeLabel === 'Dream Breaker' ||
+      (match.matchOrder === 7 || match.sequence === 7 || match.matchNumber === 7)
+    ) || null;
+  }
+  if (!liveMatch) {
+    liveMatch = inProgress[0] || upcoming[0] || completed[completed.length - 1] || null;
+  }
+
+  return { liveMatch, team1Wins, team2Wins };
+};
+
+const defaultFixtureFrom = (matches) => (matches.length > 0 ? {
+  team1Name: matches[0].team1Name,
+  team2Name: matches[0].team2Name,
+  fixtureGroupId: matches[0].fixtureGroupId
+} : null);
+
+const ServeDot = ({ on }) => (
+  <span style={{
+    flex: 'none', width: 20, height: 20, borderRadius: '50%',
+    background: on ? '#ffc72e' : 'rgba(255,255,255,.09)',
+    boxShadow: on ? '0 0 18px rgba(255,199,46,.9)' : 'inset 0 0 0 1px rgba(255,255,255,.14)',
+    animation: on ? 'od-servepulse 1.8s ease-in-out infinite' : 'none'
+  }} />
+);
+
+const WonCell = ({ value, side }) => (
+  <div style={{
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+    [side === 'a' ? 'borderRight' : 'borderLeft']: '1px solid rgba(255,255,255,.12)', background: 'rgba(0,0,0,.25)'
+  }}>
+    <div style={{ font: "800 15px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,.8)' }}>Won</div>
+    <div style={{ font: "900 52px/1 'Unbounded',sans-serif", letterSpacing: '-.05em', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+  </div>
+);
+
+const TeamCell = ({ side, name, players, logo, serving }) => {
+  const isA = side === 'a';
+  const textBlock = (
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: isA ? 'flex-end' : 'flex-start', gap: 10, minWidth: 0, textAlign: isA ? 'right' : 'left' }}>
+      <div style={{ maxWidth: '100%', font: "900 32px/1.2 'Unbounded',sans-serif", letterSpacing: '-.03em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+      <div style={{ maxWidth: '100%', font: "800 20px/1.2 'Schibsted Grotesk',sans-serif", letterSpacing: '.1em', textTransform: 'uppercase', color: '#ffb96b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{players}</div>
+    </div>
+  );
+  const mask = `linear-gradient(${isA ? 90 : 270}deg,#000 25%,transparent 95%)`;
+  return (
+    <div style={{
+      position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center',
+      justifyContent: isA ? 'flex-end' : 'flex-start', gap: 22, padding: '0 24px', minWidth: 0,
+      background: serving ? 'rgba(255,154,46,.1)' : 'transparent'
+    }}>
+      {logo && (
+        <span aria-hidden="true" style={{
+          position: 'absolute', top: '-10%', bottom: '-10%', [isA ? 'left' : 'right']: -30, width: 300,
+          background: `url("${logo}") ${isA ? 'left' : 'right'} center/contain no-repeat`,
+          opacity: 0.3, mixBlendMode: 'screen', pointerEvents: 'none', WebkitMaskImage: mask, maskImage: mask
+        }} />
+      )}
+      {isA ? <>{textBlock}<ServeDot on={serving} /></> : <><ServeDot on={serving} />{textBlock}</>}
+    </div>
+  );
+};
+
+const ScoreCell = ({ value, side }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: side === 'a' ? 'linear-gradient(180deg,#ff8a1f,#ef6a12)' : 'linear-gradient(180deg,#e9691a,#c9500d)',
+    borderLeft: side === 'b' ? '1px solid rgba(0,0,0,.35)' : undefined,
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,${side === 'a' ? '.3' : '.22'})`
+  }}>
+    <span style={{ font: "900 96px/1 'Unbounded',sans-serif", letterSpacing: '-.06em', fontVariantNumeric: 'tabular-nums', textShadow: '0 3px 14px rgba(0,0,0,.45)' }}>{value}</span>
+  </div>
+);
+
+const InfoStrip = ({ court, label, position }) => (
+  <div style={{
+    height: 48, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '0 32px',
+    background: 'linear-gradient(90deg,rgba(4,1,14,.95),rgba(12,4,34,.9))',
+    [position === 'top' ? 'borderTop' : 'borderBottom']: '1px solid rgba(255,154,46,.65)'
+  }}>
+    <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff2d78', animation: 'od-livepulse 1.6s ease-in-out infinite' }} />
+    <span style={{ font: "900 20px/1 'Unbounded',sans-serif", letterSpacing: '.08em', textTransform: 'uppercase', color: '#ff9a2e', whiteSpace: 'nowrap' }}>{court}</span>
+    {label && <>
+      <span style={{ width: 1, height: 22, background: 'rgba(255,255,255,.22)' }} />
+      <span style={{ font: "800 19px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,.85)', whiteSpace: 'nowrap' }}>{label}</span>
+    </>}
+  </div>
+);
+
+// One match bar. `position` = 'top' (info strip below) or 'bottom' (info strip above)
+const MatchBar = ({ data, position, fallbackCourt, getLogo }) => {
+  const isTop = position === 'top';
+  const match = data?.liveMatch;
+
+  const teamA = match?.team1Name || data?.fixture?.team1Name || '—';
+  const teamB = match?.team2Name || data?.fixture?.team2Name || '—';
+  const playersA = match ? [match.player1Team1, match.player2Team1].filter(Boolean).join(' / ') : '';
+  const playersB = match ? [match.player1Team2, match.player2Team2].filter(Boolean).join(' / ') : '';
+  const serveA = match?.servingPlayer === 'player1';
+  const serveB = match?.servingPlayer === 'player2';
+  const label = match?.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : (match?.matchTypeLabel || '');
+  const court = match?.court || fallbackCourt;
+
+  const strip = <InfoStrip court={court} label={match ? label : 'Waiting for match'} position={isTop ? 'top' : 'bottom'} />;
 
   return (
-    <img
-      src={currentLogo.src}
-      alt="Changing Logo"
-      className={`${className} transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-      style={style}
-    />
+    <div style={{
+      position: 'absolute', left: 0, right: 0, [isTop ? 'top' : 'bottom']: 0, height: 216,
+      display: 'flex', flexDirection: 'column',
+      background: `linear-gradient(${isTop ? '180deg' : '0deg'},#0b0420,#160835)`, zIndex: 2
+    }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, [isTop ? 'top' : 'bottom']: 0, height: 5, background: 'linear-gradient(90deg,#ff9a2e,#ff2d78 55%,#7b2cff)' }} />
+      {!isTop && strip}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '140px minmax(0,1fr) 170px 170px minmax(0,1fr) 140px', minHeight: 0 }}>
+        <WonCell value={data?.team1Wins ?? 0} side="a" />
+        <TeamCell side="a" name={teamA} players={playersA} logo={getLogo(teamA)} serving={serveA} />
+        <ScoreCell value={match ? getScore(match, 'a') : 0} side="a" />
+        <ScoreCell value={match ? getScore(match, 'b') : 0} side="b" />
+        <TeamCell side="b" name={teamB} players={playersB} logo={getLogo(teamB)} serving={serveB} />
+        <WonCell value={data?.team2Wins ?? 0} side="b" />
+      </div>
+      {isTop && strip}
+    </div>
   );
 };
 
 export default function OutsideDisplay() {
   const { tournamentId, dateString } = useParams();
-  const [tournament, setTournament] = useState(null);
-  const [centerCourtMatch, setCenterCourtMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  // Use refs to avoid recreating callbacks and triggering re-subscriptions
-  const currentFixtureRef = useRef(null);
-  const listenersSetupRef = useRef(false);
+  const [mainData, setMainData] = useState(null);
+  const [sideData, setSideData] = useState(null);
+  const [teamLogos, setTeamLogos] = useState({});
 
-  // Extract video ID from YouTube URL (including live URLs)
-  const extractVideoId = useCallback((url) => {
-    if (!url) return null;
-    
-    // Handle different YouTube URL formats including live URLs
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([^&\n?#]+)/,
-      /youtube\.com\/live\/([^&\n?#]+)/, // Handle YouTube Live URLs
-      /youtube\.com\/watch\?.*v=([^&\n?#]+)/
-    ];
-    
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match && match[1]) {
-        console.log('🎬 Video ID extracted using pattern:', pattern, 'Result:', match[1]);
-        return match[1];
-      }
-    }
-    
-    console.log('🎬 No video ID found for URL:', url);
-    return null;
+  const mainFixtureRef = useRef(null);
+  const sideFixtureRef = useRef(null);
+  const centerMatchesRef = useRef([]);
+  const sideMatchesRef = useRef([]);
+  const requestedLogosRef = useRef(new Set());
+
+  // Scale the fixed 1920x1080 canvas to fit the screen
+  const [fitScale, setFitScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setFitScale(Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
   }, []);
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No date';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const recompute = useCallback(() => {
+    const centerMatches = centerMatchesRef.current;
+    const sideMatches = sideMatchesRef.current;
 
-  // Set up Firebase listeners - same approach as MainDisplay
-  const setupFirebaseListeners = useCallback(() => {
-    if (!tournamentId || !dateString || listenersSetupRef.current) return;
+    if (!mainFixtureRef.current) mainFixtureRef.current = defaultFixtureFrom(centerMatches);
+    if (!sideFixtureRef.current) sideFixtureRef.current = defaultFixtureFrom(sideMatches);
 
-    console.log('🔧 Setting up Firebase listeners (ONE TIME)');
-    listenersSetupRef.current = true;
+    const main = mainFixtureRef.current
+      ? { fixture: mainFixtureRef.current, ...pickFixtureState(mainFixtureRef.current, centerMatches) }
+      : null;
+    const side = sideFixtureRef.current
+      ? { fixture: sideFixtureRef.current, ...pickFixtureState(sideFixtureRef.current, sideMatches) }
+      : null;
 
-    // Display settings listener
-    const displaySettingId = `${tournamentId}_${dateString}`;
-    const displaySettingsUnsubscribe = onSnapshot(
-      doc(db, 'display_settings', displaySettingId),
-      async (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const displaySetting = docSnapshot.data();
-          const selectedFixture = displaySetting.currentFixture || displaySetting.currentMainFixture;
-          
-          if (selectedFixture) {
-            console.log('📺 Display settings updated:', selectedFixture);
-            
-            // Try to get the full fixture data from fixtures collection to get YouTube URL
-            if (selectedFixture.fixtureGroupId) {
-              try {
-                console.log('🔍 Looking for fixture with fixtureGroupId:', selectedFixture.fixtureGroupId);
-                
-                // Query for fixtures with this fixtureGroupId to get the YouTube URL
-                const fixtureQuery = query(
-                  collection(db, 'fixtures'),
-                  where('tournamentId', '==', tournamentId),
-                  where('fixtureGroupId', '==', selectedFixture.fixtureGroupId)
-                );
-                
-                const fixtureSnapshot = await getDocs(fixtureQuery);
-                
-                if (!fixtureSnapshot.empty) {
-                  // Get the first fixture document to check for YouTube URL
-                  const firstFixture = fixtureSnapshot.docs[0].data();
-                  console.log('🔍 First fixture data keys:', Object.keys(firstFixture));
-                  console.log('🔍 All fixture data:', firstFixture);
-                  console.log('🔍 YouTube URL in fixture (youtubeUrl):', firstFixture.youtubeUrl);
-                  console.log('🔍 YouTube URL in fixture (youtubeLink):', firstFixture.youtubeLink);
-                  console.log('🔍 YouTube URL in fixture (youtube_url):', firstFixture.youtube_url);
-                  console.log('🔍 YouTube URL in fixture (youTubeUrl):', firstFixture.youTubeUrl);
-                  console.log('🔍 YouTube URL in fixture (liveStreamUrl):', firstFixture.liveStreamUrl);
-                  
-                  // Try different possible field names for YouTube URL - CORRECT FIELD IS "youtubeLink"
-                  const youtubeUrl = firstFixture.youtubeLink ||  // ← This is the correct field name!
-                                   firstFixture.youtubeUrl ||
-                                   firstFixture.youtube_url ||
-                                   firstFixture.youTubeUrl ||
-                                   firstFixture.liveStreamUrl ||
-                                   firstFixture.streamUrl;
-                  
-                  // Enhance the selected fixture with YouTube URL if found
-                  const enhancedFixture = {
-                    ...selectedFixture,
-                    youtubeUrl: youtubeUrl
-                  };
-                  
-                  currentFixtureRef.current = enhancedFixture;
-                  console.log('📺 Enhanced fixture with YouTube URL:', youtubeUrl);
-                } else {
-                  currentFixtureRef.current = selectedFixture;
-                  console.log('📺 No fixtures found for fixtureGroupId');
-                }
-              } catch (error) {
-                console.error('Error fetching fixture for YouTube URL:', error);
-                currentFixtureRef.current = selectedFixture;
-              }
-            } else {
-              currentFixtureRef.current = selectedFixture;
-            }
-          }
-        }
+    setMainData(main);
+    setSideData(side);
+  }, []);
+
+  useEffect(() => {
+    if (!tournamentId || !dateString) return;
+
+    getDoc(doc(db, 'tournaments', tournamentId))
+      .then(snap => { if (!snap.exists()) setError('Tournament not found'); })
+      .catch(err => { console.error('Error fetching tournament:', err); setError('Failed to load tournament data'); })
+      .finally(() => setLoading(false));
+
+    const unsubSettings = onSnapshot(
+      doc(db, 'display_settings', `${tournamentId}_${dateString}`),
+      (snap) => {
+        if (!snap.exists()) return;
+        const settings = snap.data();
+        // Same selection as MainDisplay / SideDisplay
+        const main = settings.currentFixture || settings.currentMainFixture;
+        const side = settings.currentSideFixture || settings.currentFixture;
+        if (main) mainFixtureRef.current = main;
+        if (side) sideFixtureRef.current = side;
+        recompute();
       },
-      (error) => {
-        console.error('Error listening to display settings:', error);
-      }
+      (err) => console.error('Error listening to display settings:', err)
     );
 
-    // Matches listener - listen to all matches and filter for center court + current fixture
-    const matchesQuery = query(
-      collection(db, 'fixtures'),
-      where('tournamentId', '==', tournamentId)
-    );
-    
-    const matchesUnsubscribe = onSnapshot(
-      matchesQuery,
+    const unsubMatches = onSnapshot(
+      query(collection(db, 'fixtures'), where('tournamentId', '==', tournamentId)),
       (snapshot) => {
-        const allMatches = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        // Filter for center court matches on this date
-        const dateMatches = allMatches.filter(match => {
-          const matchDate = match.date?.toDate ? match.date.toDate() : new Date(match.date || '1970-01-01');
-          const matchDateString = matchDate.toISOString().split('T')[0];
-          const courtName = match.court?.toLowerCase() || '';
-          
-          return matchDateString === dateString &&
-                 (courtName.includes('center') || courtName.includes('centre'));
-        });
-
-        console.log('🎯 Center court matches found:', dateMatches.length);
-
-        // If we have a current fixture, filter matches for that fixture
-        const currentFixture = currentFixtureRef.current;
-        let fixtureMatches = dateMatches;
-        
-        if (currentFixture) {
-          fixtureMatches = dateMatches.filter(match =>
-            match.fixtureGroupId === currentFixture.fixtureGroupId
-          );
-          console.log('🎯 Matches for current fixture:', fixtureMatches.length);
-        }
-
-        // Find the best match to display (live > with YouTube > any)
-        const liveMatch = fixtureMatches.find(match =>
-          match.status === 'live' || match.status === 'in_progress'
-        );
-        
-        const matchWithYouTube = fixtureMatches.find(match => match.youtubeUrl);
-        
-        const selectedMatch = liveMatch || matchWithYouTube || fixtureMatches[0];
-        
-        if (selectedMatch) {
-          // Check for YouTube URL at match level first, then fixture level
-          let youtubeUrl = selectedMatch.youtubeLink || selectedMatch.youtubeUrl;
-          
-          // If no match-level YouTube URL, check if current fixture has one
-          if (!youtubeUrl && currentFixture && (currentFixture.youtubeLink || currentFixture.youtubeUrl)) {
-            youtubeUrl = currentFixture.youtubeLink || currentFixture.youtubeUrl;
-            console.log('🎬 Using fixture-level YouTube URL:', youtubeUrl);
-          }
-          
-          // Create enhanced match object with YouTube URL
-          const enhancedMatch = {
-            ...selectedMatch,
-            youtubeUrl: youtubeUrl
-          };
-          
-          console.log('🎯 Selected center court match:', {
-            id: selectedMatch.id,
-            teams: `${selectedMatch.team1Name} vs ${selectedMatch.team2Name}`,
-            status: selectedMatch.status,
-            hasMatchYouTube: !!selectedMatch.youtubeUrl,
-            hasFixtureYouTube: !!(currentFixture && currentFixture.youtubeUrl),
-            finalYoutubeUrl: youtubeUrl
-          });
-          
-          // Enhanced YouTube URL logging
-          if (youtubeUrl) {
-            console.log('🎬 YOUTUBE URL FOUND:', youtubeUrl);
-            const videoId = extractVideoId(youtubeUrl);
-            console.log('🎬 EXTRACTED VIDEO ID:', videoId);
-            console.log('🎬 EMBED URL WILL BE:', `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&loop=1&playlist=${videoId}&controls=0&showinfo=0&rel=0&modestbranding=1&fs=1`);
-          } else {
-            console.log('🎬 NO YOUTUBE URL FOUND FOR MATCH OR FIXTURE');
-          }
-          
-          setCenterCourtMatch(enhancedMatch);
-        } else {
-          console.log('🎯 No center court matches found');
-          setCenterCourtMatch(null);
-        }
+        const dateMatches = snapshot.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(match => matchDateString(match) === dateString);
+        centerMatchesRef.current = dateMatches.filter(isCenterCourt);
+        sideMatchesRef.current = dateMatches.filter(match => !isCenterCourt(match));
+        recompute();
       },
-      (error) => {
-        console.error('Error listening to matches:', error);
-      }
+      (err) => console.error('Error listening to matches:', err)
     );
 
-    // Return cleanup function
     return () => {
-      console.log('🧹 Cleaning up Firebase listeners');
-      displaySettingsUnsubscribe();
-      matchesUnsubscribe();
+      unsubSettings();
+      unsubMatches();
     };
-  }, [tournamentId, dateString]);
+  }, [tournamentId, dateString, recompute]);
 
-  // Initial data fetch - runs once
+  // Fetch team logos (used as watermarks behind team names)
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const names = [
+      mainData?.liveMatch?.team1Name, mainData?.liveMatch?.team2Name,
+      sideData?.liveMatch?.team1Name, sideData?.liveMatch?.team2Name
+    ].filter(Boolean);
+
+    names.forEach(async (teamName) => {
+      if (requestedLogosRef.current.has(teamName)) return;
+      requestedLogosRef.current.add(teamName);
       try {
-        const tournamentDoc = await getDoc(doc(db, 'tournaments', tournamentId));
-        
-        if (tournamentDoc.exists()) {
-          setTournament(tournamentDoc.data());
-        } else {
-          setError('Tournament not found');
-          return;
-        }
-      } catch (error) {
-        console.error('Error fetching tournament:', error);
-        setError('Failed to load tournament data');
-      } finally {
-        setLoading(false);
+        const snapshot = await getDocs(query(collection(db, 'teams'), where('name', '==', teamName)));
+        if (snapshot.empty) return;
+        // Team names repeat across tournaments - prefer this tournament's team, then any team with a logo
+        const teamDocs = snapshot.docs.map(d => d.data());
+        const hasLogo = (t) => t.logo?.url || t.logoUrl;
+        const teamData =
+          teamDocs.find(t => t.tournamentId === tournamentId && hasLogo(t)) ||
+          teamDocs.find(hasLogo);
+        const logoUrl = teamData && (teamData.logo?.url || teamData.logoUrl);
+        if (logoUrl) setTeamLogos(prev => ({ ...prev, [teamName]: logoUrl }));
+      } catch (err) {
+        console.error('Error fetching team logo:', err);
       }
-    };
+    });
+  }, [mainData?.liveMatch?.team1Name, mainData?.liveMatch?.team2Name, sideData?.liveMatch?.team1Name, sideData?.liveMatch?.team2Name, tournamentId]);
 
-    if (tournamentId) {
-      fetchInitialData();
-    }
-  }, [tournamentId]);
-
-  // Set up listeners when component mounts
-  useEffect(() => {
-    if (tournamentId && dateString) {
-      const cleanup = setupFirebaseListeners();
-      
-      return () => {
-        if (cleanup) {
-          cleanup();
-        }
-        listenersSetupRef.current = false;
-      };
-    }
-  }, [tournamentId, dateString, setupFirebaseListeners]);
+  const getLogo = useCallback((teamName) => teamLogos[teamName] || null, [teamLogos]);
 
   if (loading) {
     return (
@@ -381,111 +295,24 @@ export default function OutsideDisplay() {
   if (error) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="alert alert-error max-w-md">
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{error}</span>
-        </div>
+        <div className="alert alert-error max-w-md"><span>{error}</span></div>
       </div>
     );
   }
 
-  const videoId = centerCourtMatch?.youtubeUrl ? extractVideoId(centerCourtMatch.youtubeUrl) : null;
-
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative">
-      {/* Top Logos Row */}
-      <div className="absolute top-8 left-0 right-0 flex justify-center items-center space-x-32">
-        <img src={hplLogoWhite} alt="CCPL Logo" className="h-20 w-auto" />
-        <img src={centreCourtLogo} alt="Centre Court" className="h-16 w-auto" />
-        <img src={anvitaWhite} alt="Anvita" className="h-16 w-auto" />
-      </div>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Schibsted Grotesk', sans-serif" }}>
+      <style>{`
+        html, body, #root { background: transparent !important; }
+        @keyframes od-livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,45,120,.7)}50%{opacity:.55;box-shadow:0 0 0 12px rgba(255,45,120,0)}}
+        @keyframes od-servepulse{0%,100%{transform:scale(1);box-shadow:0 0 18px rgba(255,199,46,.9)}50%{transform:scale(1.35);box-shadow:0 0 34px rgba(255,199,46,1)}}
+      `}</style>
 
-      {/* Left Side Logos - Spread from top to bottom of video container */}
-      <div className="absolute left-12 flex flex-col justify-between" style={{
-        top: '17.5%',  // Start at the top of the video container area
-        bottom: '27%', // End at the bottom of the video container area
-        height: '55.5%' // Match the video container height area
-      }}>
-        <img src={naturalsWhite} alt="Naturals" className="max-h-16 w-auto object-contain" />
-        <img src={scuziWhite} alt="Scuzi" className="max-h-16 w-auto object-contain" />
-        <img src={vijayaWhite} alt="Vijaya" className="max-h-16 w-auto object-contain" />
+      <div style={{ position: 'relative', flex: 'none', width: 1920, height: 1080, transform: `scale(${fitScale})`, transformOrigin: 'center center', overflow: 'hidden', color: '#fff' }}>
+        {/* Middle stays fully transparent */}
+        <MatchBar data={mainData} position="top" fallbackCourt="Centre Court" getLogo={getLogo} />
+        <MatchBar data={sideData} position="bottom" fallbackCourt="Side Court" getLogo={getLogo} />
       </div>
-
-      {/* Right Side Logos - Spread from top to bottom of video container */}
-      <div className="absolute right-12 flex flex-col justify-between" style={{
-        top: '17.5%',  // Start at the top of the video container area
-        bottom: '27%', // End at the bottom of the video container area
-        height: '55.5%' // Match the video container height area
-      }}>
-        <img src={naturalsWhite} alt="Naturals" className="max-h-16 w-auto object-contain" />
-        <img src={scuziWhite} alt="Scuzi" className="max-h-16 w-auto object-contain" />
-        <img src={vijayaWhite} alt="Vijaya" className="max-h-16 w-auto object-contain" />
-      </div>
-
-      {/* Bottom Logos Row - Changing logos with fade effects */}
-      <div className="absolute bottom-8 flex justify-between items-center" style={{
-        left: '12.5%',  // Start at the left edge of the video container
-        right: '12.5%', // End at the right edge of the video container
-        width: '75%'    // Match the video container width
-      }}>
-        <ChangingLogo className="w-auto object-contain" style={{ height: '4.25rem' }} />
-        <ChangingLogo className="w-auto object-contain" style={{ height: '4.25rem' }} />
-        <ChangingLogo className="w-auto object-contain" style={{ height: '4.25rem' }} />
-        <ChangingLogo className="w-auto object-contain" style={{ height: '4.25rem' }} />
-        <ChangingLogo className="w-auto object-contain" style={{ height: '4.25rem' }} />
-      </div>
-
-      {/* Main Video Container */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-[75%] h-[65%] bg-red-600 rounded-lg overflow-hidden shadow-2xl">
-          {videoId ? (
-            <>
-              {console.log('🎬 RENDERING YOUTUBE VIDEO:', {
-                videoId,
-                embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&fs=1&enablejsapi=1`,
-                matchData: centerCourtMatch
-              })}
-              <iframe
-                className="w-full h-full"
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&fs=1&enablejsapi=1`}
-                title="Center Court Live Stream"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-red-600">
-              <div className="text-center text-white">
-                <div className="text-8xl mb-8">🏓</div>
-                <h2 className="text-4xl font-bold mb-4">Center Court</h2>
-                <p className="text-xl opacity-75 mb-4">
-                  {centerCourtMatch ? (
-                    <>
-                      {centerCourtMatch.team1Name} vs {centerCourtMatch.team2Name}
-                      <br />
-                      <span className="text-lg">No live stream available</span>
-                    </>
-                  ) : (
-                    'No center court match scheduled'
-                  )}
-                </p>
-                {tournament && (
-                  <div className="text-lg opacity-60">
-                    {tournament.name}
-                    <br />
-                    {formatDate(dateString)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
     </div>
   );
 }

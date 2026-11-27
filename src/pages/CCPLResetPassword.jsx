@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CCPLTopBar from '../components/CCPLTopBar';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
@@ -156,11 +157,6 @@ const CCPLResetPassword = () => {
     }
   };
 
-  const leagues = [
-    { label: 'CCPL S2', href: '/ccpl-home', active: true },
-    { label: 'CCPL S1', href: '/ccpl-s1', active: false },
-    { label: 'CCPL Clubs', href: '/hpl-clubs', active: false },
-  ];
 
   return (
     <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
@@ -239,50 +235,7 @@ const CCPLResetPassword = () => {
         }
       `}</style>
 
-      {/* Top Bar */}
-      <div className="ccpl-top-bar" style={{ display: 'flex', alignItems: 'stretch', background: accentColor, boxSizing: 'border-box', height: '50px', overflowX: 'auto', overflowY: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
-          {leagues.map((lg, idx) => (
-            <a
-              key={idx}
-              href={lg.href}
-              className="cc-league-tab"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: isMobile ? '0 16px' : '0 26px',
-                fontFamily: "'Montserrat', sans-serif",
-                fontWeight: 700,
-                fontSize: isMobile ? '12px' : '14px',
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-                background: lg.active ? '#0b0b0c' : '#f1f1ee',
-                color: lg.active ? '#fff' : '#0b0b0c',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {lg.label}
-            </a>
-          ))}
-        </div>
-        <div style={{ flex: 1, minWidth: '0' }}></div>
-        <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
-          <a href="#" className="cc-social" aria-label="Instagram" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '50px', background: '#0b0b0c', color: '#fff', textDecoration: 'none' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="2" width="20" height="20" rx="5"/>
-              <circle cx="12" cy="12" r="4"/>
-              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-            </svg>
-          </a>
-          <a href="#" className="cc-social" aria-label="YouTube" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '50px', background: '#0b0b0c', color: '#fff', textDecoration: 'none' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21.6 7.2c-.25-1-1-1.75-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4c-1 .25-1.75 1-2 2C2 8.9 2 12 2 12s0 3.1.4 4.8c.25 1 1 1.75 2 2 1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4c1-.25 1.75-1 2-2 .4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.2V8.8l6 3.2-6 3.2z"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-
+      <CCPLTopBar activeLeague="ccpl-s2" accentColor={accentColor} />
       {/* Navigation */}
       <CCPLNavbar activePage="login" />
 

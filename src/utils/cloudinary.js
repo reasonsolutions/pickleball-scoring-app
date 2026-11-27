@@ -394,6 +394,49 @@ export const uploadClubLogo = async (file) => {
   }
 };
 
+// Upload function for vendor logo using unsigned upload
+export const uploadVendorLogo = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/vendor_logos');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading vendor logo to Cloudinary:', error);
+    throw error;
+  }
+};
+
 // Upload function for match day images using unsigned upload
 export const uploadMatchDayImage = async (file) => {
   const formData = new FormData();
@@ -480,6 +523,140 @@ export const uploadVendorMenuItem = async (file) => {
   }
 };
 
+// Upload function for app sponsor logos using unsigned upload
+export const uploadSponsorLogo = async (file, sectionKey = 'general') => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', `pickleball_app/sponsors/${sectionKey}`);
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+
+      // Provide specific error messages
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url, // Keep for backward compatibility
+      publicId: data.public_id // Keep for backward compatibility
+    };
+  } catch (error) {
+    console.error('Error uploading sponsor logo to Cloudinary:', error);
+    throw error;
+  }
+};
+
+// Upload function for career/job banner images using unsigned upload
+export const uploadCareerImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/careers');
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url,
+      publicId: data.public_id
+    };
+  } catch (error) {
+    console.error('Error uploading career image to Cloudinary:', error);
+    throw error;
+  }
+};
+
+// Upload function for job application resumes/documents (PDF, DOC, DOCX, images) using unsigned upload
+export const uploadResumeDocument = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'pickleball_app/career_applications');
+
+  // Resumes are typically raw files (pdf/doc/docx) but may also be images
+  const isImage = file.type.startsWith('image/');
+  const endpoint = isImage ? 'image' : 'raw';
+
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpoint}/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+
+      if (data.error?.message?.includes('Upload preset not found')) {
+        throw new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.');
+      } else if (data.error?.message?.includes('Invalid')) {
+        throw new Error('Invalid upload configuration. Please check Cloudinary settings.');
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    }
+
+    return {
+      secure_url: data.secure_url,
+      public_id: data.public_id,
+      url: data.secure_url,
+      publicId: data.public_id,
+      originalFilename: data.original_filename,
+      format: data.format,
+      resource_type: data.resource_type
+    };
+  } catch (error) {
+    console.error('Error uploading resume/document to Cloudinary:', error);
+    throw error;
+  }
+};
+
 // Delete function for player photos
 export const deletePlayerPhoto = async (publicId) => {
   try {
@@ -506,4 +683,60 @@ export const deletePlayerPhoto = async (publicId) => {
     console.error('Error deleting from Cloudinary:', error);
     throw error;
   }
+};
+// Upload function for player action photos/videos using unsigned upload.
+// Uses XHR so callers can show upload progress (videos can be large).
+export const uploadPlayerActionMedia = (file, onProgress) => {
+  const isVideo = file.type.startsWith('video/');
+  const endpoint = isVideo ? 'video' : 'image';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', `pickleball_app/players/action_${isVideo ? 'videos' : 'photos'}`);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${endpoint}/upload`);
+
+    xhr.upload.onprogress = (event) => {
+      if (onProgress && event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        reject(new Error('Invalid response from Cloudinary'));
+        return;
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        console.error('Cloudinary error:', data);
+        if (data.error?.message?.includes('Upload preset not found')) {
+          reject(new Error('Upload preset "player_photos" not found. Please create it in Cloudinary dashboard.'));
+        } else {
+          reject(new Error(data.error?.message || 'Upload failed'));
+        }
+        return;
+      }
+
+      resolve({
+        secure_url: data.secure_url,
+        public_id: data.public_id,
+        url: data.secure_url,
+        publicId: data.public_id,
+        resource_type: data.resource_type,
+        // Cloudinary serves a poster frame for videos by swapping the extension to .jpg
+        thumbnailUrl: isVideo ? data.secure_url.replace(/\.[^/.]+$/, '.jpg') : null,
+        duration: data.duration || null
+      });
+    };
+
+    xhr.onerror = () => reject(new Error('Network error while uploading to Cloudinary'));
+    xhr.send(formData);
+  });
 };

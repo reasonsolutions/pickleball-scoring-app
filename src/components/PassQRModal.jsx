@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 
-export default function PassQRModal({ pass, matchDayName, onClose }) {
+export default function PassQRModal({ pass, matchDayName, eventId, eventDate, onClose }) {
   const [qrCodes, setQrCodes] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const passRefs = useRef([]);
@@ -17,16 +17,18 @@ export default function PassQRModal({ pass, matchDayName, onClose }) {
     
     for (let i = 0; i < numPasses; i++) {
       try {
-        // Generate QR data for each pass
+        // Same payload as the WhatsApp PDF passes (functions/passPDFs.js renderPassPDFs)
         const qrData = JSON.stringify({
           passId: pass.id,
           passNumber: i + 1,
-          matchDayName: matchDayName,
-          name: pass.name,
-          team: pass.team,
+          totalPasses: numPasses,
+          eventId,
+          eventName: matchDayName,
+          userName: pass.name,
+          teamName: pass.team,
           phoneNumber: pass.phoneNumber,
-          status: pass.status,
-          createdAt: pass.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+          eventDate,
+          timestamp: new Date().toISOString()
         });
 
         const canvas = document.createElement('canvas');

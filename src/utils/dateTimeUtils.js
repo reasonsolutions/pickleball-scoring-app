@@ -106,19 +106,34 @@ export const createDateTime = (dateStr, timeStr) => {
 };
 
 /**
+ * When player names for a match get revealed
+ * @param {Object} match - Match object with time, date properties
+ * @param {Object} fixture - Fixture object with time, date properties (fallback)
+ * @param {number} minutesBefore - How long before the match start names are revealed
+ * @returns {Date|null} - Reveal time, or null if the match has no time
+ */
+export const getPlayerRevealTime = (match, fixture = {}, minutesBefore = 55) => {
+  const matchTimeStr = match.time || fixture.time;
+  if (!matchTimeStr) return null;
+  const matchDateTime = createDateTime(match.date || fixture.date || new Date(), matchTimeStr);
+  return new Date(matchDateTime.getTime() - (minutesBefore * 60 * 1000));
+};
+
+/**
  * Check if player names should be revealed based on match timing
  * @param {Object} match - Match object with status, time, date properties
  * @param {Object} fixture - Fixture object with time, date properties (fallback)
+ * @param {number} minutesBefore - How long before the match start names are revealed
  * @returns {boolean} - Whether player names should be shown
  */
-export const shouldShowPlayerNames = (match, fixture = {}) => {
+export const shouldShowPlayerNames = (match, fixture = {}, minutesBefore = 55) => {
   try {
     // If match is completed or in progress, always show player names
     if (match.status === 'completed' || match.status === 'in-progress') {
       return true;
     }
     
-    // For scheduled matches, check the 55-minute rule
+    // For scheduled matches, check the reveal window
     const matchTimeStr = match.time || fixture.time;
     const matchDateStr = match.date || fixture.date;
     
@@ -153,8 +168,8 @@ export const shouldShowPlayerNames = (match, fixture = {}) => {
       return true;
     }
     
-    // Show player names 55 minutes before match time
-    const revealTime = new Date(matchDateTime.getTime() - (55 * 60 * 1000));
+    // Show player names minutesBefore the match time
+    const revealTime = new Date(matchDateTime.getTime() - (minutesBefore * 60 * 1000));
     return now >= revealTime;
     
   } catch (error) {

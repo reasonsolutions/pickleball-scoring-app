@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import CCPLTopBar from '../components/CCPLTopBar';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import CCPLNavbar from '../components/CCPLNavbar';
+import CCPLFooter from '../components/CCPLFooter';
+import CCPLTeamPasses from '../components/CCPLTeamPasses';
+import CcplTeamFixtures from '../components/CcplTeamFixtures';
 import { uploadTeamLogoOptimized } from '../utils/cloudinaryOptimized';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
+const INK = '#0b0b0c';
+const PAPER = '#f2f0ea';
+const MUTED = '#5f5b52';
+const RULE = '#d8d4ca';
 export default function CcplTeamProfile() {
   const { teamId } = useParams();
   const navigate = useNavigate();
@@ -30,8 +38,9 @@ export default function CcplTeamProfile() {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
   const [descriptionSaving, setDescriptionSaving] = useState(false);
+  const [pendingPassCount, setPendingPassCount] = useState(0);
 
-  const accentColor = '#ee3a24';
+  const accentColor = '#e27b46';
   const accentColorDark = '#7d0f0f';
 
   useEffect(() => {
@@ -408,11 +417,42 @@ export default function CcplTeamProfile() {
     }
   };
 
-  const leagues = [
-    { label: 'CCPL S2', href: '/ccpl-home', active: true },
-    { label: 'CCPL S1', href: '/ccpl-s1', active: false },
-    { label: 'CCPL Clubs', href: '/hpl-clubs', active: false },
+
+  const sessionUser = (() => {
+    try {
+      const raw = localStorage.getItem('ccpl-user') || sessionStorage.getItem('ccpl-user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const adminName = sessionUser?.name || sessionUser?.displayName || teamData?.adminEmail || 'N/A';
+  const adminPhone = sessionUser?.phone || sessionUser?.phoneNumber || 'N/A';
+  const adminEmail = sessionUser?.email || teamData?.adminEmail || 'N/A';
+
+  const tabs = [
+    ['teamInfo', 'Team Info'],
+    ['players', 'Players'],
+    ['passes', 'Passes'],
+    ['designAssets', 'Design Assets'],
+    ['fixtures', 'Fixtures'],
   ];
+
+  const zuume = { fontFamily: "'Zuume Cut', sans-serif", fontWeight: 900, fontStyle: 'italic' };
+  const eyebrow = { fontSize: '11px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: MUTED };
+  const sectionTitle = { ...zuume, margin: '0 0 24px', textTransform: 'uppercase', fontSize: 'clamp(44px,5vw,72px)', lineHeight: 0.85 };
+  const cardHead = { padding: '16px 24px', background: INK, color: '#fff', ...zuume, fontSize: '26px', lineHeight: 1, letterSpacing: '.04em', textTransform: 'uppercase' };
+  const skew = (bg, extra = {}) => ({ display: 'inline-flex', transform: 'skewX(-14deg)', background: bg, border: 0, ...extra });
+  const unskew = { display: 'inline-block', transform: 'skewX(14deg)' };
+  const pillLabel = { ...unskew, fontWeight: 800, fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase' };
+  const emptyPanel = (text) => (
+    <div style={{ border: `2px solid ${INK}`, background: '#fff', padding: '40px 24px', textAlign: 'center', fontSize: '15px', fontWeight: 600, color: MUTED }}>{text}</div>
+  );
+
+  const teamName = teamData?.name || 'Team Name';
+  const nameWords = teamName.split(' ');
+  const nameLead = nameWords.length > 1 ? nameWords.slice(0, -1).join(' ') + ' ' : '';
+  const nameTail = nameWords[nameWords.length - 1];
 
   return (
     <>
@@ -435,758 +475,226 @@ export default function CcplTeamProfile() {
           font-weight: 700;
           font-style: normal;
         }
-        
+
         .ccpl-container {
-          background: #0b0b0c;
+          background: ${INK};
           color: #fff;
           font-family: 'Montserrat', sans-serif;
           min-height: 100vh;
           overflow-x: hidden;
+          -webkit-font-smoothing: antialiased;
         }
-        
-        /* Hide scrollbar for top bar while maintaining scroll functionality */
-        .ccpl-top-bar::-webkit-scrollbar {
-          display: none;
-        }
-        .ccpl-top-bar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        
-        .ccpl-container ::selection {
-          background: ${accentColor};
-          color: #0b0b0c;
-        }
-        
-        .cc-league-tab {
-          transition: background 0.2s ease, color 0.2s ease;
-        }
-        
-        .cc-league-tab:hover {
-          background: rgba(255, 255, 255, 0.85) !important;
-        }
-        
-        .cc-social {
-          transition: background 0.2s ease;
-        }
-        
-        .cc-social:hover {
-          background: #232324 !important;
-        }
+        .ccpl-container *, .ccpl-container *::before, .ccpl-container *::after { box-sizing: border-box; }
+        .ccpl-container span { font-family: inherit; }
+        .ccpl-container ::selection { background: ${accentColor}; color: ${INK}; }
+        .ta-tab:hover { color: ${accentColor} !important; }
+        .ta-card { transition: background .25s ease, color .25s ease; }
+        .ta-card:hover { background: ${INK} !important; color: #fff; }
+        .ta-card:hover .ta-card-rule { border-color: rgba(255,255,255,.18) !important; }
+        .ta-pill-btn:hover { background: #fff !important; }
+        .ta-ghost-btn:hover { background: ${INK} !important; color: #fff !important; }
+        .ta-dark-btn:hover { background: ${accentColor} !important; color: ${INK} !important; }
+        .ta-textarea:focus { border-color: ${accentColor} !important; background: #fff !important; }
+        .ta-textarea::placeholder { color: #8a857a; }
       `}</style>
 
       <div className="ccpl-container">
-        {/* Top Bar */}
-        <div className="ccpl-top-bar" style={{ display: 'flex', alignItems: 'stretch', background: accentColor, boxSizing: 'border-box', height: '50px', overflowX: 'auto', overflowY: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
-            {leagues.map((lg, idx) => (
-              <a
-                key={idx}
-                href={lg.href}
-                className="cc-league-tab"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: isMobile ? '0 16px' : '0 26px',
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  fontSize: isMobile ? '12px' : '14px',
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  background: lg.active ? '#0b0b0c' : '#f1f1ee',
-                  color: lg.active ? '#fff' : '#0b0b0c',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {lg.label}
-              </a>
-            ))}
-          </div>
-          <div style={{ flex: 1, minWidth: '0' }}></div>
-          <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, minWidth: 'min-content' }}>
-            <a href="#" className="cc-social" aria-label="Instagram" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '50px', background: '#0b0b0c', color: '#fff', textDecoration: 'none' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="2" width="20" height="20" rx="5"/>
-                <circle cx="12" cy="12" r="4"/>
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-              </svg>
-            </a>
-            <a href="#" className="cc-social" aria-label="YouTube" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '50px', background: '#0b0b0c', color: '#fff', textDecoration: 'none' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M21.6 7.2c-.25-1-1-1.75-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4c-1 .25-1.75 1-2 2C2 8.9 2 12 2 12s0 3.1.4 4.8c.25 1 1 1.75 2 2 1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4c1-.25 1.75-1 2-2 .4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.2V8.8l6 3.2-6 3.2z"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-
-        {/* Navigation */}
+        <CCPLTopBar activeLeague="ccpl-s2" />
         <CCPLNavbar activePage="teams" />
 
-        {/* Main Content */}
         {loading ? (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '60vh',
-            fontFamily: "'Montserrat', sans-serif",
-            color: '#fff',
-            fontSize: '18px'
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', color: '#fff', fontSize: '18px' }}>
             Loading team profile...
           </div>
         ) : !teamData ? (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '60vh',
-            fontFamily: "'Montserrat', sans-serif",
-            color: '#fff',
-            fontSize: '18px'
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', color: '#fff', fontSize: '18px' }}>
             Team not found
           </div>
         ) : (
-        <div style={{ padding: isMobile ? '32px 6vw' : '56px 6vw', maxWidth: '1400px', margin: '0 auto' }}>
-          {/* Profile Header */}
-          <div style={{
-            background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColorDark} 100%)`,
-            borderRadius: '12px',
-            padding: isMobile ? '32px 24px' : '48px 40px',
-            marginBottom: '32px',
-            border: '1px solid rgba(255,255,255,0.1)'
-          }}>
-            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'center' : 'flex-start', gap: '24px' }}>
-              {/* Team Logo/Avatar */}
-              <div style={{
-                width: '120px',
-                height: '120px',
-                background: '#0b0b0c',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px solid rgba(255,255,255,0.2)',
-                flexShrink: 0,
-                overflow: 'hidden'
-              }}>
+        <>
+          {/* Admin Header */}
+          <section style={{ position: 'relative', background: INK, color: '#fff', padding: 'clamp(40px,5vw,72px) 6vw calc(5vw + clamp(48px,6vw,80px))', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', right: '-1vw', bottom: '2vw', pointerEvents: 'none', ...zuume, fontSize: 'clamp(200px,30vw,480px)', lineHeight: 0.8, color: 'transparent', WebkitTextStroke: '2px rgba(255,255,255,.14)' }}>ADMIN</div>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '38%', height: '10px', background: accentColor, clipPath: 'polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)' }}></div>
+            <div style={{ position: 'relative', maxWidth: '1400px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 'clamp(24px,4vw,56px)' }}>
+              <div style={{ position: 'relative', width: 'clamp(130px,15vw,200px)', height: 'clamp(130px,15vw,200px)', flex: 'none', background: '#fff', border: '2px solid #fff', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '8px', background: accentColor }}></span>
                 {teamData?.logo?.url ? (
-                  <img
-                    src={teamData.logo.url}
-                    alt={teamData.name || 'Team Logo'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
+                  <img src={teamData.logo.url} alt={teamName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 ) : (
-                  <span style={{
-                    fontFamily: "'Zuume Cut', sans-serif",
-                    fontWeight: 900,
-                    fontStyle: 'italic',
-                    fontSize: '48px',
-                    color: accentColor
-                  }}>
+                  <span style={{ ...zuume, fontSize: 'clamp(64px,8vw,110px)', lineHeight: 1, color: accentColor }}>
                     {teamData?.name?.charAt(0)?.toUpperCase() || 'T'}
                   </span>
                 )}
               </div>
-              
-              {/* Team Info */}
-              <div style={{ textAlign: isMobile ? 'center' : 'left', flex: 1 }}>
-                <h1 style={{
-                  fontFamily: "'Zuume Cut', sans-serif",
-                  fontWeight: 900,
-                  fontStyle: 'italic',
-                  fontSize: isMobile ? '32px' : '48px',
-                  lineHeight: 1.1,
-                  margin: '0 0 12px',
-                  textTransform: 'uppercase',
-                  color: '#fff'
-                }}>
-                  {teamData?.name || 'Team Name'}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
+                  <span style={skew(accentColor, { padding: '8px 16px' })}>
+                    <span style={{ ...pillLabel, fontSize: '13px', color: INK, whiteSpace: 'nowrap' }}>Team Admin</span>
+                  </span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.8)' }}>{adminName}</span>
+                </div>
+                <h1 style={{ margin: 0, ...zuume, textTransform: 'uppercase', fontSize: 'clamp(64px,10vw,160px)', lineHeight: 0.84, letterSpacing: '-.01em', overflowWrap: 'anywhere' }}>
+                  {nameLead}<span style={{ color: accentColor }}>{nameTail}</span>
                 </h1>
-                <p style={{
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontSize: isMobile ? '16px' : '20px',
-                  opacity: 0.9,
-                  margin: 0,
-                  fontWeight: 600
-                }}>
-                  Team Admin: {(() => {
-                    const loggedInUser = localStorage.getItem('ccpl-user') || sessionStorage.getItem('ccpl-user');
-                    if (loggedInUser) {
-                      const parsedUser = JSON.parse(loggedInUser);
-                      return parsedUser.name || parsedUser.displayName || teamData?.adminEmail || '[Team Admin Name]';
-                    }
-                    return teamData?.adminEmail || '[Team Admin Name]';
-                  })()}
-                </p>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Navigation Tabs */}
-          <div style={{ 
-            background: '#1a1a1b',
-            borderRadius: '12px',
-            marginBottom: '32px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            overflow: 'hidden'
-          }}>
-            <div style={{ 
-              display: 'flex',
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
-              overflowX: 'auto'
-            }}>
-              <button
-                onClick={() => setActiveTab('teamInfo')}
-                style={{
-                  padding: isMobile ? '16px 20px' : '20px 32px',
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  fontSize: isMobile ? '13px' : '15px',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'teamInfo' ? `3px solid ${accentColor}` : '3px solid transparent',
-                  color: activeTab === 'teamInfo' ? accentColor : 'rgba(255,255,255,0.6)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Team Info
-              </button>
-              <button
-                onClick={() => setActiveTab('players')}
-                style={{
-                  padding: isMobile ? '16px 20px' : '20px 32px',
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  fontSize: isMobile ? '13px' : '15px',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'players' ? `3px solid ${accentColor}` : '3px solid transparent',
-                  color: activeTab === 'players' ? accentColor : 'rgba(255,255,255,0.6)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Players
-              </button>
-              <button
-                onClick={() => setActiveTab('designAssets')}
-                style={{
-                  padding: isMobile ? '16px 20px' : '20px 32px',
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  fontSize: isMobile ? '13px' : '15px',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'designAssets' ? `3px solid ${accentColor}` : '3px solid transparent',
-                  color: activeTab === 'designAssets' ? accentColor : 'rgba(255,255,255,0.6)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Design Assets
-              </button>
-              <button
-                onClick={() => setActiveTab('fixtures')}
-                style={{
-                  padding: isMobile ? '16px 20px' : '20px 32px',
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  fontSize: isMobile ? '13px' : '15px',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'fixtures' ? `3px solid ${accentColor}` : '3px solid transparent',
-                  color: activeTab === 'fixtures' ? accentColor : 'rgba(255,255,255,0.6)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Fixtures
-              </button>
-            </div>
+          {/* Admin Body */}
+          <section style={{ position: 'relative', background: PAPER, color: INK, marginTop: '-5vw', padding: 'calc(5vw + clamp(32px,4vw,56px)) 6vw clamp(64px,8vw,110px)', clipPath: 'polygon(0 5vw,100% 0,100% 100%,0 100%)' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
-            {/* Tab Content */}
-            <div style={{ padding: isMobile ? '24px' : '40px' }}>
+              {/* Tabs */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', border: `2px solid ${INK}`, background: '#fff', marginBottom: 'clamp(28px,4vw,48px)', overflow: 'hidden' }}>
+                {tabs.map(([id, label]) => {
+                  const active = activeTab === id;
+                  const badge = id === 'passes' ? pendingPassCount : 0;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className="ta-tab"
+                      onClick={() => setActiveTab(id)}
+                      style={{ flex: '1 1 160px', border: 0, borderRight: `2px solid ${INK}`, marginRight: '-2px', background: active ? INK : '#fff', color: active ? accentColor : INK, padding: '16px 20px', cursor: 'pointer', ...zuume, fontSize: '24px', letterSpacing: '.04em', textTransform: 'uppercase', lineHeight: 1, transition: 'background .2s ease, color .2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    >
+                      <span>{label}</span>
+                      {badge > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '24px', height: '24px', padding: '0 7px', borderRadius: '12px', background: accentColor, color: INK, fontFamily: "'Montserrat', sans-serif", fontStyle: 'normal', fontWeight: 800, fontSize: '12px', letterSpacing: 0 }}>{badge}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Team Info */}
               {activeTab === 'teamInfo' && (
                 <div>
-                  <h2 style={{ 
-                    fontFamily: "'Zuume Cut', sans-serif",
-                    fontWeight: 900,
-                    fontStyle: 'italic',
-                    fontSize: isMobile ? '24px' : '32px',
-                    color: '#fff',
-                    marginBottom: '24px',
-                    textTransform: 'uppercase'
-                  }}>
-                    Team Information
-                  </h2>
-                  
-                  <div style={{ 
-                    display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                    gap: '24px'
-                  }}>
-                    {/* Basic Information */}
-                    <div style={{ background: '#232324', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <h3 style={{ 
-                        fontFamily: "'Montserrat', sans-serif",
-                        fontSize: '14px',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: accentColor,
-                        marginBottom: '16px',
-                        fontWeight: 700
-                      }}>
-                        Basic Details
-                      </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontFamily: "'Montserrat', sans-serif" }}>Team Name</p>
-                          <p style={{ fontSize: '15px', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>{teamData?.name || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontFamily: "'Montserrat', sans-serif" }}>Team Admin</p>
-                          <p style={{ fontSize: '15px', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
-                            {(() => {
-                              const loggedInUser = localStorage.getItem('ccpl-user') || sessionStorage.getItem('ccpl-user');
-                              if (loggedInUser) {
-                                const parsedUser = JSON.parse(loggedInUser);
-                                return parsedUser.name || parsedUser.displayName || teamData?.adminEmail || 'N/A';
-                              }
-                              return teamData?.adminEmail || 'N/A';
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontFamily: "'Montserrat', sans-serif" }}>Contact</p>
-                          <p style={{ fontSize: '15px', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
-                            {(() => {
-                              const loggedInUser = localStorage.getItem('ccpl-user') || sessionStorage.getItem('ccpl-user');
-                              if (loggedInUser) {
-                                const parsedUser = JSON.parse(loggedInUser);
-                                return parsedUser.phone || parsedUser.phoneNumber || 'N/A';
-                              }
-                              return 'N/A';
-                            })()}
-                          </p>
-                        </div>
-                        <div>
-                          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontFamily: "'Montserrat', sans-serif" }}>Email</p>
-                          <p style={{ fontSize: '15px', color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>
-                            {(() => {
-                              const loggedInUser = localStorage.getItem('ccpl-user') || sessionStorage.getItem('ccpl-user');
-                              if (loggedInUser) {
-                                const parsedUser = JSON.parse(loggedInUser);
-                                return parsedUser.email || teamData?.adminEmail || 'N/A';
-                              }
-                              return teamData?.adminEmail || 'N/A';
-                            })()}
-                          </p>
-                        </div>
+                  <h2 style={sectionTitle}>Team <span style={{ color: accentColor }}>Information.</span></h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(320px,100%),1fr))', gap: '20px', alignItems: 'stretch' }}>
+                    <div style={{ background: '#fff', border: `2px solid ${INK}` }}>
+                      <div style={cardHead}>Basic Details</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', padding: '8px 24px 12px' }}>
+                        {[
+                          ['Team Name', teamData?.name || 'N/A'],
+                          ['Team Admin', adminName],
+                          ['Contact', adminPhone],
+                          ['Email', adminEmail],
+                        ].map(([label, value], i, arr) => (
+                          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px 0', borderBottom: i < arr.length - 1 ? `1px solid ${RULE}` : 'none', minWidth: 0 }}>
+                            <span style={eyebrow}>{label}</span>
+                            <span style={{ fontSize: '16px', fontWeight: 600, overflowWrap: 'anywhere' }}>{value}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Additional Information */}
-                    <div style={{ background: '#232324', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <h3 style={{ 
-                        fontFamily: "'Montserrat', sans-serif",
-                        fontSize: '14px',
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                        color: accentColor,
-                        marginBottom: '16px',
-                        fontWeight: 700
-                      }}>
-                        Additional Details
-                      </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>Team Description</p>
-                            {!isEditingDescription && (
-                              <button
-                                onClick={handleEditDescription}
-                                style={{
-                                  padding: '6px 12px',
-                                  background: 'transparent',
-                                  color: accentColor,
-                                  border: `1px solid ${accentColor}`,
-                                  borderRadius: '4px',
-                                  fontFamily: "'Montserrat', sans-serif",
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  letterSpacing: '0.05em',
-                                  textTransform: 'uppercase',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = accentColor;
-                                  e.currentTarget.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'transparent';
-                                  e.currentTarget.style.color = accentColor;
-                                }}
-                              >
-                                Edit
-                              </button>
-                            )}
-                          </div>
-                          
-                          {isEditingDescription ? (
-                            <div>
-                              <textarea
-                                value={editedDescription}
-                                onChange={(e) => setEditedDescription(e.target.value)}
-                                placeholder="Enter team description..."
-                                maxLength={500}
-                                style={{
-                                  width: '100%',
-                                  minHeight: '120px',
-                                  padding: '12px',
-                                  background: '#1a1a1b',
-                                  border: '1px solid rgba(255,255,255,0.1)',
-                                  borderRadius: '6px',
-                                  color: '#fff',
-                                  fontFamily: "'Montserrat', sans-serif",
-                                  fontSize: '14px',
-                                  lineHeight: '1.6',
-                                  resize: 'vertical',
-                                  outline: 'none',
-                                  boxSizing: 'border-box'
-                                }}
-                                onFocus={(e) => {
-                                  e.currentTarget.style.borderColor = accentColor;
-                                }}
-                                onBlur={(e) => {
-                                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                                }}
-                              />
-                              <p style={{
-                                fontSize: '11px',
-                                color: 'rgba(255,255,255,0.4)',
-                                marginTop: '4px',
-                                fontFamily: "'Montserrat', sans-serif"
-                              }}>
-                                {editedDescription.length}/500 characters
-                              </p>
-                              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                                <button
-                                  onClick={handleSaveDescription}
-                                  disabled={descriptionSaving}
-                                  style={{
-                                    padding: '10px 20px',
-                                    background: descriptionSaving ? 'rgba(238, 58, 36, 0.5)' : accentColor,
-                                    color: '#fff',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.05em',
-                                    textTransform: 'uppercase',
-                                    cursor: descriptionSaving ? 'not-allowed' : 'pointer',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (!descriptionSaving) {
-                                      e.currentTarget.style.background = accentColorDark;
-                                    }
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    if (!descriptionSaving) {
-                                      e.currentTarget.style.background = accentColor;
-                                    }
-                                  }}
-                                >
-                                  {descriptionSaving ? 'Saving...' : 'Save'}
-                                </button>
-                                <button
-                                  onClick={handleCancelDescription}
-                                  disabled={descriptionSaving}
-                                  style={{
-                                    padding: '10px 20px',
-                                    background: 'transparent',
-                                    color: 'rgba(255,255,255,0.6)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    borderRadius: '6px',
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.05em',
-                                    textTransform: 'uppercase',
-                                    cursor: descriptionSaving ? 'not-allowed' : 'pointer',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (!descriptionSaving) {
-                                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                                    }
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    if (!descriptionSaving) {
-                                      e.currentTarget.style.background = 'transparent';
-                                    }
-                                  }}
-                                >
-                                  Cancel
+                    <div style={{ background: '#fff', border: `2px solid ${INK}`, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ ...cardHead, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 16px 12px 24px', lineHeight: 1.1 }}>
+                        <span style={{ minWidth: 0 }}>Additional Details</span>
+                        {!isEditingDescription && (
+                          <button type="button" className="ta-pill-btn" onClick={handleEditDescription} style={skew(accentColor, { color: INK, padding: '8px 18px', cursor: 'pointer' })}>
+                            <span style={{ ...pillLabel, fontFamily: "'Montserrat', sans-serif", fontStyle: 'normal' }}>Edit</span>
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', padding: '24px' }}>
+                        <span style={eyebrow}>Team Description</span>
+                        {isEditingDescription ? (
+                          <>
+                            <textarea
+                              className="ta-textarea"
+                              rows={6}
+                              value={editedDescription}
+                              onChange={(e) => setEditedDescription(e.target.value)}
+                              placeholder="Tell fans about your team"
+                              maxLength={500}
+                              style={{ background: PAPER, border: `2px solid ${INK}`, color: INK, fontFamily: "'Montserrat', sans-serif", fontWeight: 500, fontSize: '15px', lineHeight: 1.5, padding: '14px 16px', outline: 'none', resize: 'vertical', borderRadius: 0, width: '100%' }}
+                            />
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 600, color: MUTED }}>{editedDescription.length}/500 characters</span>
+                              <div style={{ display: 'flex', gap: '12px' }}>
+                                <button type="button" className="ta-ghost-btn" onClick={handleCancelDescription} disabled={descriptionSaving} style={{ background: 'transparent', border: `2px solid ${INK}`, color: INK, padding: '10px 18px', cursor: descriptionSaving ? 'not-allowed' : 'pointer', fontFamily: "'Montserrat', sans-serif", fontWeight: 700, fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase' }}>Cancel</button>
+                                <button type="button" className="ta-dark-btn" onClick={handleSaveDescription} disabled={descriptionSaving} style={skew(INK, { color: '#fff', padding: '10px 22px', cursor: descriptionSaving ? 'not-allowed' : 'pointer', opacity: descriptionSaving ? 0.6 : 1 })}>
+                                  <span style={{ ...unskew, ...zuume, fontSize: '20px', letterSpacing: '.05em', textTransform: 'uppercase' }}>{descriptionSaving ? 'Saving...' : 'Save'}</span>
                                 </button>
                               </div>
                             </div>
-                          ) : (
-                            <p style={{ fontSize: '15px', color: '#fff', fontFamily: "'Montserrat', sans-serif", lineHeight: '1.6', margin: 0 }}>
-                              {teamData?.description || 'No description available. Click Edit to add one.'}
-                            </p>
-                          )}
-                        </div>
+                          </>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: '16px', fontWeight: 500, lineHeight: 1.6, color: teamData?.description ? INK : MUTED, whiteSpace: 'pre-wrap' }}>
+                            {teamData?.description || 'No description available. Click Edit to add one.'}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Players */}
               {activeTab === 'players' && (
                 <div>
-                  {/* Players Sub-tabs */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '16px',
-                    borderBottom: `1px solid rgba(255,255,255,0.1)`,
-                    marginBottom: '24px'
-                  }}>
-                    <button
-                      onClick={() => setPlayersTab('myPlayers')}
-                      style={{
-                        padding: '12px 24px',
-                        fontFamily: "'Montserrat', sans-serif",
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        background: 'none',
-                        border: 'none',
-                        borderBottom: playersTab === 'myPlayers' ? `2px solid ${accentColor}` : '2px solid transparent',
-                        color: playersTab === 'myPlayers' ? accentColor : 'rgba(255,255,255,0.6)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      My Players
-                    </button>
-                    <button
-                      onClick={() => setPlayersTab('auction')}
-                      style={{
-                        padding: '12px 24px',
-                        fontFamily: "'Montserrat', sans-serif",
-                        fontWeight: 600,
-                        fontSize: '14px',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        background: 'none',
-                        border: 'none',
-                        borderBottom: playersTab === 'auction' ? `2px solid ${accentColor}` : '2px solid transparent',
-                        color: playersTab === 'auction' ? accentColor : 'rgba(255,255,255,0.6)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      Players in Auction
-                    </button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px 24px', marginBottom: '24px' }}>
+                    <h2 style={{ ...sectionTitle, margin: 0 }}>
+                      {playersTab === 'myPlayers' ? <>The <span style={{ color: accentColor }}>Squad.</span></> : <>Players in <span style={{ color: accentColor }}>Auction.</span></>}
+                    </h2>
+                    <div style={{ display: 'flex', border: `2px solid ${INK}`, background: '#fff' }}>
+                      {[['myPlayers', 'My Players'], ['auction', 'Players in Auction']].map(([id, label], i) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setPlayersTab(id)}
+                          style={{ border: 0, borderLeft: i ? `2px solid ${INK}` : 0, background: playersTab === id ? INK : '#fff', color: playersTab === id ? accentColor : INK, padding: '10px 18px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", fontWeight: 800, fontSize: '12px', letterSpacing: '.14em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* My Players Tab Content */}
                   {playersTab === 'myPlayers' && (
-                    <div>
-                      {playersLoading ? (
-                        <div style={{
-                          background: '#232324',
-                          borderRadius: '8px',
-                          padding: '40px',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          textAlign: 'center'
-                        }}>
-                          <p style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Montserrat', sans-serif", fontSize: '15px' }}>
-                            Loading players...
-                          </p>
-                        </div>
-                      ) : players.length === 0 ? (
-                        <div style={{
-                          background: '#232324',
-                          borderRadius: '8px',
-                          padding: '40px',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          textAlign: 'center'
-                        }}>
-                          <p style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Montserrat', sans-serif", fontSize: '15px' }}>
-                            No players in this team yet.
-                          </p>
-                        </div>
-                      ) : (
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
-                          gap: '20px'
-                        }}>
-                          {players.map((player) => (
-                            <div
-                              key={player.id}
-                              style={{
-                                background: '#232324',
-                                borderRadius: '12px',
-                                padding: '20px',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                                transition: 'transform 0.2s ease, border-color 0.2s ease',
-                                cursor: 'pointer'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-4px)';
-                                e.currentTarget.style.borderColor = accentColor;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
-                              }}
-                            >
-                              {/* Player Photo */}
-                              <div style={{
-                                width: '100%',
-                                height: '200px',
-                                marginBottom: '16px',
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                background: '#1a1a1b'
-                              }}>
-                                {player.photo ? (
-                                  <img
-                                    src={player.photo}
-                                    alt={player.name}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'cover'
-                                    }}
-                                  />
-                                ) : (
-                                  <div style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontFamily: "'Zuume Cut', sans-serif",
-                                    fontSize: '48px',
-                                    fontWeight: 900,
-                                    fontStyle: 'italic',
-                                    color: accentColor
-                                  }}>
-                                    {player.name?.charAt(0)?.toUpperCase() || 'P'}
-                                  </div>
-                                )}
+                    playersLoading ? emptyPanel('Loading players...')
+                    : players.length === 0 ? emptyPanel('No players in this team yet.')
+                    : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: '16px' }}>
+                        {players.map((player, i) => (
+                          <div key={player.id} className="ta-card" style={{ position: 'relative', display: 'flex', flexDirection: 'column', border: `2px solid ${INK}`, background: '#fff' }}>
+                            <div style={{ position: 'relative', aspectRatio: '4/5', background: '#e4e1d8', borderBottom: `2px solid ${INK}`, overflow: 'hidden' }}>
+                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', ...zuume, fontSize: '96px', color: accentColor }}>
+                                {player.name?.charAt(0)?.toUpperCase() || 'P'}
                               </div>
-
-                              {/* Player Info */}
-                              <h3 style={{
-                                fontFamily: "'Zuume Cut', sans-serif",
-                                fontWeight: 900,
-                                fontStyle: 'italic',
-                                fontSize: '20px',
-                                color: '#fff',
-                                marginBottom: '12px',
-                                textTransform: 'uppercase'
-                              }}>
-                                {player.name || 'Unknown Player'}
-                              </h3>
-
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{
-                                    fontSize: '12px',
-                                    color: 'rgba(255,255,255,0.5)',
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em'
-                                  }}>
-                                    Gender
-                                  </span>
-                                  <span style={{
-                                    fontSize: '14px',
-                                    color: '#fff',
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontWeight: 600
-                                  }}>
-                                    {player.gender ? player.gender.charAt(0).toUpperCase() + player.gender.slice(1) : 'N/A'}
-                                  </span>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{
-                                    fontSize: '12px',
-                                    color: 'rgba(255,255,255,0.5)',
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em'
-                                  }}>
-                                    Singles Rating
-                                  </span>
-                                  <span style={{
-                                    fontSize: '14px',
-                                    color: accentColor,
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontWeight: 700
-                                  }}>
-                                    {player.singlesRating || 'N/A'}
-                                  </span>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{
-                                    fontSize: '12px',
-                                    color: 'rgba(255,255,255,0.5)',
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.05em'
-                                  }}>
-                                    Doubles Rating
-                                  </span>
-                                  <span style={{
-                                    fontSize: '14px',
-                                    color: accentColor,
-                                    fontFamily: "'Montserrat', sans-serif",
-                                    fontWeight: 700
-                                  }}>
-                                    {player.doublesRating || 'N/A'}
-                                  </span>
-                                </div>
+                              {player.photo && (
+                                // Sits over the initial; hidden if the photo fails to load
+                                <img src={player.photo} alt={player.name} onError={(e) => { e.currentTarget.style.display = 'none'; }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              )}
+                              <span style={{ position: 'absolute', top: 0, left: 0, display: 'inline-flex', background: INK, padding: '6px 10px', ...zuume, fontSize: '20px', lineHeight: 1, color: accentColor }}>{String(i + 1).padStart(2, '0')}</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px 16px 16px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ ...zuume, fontSize: '26px', lineHeight: 0.95, textTransform: 'uppercase' }}>{player.name || 'Unknown Player'}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: accentColor }}>
+                                  {player.gender ? player.gender.charAt(0).toUpperCase() + player.gender.slice(1) : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="ta-card-rule" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: `1px solid ${RULE}`, paddingTop: '12px', gap: '12px' }}>
+                                {[['Singles Rating', player.singlesRating], ['Doubles Rating', player.doublesRating]].map(([label, val]) => (
+                                  <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ ...zuume, fontSize: '30px', lineHeight: 0.9 }}>{val || 'N/A'}</span>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#8a857a' }}>{label}</span>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
                   )}
 
-                  {/* Players in Auction Tab Content */}
                   {playersTab === 'auction' && (
+                    <div style={{ background: INK, color: '#fff', border: `2px solid ${INK}`, padding: isMobile ? '20px 16px' : '32px' }}>
+                      <div>
                     <div>
                       {/* Search Bar and Filter */}
                       <div style={{ marginBottom: '24px' }}>
@@ -2183,89 +1691,44 @@ export default function CcplTeamProfile() {
                       );
                       })()}
                     </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
 
+              {/* Passes — kept mounted so the tab badge shows the pending count */}
+              <div style={{ display: activeTab === 'passes' ? 'block' : 'none' }}>
+                <h2 style={sectionTitle}>Pass <span style={{ color: accentColor }}>Requests.</span></h2>
+                <CCPLTeamPasses
+                  userId={sessionUser?.id}
+                  fallbackTeamName={teamData?.name}
+                  onPendingCountChange={setPendingPassCount}
+                />
+              </div>
+
+              {/* Design Assets */}
               {activeTab === 'designAssets' && (
                 <div>
-                  <h2 style={{
-                    fontFamily: "'Zuume Cut', sans-serif",
-                    fontWeight: 900,
-                    fontStyle: 'italic',
-                    fontSize: isMobile ? '24px' : '32px',
-                    color: '#fff',
-                    marginBottom: '24px',
-                    textTransform: 'uppercase'
-                  }}>
-                    Design Assets
-                  </h2>
-                  
-                  <div style={{ background: '#232324', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Montserrat', sans-serif", fontSize: '15px', marginBottom: '24px' }}>
-                      Upload your team's logo. This will be used in official CCPL communications, merchandise, and match displays.
-                    </p>
-                    
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '24px'
-                    }}>
-                      <div style={{ textAlign: 'center', width: '100%', maxWidth: '400px' }}>
-                        <h3 style={{
-                          fontFamily: "'Montserrat', sans-serif",
-                          fontSize: '14px',
-                          letterSpacing: '0.1em',
-                          textTransform: 'uppercase',
-                          color: accentColor,
-                          marginBottom: '16px',
-                          fontWeight: 700
-                        }}>
-                          Team Logo
-                        </h3>
-                        
-                        {/* Logo Display */}
-                        <div style={{
-                          width: '100%',
-                          maxWidth: '300px',
-                          height: '300px',
-                          margin: '0 auto 16px',
-                          background: '#1a1a1b',
-                          borderRadius: '8px',
-                          border: teamData?.logo?.url ? '2px solid rgba(238, 58, 36, 0.3)' : '2px dashed rgba(255,255,255,0.2)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          overflow: 'hidden',
-                          position: 'relative'
-                        }}>
-                          {teamData?.logo?.url ? (
-                            <img
-                              src={teamData.logo.url}
-                              alt="Team Logo"
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'contain',
-                                padding: '20px'
-                              }}
-                            />
-                          ) : (
-                            <div style={{ textAlign: 'center', padding: '20px' }}>
-                              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" style={{ margin: '0 auto 12px' }}>
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                <circle cx="8.5" cy="8.5" r="1.5"/>
-                                <polyline points="21 15 16 10 5 21"/>
-                              </svg>
-                              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontFamily: "'Montserrat', sans-serif", margin: 0 }}>
-                                No logo uploaded
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Upload Button */}
+                  <h2 style={sectionTitle}>Design <span style={{ color: accentColor }}>Assets.</span></h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(300px,100%),1fr))', gap: '20px', alignItems: 'start' }}>
+                    <div style={{ border: `2px solid ${INK}`, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ aspectRatio: '1/1', background: '#e4e1d8', borderBottom: `2px solid ${INK}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {teamData?.logo?.url ? (
+                          <img src={teamData.logo.url} alt="Team Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '24px', background: '#fff' }} />
+                        ) : (
+                          <div style={{ textAlign: 'center', padding: '20px', color: '#8a857a' }}>
+                            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'block', margin: '0 auto 12px' }}>
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                              <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            <span style={{ fontSize: '13px', fontWeight: 600 }}>No logo uploaded</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 16px' }}>
+                        <span style={{ ...zuume, fontSize: '24px', lineHeight: 1, textTransform: 'uppercase' }}>Team Logo</span>
                         <input
                           type="file"
                           id="logoUpload"
@@ -2274,114 +1737,51 @@ export default function CcplTeamProfile() {
                           disabled={logoUploading}
                           style={{ display: 'none' }}
                         />
-                        <label
-                          htmlFor="logoUpload"
-                          style={{
-                            display: 'inline-block',
-                            padding: '12px 32px',
-                            background: logoUploading ? 'rgba(238, 58, 36, 0.5)' : accentColor,
-                            color: '#fff',
-                            borderRadius: '6px',
-                            fontFamily: "'Montserrat', sans-serif",
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            letterSpacing: '0.05em',
-                            textTransform: 'uppercase',
-                            cursor: logoUploading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s ease',
-                            border: 'none'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!logoUploading) {
-                              e.currentTarget.style.background = accentColorDark;
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!logoUploading) {
-                              e.currentTarget.style.background = accentColor;
-                              e.currentTarget.style.transform = 'translateY(0)';
-                            }
-                          }}
-                        >
-                          {logoUploading ? 'Uploading...' : (teamData?.logo?.url ? 'Change Logo' : 'Upload Logo')}
+                        <label htmlFor="logoUpload" className={logoUploading ? undefined : 'ta-dark-btn'} style={skew(INK, { color: '#fff', padding: '8px 18px', cursor: logoUploading ? 'not-allowed' : 'pointer', opacity: logoUploading ? 0.6 : 1 })}>
+                          <span style={{ ...pillLabel, whiteSpace: 'nowrap' }}>{logoUploading ? 'Uploading...' : (teamData?.logo?.url ? 'Change Logo' : 'Upload Logo')}</span>
                         </label>
+                      </div>
+                      {logoUploadProgress && (
+                        <p style={{ margin: 0, padding: '0 16px 14px', color: logoUploadProgress.includes('success') ? '#2f9e5b' : accentColor, fontSize: '13px', fontWeight: 700 }}>
+                          {logoUploadProgress}
+                        </p>
+                      )}
+                    </div>
 
-                        {/* Upload Progress */}
-                        {logoUploadProgress && (
-                          <p style={{
-                            marginTop: '12px',
-                            color: logoUploadProgress.includes('success') ? '#4ade80' : accentColor,
-                            fontSize: '13px',
-                            fontFamily: "'Montserrat', sans-serif",
-                            fontWeight: 600
-                          }}>
-                            {logoUploadProgress}
-                          </p>
-                        )}
-
-                        {/* Upload Guidelines */}
-                        <div style={{
-                          marginTop: '20px',
-                          padding: '16px',
-                          background: '#1a1a1b',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(255,255,255,0.05)'
-                        }}>
-                          <p style={{
-                            fontSize: '12px',
-                            color: 'rgba(255,255,255,0.6)',
-                            fontFamily: "'Montserrat', sans-serif",
-                            margin: '0 0 8px',
-                            fontWeight: 600
-                          }}>
-                            Upload Guidelines:
-                          </p>
-                          <ul style={{
-                            fontSize: '11px',
-                            color: 'rgba(255,255,255,0.5)',
-                            fontFamily: "'Montserrat', sans-serif",
-                            margin: 0,
-                            paddingLeft: '20px',
-                            textAlign: 'left'
-                          }}>
-                            <li>Accepted formats: JPEG, PNG, WebP</li>
-                            <li>Maximum file size: 5MB</li>
-                            <li>Recommended: Square image (1:1 ratio)</li>
-                            <li>Minimum resolution: 500x500 pixels</li>
-                          </ul>
-                        </div>
+                    <div style={{ border: `2px solid ${INK}`, background: '#fff' }}>
+                      <div style={cardHead}>Upload Guidelines</div>
+                      <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <p style={{ margin: 0, fontSize: '14px', fontWeight: 500, lineHeight: 1.6, color: MUTED }}>
+                          Your team logo is used in official CCPL communications, merchandise and match displays.
+                        </p>
+                        {[
+                          ['Formats', 'JPEG, PNG, WebP'],
+                          ['Max file size', '5MB'],
+                          ['Aspect ratio', 'Square (1:1) recommended'],
+                          ['Resolution', 'At least 500 × 500 px'],
+                        ].map(([label, value]) => (
+                          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingTop: '12px', borderTop: `1px solid ${RULE}` }}>
+                            <span style={eyebrow}>{label}</span>
+                            <span style={{ fontSize: '15px', fontWeight: 600 }}>{value}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Fixtures */}
               {activeTab === 'fixtures' && (
-                <div>
-                  <h2 style={{ 
-                    fontFamily: "'Zuume Cut', sans-serif",
-                    fontWeight: 900,
-                    fontStyle: 'italic',
-                    fontSize: isMobile ? '24px' : '32px',
-                    color: '#fff',
-                    marginBottom: '24px',
-                    textTransform: 'uppercase'
-                  }}>
-                    Fixtures
-                  </h2>
-                  
-                  <div style={{ background: '#232324', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Montserrat', sans-serif", fontSize: '15px' }}>
-                      Fixtures will be released soon
-                    </p>
-                  </div>
-                </div>
+                <CcplTeamFixtures teamId={teamId} teamData={teamData} accentColor={accentColor} isMobile={isMobile} />
               )}
+
             </div>
-          </div>
-        </div>
+          </section>
+        </>
         )}
+
+        <CCPLFooter above={PAPER} />
 
         {/* Player Profile Modal */}
         {showPlayerModal && selectedPlayer && (
@@ -2421,7 +1821,7 @@ export default function CcplTeamProfile() {
               maxHeight: '90vh',
               overflowY: 'auto',
               border: `1px solid ${accentColor}`,
-              boxShadow: `0 0 40px rgba(238, 58, 36, 0.3)`
+              boxShadow: `0 0 40px rgba(226, 123, 70, 0.3)`
             }}>
               {/* Header */}
               <div style={{
@@ -2488,18 +1888,18 @@ export default function CcplTeamProfile() {
                         borderRadius: '12px',
                         overflow: 'hidden',
                         border: `3px solid ${accentColor}`,
-                        boxShadow: `0 0 20px rgba(238, 58, 36, 0.3)`,
+                        boxShadow: `0 0 20px rgba(226, 123, 70, 0.3)`,
                         cursor: 'pointer',
                         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                         position: 'relative'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = `0 0 30px rgba(238, 58, 36, 0.5)`;
+                        e.currentTarget.style.boxShadow = `0 0 30px rgba(226, 123, 70, 0.5)`;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = `0 0 20px rgba(238, 58, 36, 0.3)`;
+                        e.currentTarget.style.boxShadow = `0 0 20px rgba(226, 123, 70, 0.3)`;
                       }}
                     >
                       <img
@@ -2956,7 +2356,7 @@ export default function CcplTeamProfile() {
                 objectFit: 'contain',
                 borderRadius: '12px',
                 border: `3px solid ${accentColor}`,
-                boxShadow: `0 0 40px rgba(238, 58, 36, 0.5)`
+                boxShadow: `0 0 40px rgba(226, 123, 70, 0.5)`
               }}
             />
 

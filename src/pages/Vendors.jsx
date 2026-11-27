@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/MainLayout';
 import AddVendorModal from '../components/AddVendorModal';
+import EditVendorModal from '../components/EditVendorModal';
 import { getAllVendors, deleteVendor, toggleVendorStatus } from '../services/vendorService';
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingVendor, setEditingVendor] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
@@ -57,6 +59,11 @@ export default function Vendors() {
   const handleVendorAdded = (newVendor) => {
     setVendors([...vendors, newVendor]);
     setShowAddModal(false);
+  };
+
+  const handleVendorUpdated = (updatedVendor) => {
+    setVendors(vendors.map(v => v.id === updatedVendor.id ? { ...v, ...updatedVendor } : v));
+    setEditingVendor(null);
   };
 
   // Filter vendors based on search and category
@@ -252,7 +259,15 @@ export default function Vendors() {
                                 }`}
                               />
                             </button>
-                            
+
+                            {/* Edit Button */}
+                            <button
+                              onClick={() => setEditingVendor(vendor)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Edit
+                            </button>
+
                             {/* Delete Button */}
                             <button
                               onClick={() => handleDeleteVendor(vendor.id)}
@@ -332,6 +347,15 @@ export default function Vendors() {
         <AddVendorModal
           onClose={() => setShowAddModal(false)}
           onVendorAdded={handleVendorAdded}
+        />
+      )}
+
+      {/* Edit Vendor Modal */}
+      {editingVendor && (
+        <EditVendorModal
+          vendor={editingVendor}
+          onClose={() => setEditingVendor(null)}
+          onVendorUpdated={handleVendorUpdated}
         />
       )}
     </MainLayout>

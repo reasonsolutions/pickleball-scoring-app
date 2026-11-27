@@ -171,19 +171,65 @@ service cloud.firestore {
                    isSuperAdminSimple();
     }
     
+    // Careers collection rules - for job listings management
+    match /careers/{careerId} {
+      // Allow public read access for careers (needed for careers page)
+      allow read: if true;
+      
+      // Only super admins can create, update, or delete career listings
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      // Applications subcollection - for job applications submitted by candidates
+      match /applications/{applicationId} {
+        // Allow public read access is restricted - only super admins can read applications
+        allow read: if request.auth != null &&
+                     isSuperAdminSimple();
+        
+        // Allow anyone (public) to submit a job application
+        allow create: if true;
+        
+        // Only super admins can update application status
+        allow update: if request.auth != null &&
+                     isSuperAdminSimple();
+        
+        // Only super admins can delete applications
+        allow delete: if request.auth != null &&
+                     isSuperAdminSimple();
+      }
+    }
+    
+    // Support Requests collection rules - for support/contact form submissions
+    match /support-requests/{requestId} {
+      // Only super admins can read support requests
+      allow read: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      // Allow anyone (public) to submit a support request
+      allow create: if true;
+      
+      // Only super admins can update request status
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+      
+      // Only super admins can delete support requests
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+    
     // Display Settings collection rules
     match /display_settings/{settingId} {
       // Allow public read access for display settings (needed for main display)
       allow read: if true;
       
-      // Only super admins can create, update, or delete display settings
-      allow create: if request.auth != null &&
-                   isSuperAdminSimple() &&
-                   isValidDisplaySettingData(request.resource.data);
-      
-      allow update: if request.auth != null &&
-                   isSuperAdminSimple() &&
-                   isValidDisplaySettingData(request.resource.data);
+      // Allow public create/update so the display remote (/remote/:tournamentId) works without login
+      allow create, update: if true;
       
       allow delete: if request.auth != null &&
                    isSuperAdminSimple();
@@ -229,8 +275,17 @@ service cloud.firestore {
       
       allow delete: if request.auth != null &&
                    isSuperAdminSimple();
+
+      // Logo library and per-match logo sets, one document each (keeps the
+      // main logos document under Firestore's 1 MB limit)
+      match /{subcollection}/{docId} {
+        allow read: if subcollection in ['match_logos', 'logo_library'];
+        allow write: if subcollection in ['match_logos', 'logo_library'] &&
+                     request.auth != null &&
+                     isSuperAdminSimple();
+      }
     }
-    
+
     // Clubs Players collection rules - for HPL player registration
     match /clubs-players/{playerId} {
       // Allow public read and write access for player registration form
@@ -457,6 +512,36 @@ service cloud.firestore {
                    isSuperAdminSimple();
     }
     
+    // App Config collection rules - for force-update / min app version config
+    // Document path: app-config/version
+    // Fields: { minVersion: string, latestVersion: string, updateMessage: string,
+    //           iosStoreUrl: string, androidStoreUrl: string, updatedAt: timestamp }
+    match /app-config/{docId} {
+      // Allow public read access so the app can check the required version on launch
+      allow read: if true;
+      
+      // Open write access for now (no Firebase Auth admin session exists for this
+      // custom-auth app) so this can be updated from the Firebase console or a
+      // small script at any time without redeploying the app.
+      allow write: if true;
+    }
+    
+    // App Sponsors collection rules - for mobile app sponsor logos per section
+    match /app-sponsors/{sectionId} {
+      // Allow public read access for sponsor logos (needed for mobile app)
+      allow read: if true;
+
+      // Only super admins can create, update, or delete sponsor logos
+      allow create: if request.auth != null &&
+                   isSuperAdminSimple();
+
+      allow update: if request.auth != null &&
+                   isSuperAdminSimple();
+
+      allow delete: if request.auth != null &&
+                   isSuperAdminSimple();
+    }
+
     // HPL Users collection rules - for custom user management
     // WARNING: This stores passwords directly - use Firebase Auth in production
     match /hpl-users/{userId} {
@@ -544,8 +629,54 @@ service cloud.firestore {
         
         // Allow authenticated users to delete passes
         allow delete: if true;
+
+        // Gate scans - one doc per admitted pass number, written by the scanner page (PassScanner.jsx).
+        // The scanner page is public (no login), so anyone may scan, but a pass number can be created
+        // only once and only for an approved pass. Logged-in scans record the uid, others 'public'.
+        // After that only the duplicate-attempt fields can change; super admins can delete to undo.
+        match /scans/{passNumber} {
+          allow read: if true;
+
+          allow create: if isAdmittablePass(ticketId, passId, passNumber) &&
+                       request.resource.data.keys().hasOnly(['eventId', 'passId', 'passNumber', 'name', 'team',
+                         'scannedAt', 'scannedBy', 'scannedByName', 'duplicateAttempts']) &&
+                       request.resource.data.eventId == ticketId &&
+                       request.resource.data.passId == passId &&
+                       request.resource.data.passNumber == int(passNumber) &&
+                       isScannerId(request.resource.data.scannedBy) &&
+                       request.resource.data.scannedAt == request.time &&
+                       request.resource.data.duplicateAttempts == 0;
+
+          allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['duplicateAttempts', 'lastDuplicateAt', 'lastDuplicateBy']) &&
+                       request.resource.data.duplicateAttempts == resource.data.duplicateAttempts + 1 &&
+                       isScannerId(request.resource.data.lastDuplicateBy);
+
+          allow delete: if isSuperAdminSimple();
+        }
       }
       
+      // Scan log - every attempt at the public gate scanner (PassScanner.jsx), shared by all devices.
+      // Append-only; super admins can delete.
+      match /scanLog/{logId} {
+        allow read: if true;
+
+        allow create: if request.resource.data.keys().hasOnly(['result', 'name', 'team', 'reason', 'passNumber',
+                           'totalPasses', 'scannedBy', 'scannedByName', 'at']) &&
+                       request.resource.data.result in ['valid', 'already_scanned', 'invalid', 'error'] &&
+                       request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
+                       request.resource.data.team is string && request.resource.data.team.size() <= 200 &&
+                       request.resource.data.reason is string && request.resource.data.reason.size() <= 300 &&
+                       request.resource.data.passNumber is int &&
+                       request.resource.data.totalPasses is int &&
+                       isScannerId(request.resource.data.scannedBy) &&
+                       request.resource.data.scannedByName is string && request.resource.data.scannedByName.size() <= 200 &&
+                       request.resource.data.at == request.time;
+
+        allow update: if false;
+        allow delete: if isSuperAdminSimple();
+      }
+
       // Allocation subcollection - for team pass allocations
       match /allocation/{teamId} {
         // Allow public read access for allocations
@@ -945,6 +1076,20 @@ service cloud.firestore {
               isSuperAdminFromDatabase());
     }
     
+    // scannedBy must be the caller's uid, or 'public' when scanning without logging in
+    function isScannerId(value) {
+      return (request.auth != null && value == request.auth.uid) ||
+             (request.auth == null && value == 'public');
+    }
+
+    // The pass request exists, is approved, and passNumber is one of the passes it was issued
+    function isAdmittablePass(eventId, passId, passNumber) {
+      let pass = get(/databases/$(database)/documents/ticketing/$(eventId)/passes/$(passId)).data;
+      return pass.status in ['approved', 'confirmed'] &&
+             int(passNumber) >= 1 &&
+             int(passNumber) <= pass.numPasses;
+    }
+
     // Function to check if user has super_admin role in database
     function isSuperAdminFromDatabase() {
       return request.auth != null &&

@@ -1,5 +1,6 @@
-@import url('https://use.typekit.net/your-kit-id.css'); /* Replace with your Adobe Fonts kit ID */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Schibsted+Grotesk:wght@500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -70,6 +71,39 @@
   src: url('./fonts/figtree/Figtree-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
+  font-display: swap;
+}
+
+/* Zuume Cut (CCPL nav / top bar) */
+@font-face {
+  font-family: 'Zuume Cut';
+  src: url('/fonts/zuume-cut-bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Zuume Cut';
+  src: url('/fonts/zuume-cut-bold-italic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Zuume Cut';
+  src: url('/fonts/zuume-cut-black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Zuume Cut';
+  src: url('/fonts/zuume-cut-black-italic.ttf') format('truetype');
+  font-weight: 900;
+  font-style: italic;
   font-display: swap;
 }
 
@@ -2639,4 +2673,52 @@ html:has(.tv-display-pro) {
 
 .drs-text-skew {
   transform: skew(-15deg) !important;
+}
+
+/* Streaming Overlay Animations */
+@keyframes livepulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 45, 120, 0.7);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 12px rgba(255, 45, 120, 0);
+  }
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(260%) skewX(-20deg);
+  }
+}
+
+@keyframes servepulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 18px rgba(255, 199, 46, 0.9);
+  }
+  50% {
+    transform: scale(1.35);
+    box-shadow: 0 0 34px rgba(255, 199, 46, 1);
+  }
+}
+
+.font-unbounded {
+  font-family: 'Unbounded', sans-serif;
+}
+
+.font-schibsted {
+  font-family: 'Schibsted Grotesk', sans-serif;
+}
+
+/* Streaming venue overlay: transparent page for OBS / vMix browser sources */
+html:has(.streaming-overlay-transparent),
+body:has(.streaming-overlay-transparent),
+#root:has(.streaming-overlay-transparent) {
+  background: transparent !important;
+  background-color: transparent !important;
 }

@@ -10,4 +10,24 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/arenagrid-api': {
+        target: 'https://auction-api.arenagrid.in',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/arenagrid-api/, '/api'),
+        secure: false,
+      },
+    },
+  },
+  preview: {
+    proxy: {
+      '/arenagrid-api': {
+        target: 'https://auction-api.arenagrid.in',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/arenagrid-api/, '/api'),
+        secure: false,
+      },
+    },
+  },
 })

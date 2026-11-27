@@ -448,6 +448,7 @@ export default function AppUsers() {
                             <option value="user">User</option>
                             <option value="player">Player</option>
                             <option value="team admin">Team Admin</option>
+                            <option value="ccpl-admin">CCPL Admin</option>
                             <option value="super admin">Super Admin</option>
                           </select>
                         </td>

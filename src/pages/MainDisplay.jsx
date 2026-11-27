@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { resolveDisplayLogos, useMatchLogoOverride } from '../utils/matchLogos';
+import SlidingImagesOverlay from '../components/SlidingImagesOverlay';
+import TimeoutSequenceOverlay, { getActiveTimeout } from '../components/TimeoutSequenceOverlay';
 import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
 
 // Import background image
@@ -9,14 +12,31 @@ import mainDisplayBg from '../assets/maindisplay.png';
 
 // Import default paddle logo as fallback
 import paddleLogo from '../assets/paddle.png';
+import LineupIntro, { pickIntroScene } from '../components/LineupIntro';
+import MatchPreview from '../components/MatchPreview';
+import TitleSponsorScreen, { useTitleSponsorWindow } from '../components/TitleSponsorScreen';
+import AllSquareOverlay, { useAllSquareTrigger } from '../components/AllSquareOverlay';
+import ElectricStreakOverlay, { useElectricStreakTrigger } from '../components/ElectricStreakOverlay';
+import MatchPointOverlay, { useMatchPointTrigger } from '../components/MatchPointOverlay';
+import { computeSeasonRecords } from '../utils/seasonRecords';
+import { getActiveJumbotronTheme, getJumbotronTheme, JumbotronThemeStyles, JumbotronThemeBackdrop, JumbotronThemeForeground, JumbotronPillFrame, themedScore } from '../components/jumbotronThemes';
+
+// Jumbotron header logo (fallback when no display logos are configured)
+import terminusLogo from '../assets/terminus-ccpl-logo.png';
 
 export default function MainDisplay() {
   const { tournamentId, dateString } = useParams();
   const [tournament, setTournament] = useState(null);
   const [currentFixture, setCurrentFixture] = useState(null);
+  // Lineup intro triggered from the Remote
+  const [introScene, setIntroScene] = useState(null);
+  const finishedIntroRef = useRef(null);
   const [liveMatch, setLiveMatch] = useState(null);
   const [completedMatches, setCompletedMatches] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
+  const [fixtureMatches, setFixtureMatches] = useState([]);
+  // Fixture win-loss record per team name across the tournament, e.g. { 'Raptors': '3-1 season' }
+  const [seasonRecords, setSeasonRecords] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [firebaseReadCount, setFirebaseReadCount] = useState(0);
@@ -27,6 +47,8 @@ export default function MainDisplay() {
   // Dynamic logos state
   const [displayLogos, setDisplayLogos] = useState([]);
   const [bottomLogos, setBottomLogos] = useState([]);
+  const [logosDocData, setLogosDocData] = useState({});
+  const [slidingImages, setSlidingImages] = useState([]);
   const [showAdsMedia, setShowAdsMedia] = useState(false);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [imageTimer, setImageTimer] = useState(null);
@@ -57,11 +79,22 @@ export default function MainDisplay() {
   const [mainTeam2Logo, setMainTeam2Logo] = useState(null);
   
   // Use refs to avoid recreating callbacks and triggering re-subscriptions
+  // Today's matches for this court, kept in state for the title sponsor window
+  const [courtDayMatches, setCourtDayMatches] = useState([]);
   const centerCourtMatchesRef = useRef([]);
   const currentFixtureRef = useRef(null);
   const readCountRef = useRef(0);
   const listenersSetupRef = useRef(false);
   const timeoutIntervalRef = useRef(null);
+
+  // Scale the fixed 1920x1080 jumbotron canvas to fit the screen
+  const [fitScale, setFitScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setFitScale(Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
 
   // Cleanup stale timeout data (only for non-live matches)
   const cleanupStaleTimeouts = useCallback(async () => {
@@ -162,7 +195,14 @@ export default function MainDisplay() {
       const snapshot = await getDocs(teamsQuery);
       
       if (snapshot.docs.length > 0) {
-        const teamData = snapshot.docs[0].data();
+        // Team names repeat across tournaments - prefer this tournament's team, then any team with a logo
+        const teamDocs = snapshot.docs.map(d => d.data());
+        const hasLogo = (t) => t.logo?.url || t.logoUrl;
+        const teamData =
+          teamDocs.find(t => t.tournamentId === tournamentId && hasLogo(t)) ||
+          teamDocs.find(t => t.tournamentId === tournamentId) ||
+          teamDocs.find(hasLogo) ||
+          teamDocs[0];
         const logoUrl = teamData.logo?.url || teamData.logoUrl || paddleLogo;
         
         // Cache the logo
@@ -174,7 +214,7 @@ export default function MainDisplay() {
     } catch (error) {
       console.error('Error fetching team logo:', error);
     }
-  }, [teamLogosCache]);
+  }, [teamLogosCache, tournamentId]);
 
   // Helper function to determine if a match is singles or doubles
   const isDoublesMatch = useCallback((match) => {
@@ -196,11 +236,11 @@ export default function MainDisplay() {
     const dotCount = isDoubles ? (match.teamServeCount || 0) + 1 : 1;
     
     return (
-      <div className="absolute top-full left-1/2 transform -translate-x-1/2 flex justify-center mt-2">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
         {Array.from({ length: dotCount }, (_, index) => (
-          <div
+          <span
             key={index}
-            className="w-3 h-3 bg-yellow-400 rounded-full mx-1 shadow-lg"
+            style={{ display: 'block', width: 26, height: 26, borderRadius: '50%', background: 'var(--jb-serve, #ffd23a)', animation: 'jb-servepulse 1.6s ease-in-out infinite' }}
           />
         ))}
       </div>
@@ -314,7 +354,8 @@ export default function MainDisplay() {
         (timeoutValue === true ||
          (typeof timeoutValue === 'object' &&
           timeoutValue.team &&
-          timeoutValue.startTime)); // Must have both team and startTime for object-based timeouts
+          timeoutValue.startTime &&
+          timeoutValue.type === 'substitution')); // Regular timeouts run TimeoutSequenceOverlay instead
       
       console.log('🔍 Timeout check for match:', {
         matchId: match.id,
@@ -461,6 +502,7 @@ export default function MainDisplay() {
 
     setCompletedMatches(completed);
     setUpcomingMatches(upcoming);
+    setFixtureMatches(fixtureMatches);
     
     // Set live match priority with Game Breaker logic
     let liveMatchToSet = null;
@@ -545,37 +587,28 @@ export default function MainDisplay() {
     }
   }, [tournamentId, loadMediaItems]);
 
- // Load display logos when component mounts
- useEffect(() => {
-   const loadDisplayLogos = async () => {
-     if (!tournamentId) return;
-     
-     try {
-       const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
-       if (logosDoc.exists()) {
-         const data = logosDoc.data();
-         const topLogos = data.displayLogos || [];
-         const bottomLogosData = data.bottomLogos || [];
-         // Sort by rank to maintain order
-         const sortedTopLogos = topLogos.sort((a, b) => a.rank - b.rank);
-         const sortedBottomLogos = bottomLogosData.sort((a, b) => a.rank - b.rank);
-         setDisplayLogos(sortedTopLogos);
-         setBottomLogos(sortedBottomLogos);
-       } else {
-         setDisplayLogos([]);
-         setBottomLogos([]);
-       }
-     } catch (error) {
-       console.error('Error loading display logos:', error);
-       setDisplayLogos([]);
-       setBottomLogos([]);
-     }
-   };
+  // Live tournament logos; the current match's own logos override the defaults
+  useEffect(() => {
+    if (!tournamentId) return;
+    const unsubscribe = onSnapshot(
+      doc(db, 'tournament_logos', tournamentId),
+      (logosDoc) => setLogosDocData(logosDoc.exists() ? logosDoc.data() : {}),
+      (error) => {
+        console.error('Error loading display logos:', error);
+        setLogosDocData({});
+      }
+    );
+    return () => unsubscribe();
+  }, [tournamentId]);
 
-   if (tournamentId) {
-     loadDisplayLogos();
-   }
- }, [tournamentId]);
+  const matchLogoOverride = useMatchLogoOverride(tournamentId, dateString, currentFixture);
+
+  useEffect(() => {
+    const resolved = resolveDisplayLogos(logosDocData, dateString, currentFixture, matchLogoOverride);
+    setDisplayLogos(resolved.displayLogos);
+    setBottomLogos(resolved.bottomLogos);
+    setSlidingImages(resolved.slidingImages);
+  }, [logosDocData, matchLogoOverride, dateString, currentFixture?.fixtureGroupId, currentFixture?.team1Name, currentFixture?.team2Name]);
 
  // Fetch team logos when live match changes
  useEffect(() => {
@@ -793,6 +826,13 @@ export default function MainDisplay() {
         if (docSnapshot.exists()) {
           const displaySetting = docSnapshot.data();
           const selectedFixture = displaySetting.currentFixture || displaySetting.currentMainFixture;
+          setIntroScene(prev => {
+            const next = pickIntroScene(displaySetting.mainScene);
+            if (next && next.startedAt === prev?.startedAt) return prev;
+            // Don't replay an intro that already finished on this screen
+            if (next && next.startedAt === finishedIntroRef.current) return null;
+            return next;
+          });
           
           if (selectedFixture) {
             console.log('📺 Display settings updated:', selectedFixture);
@@ -827,6 +867,8 @@ export default function MainDisplay() {
           ...doc.data()
         }));
 
+        setSeasonRecords(computeSeasonRecords(allMatches));
+
         // Filter for center court matches on this date
         const dateMatches = allMatches.filter(match => {
           const matchDate = match.date?.toDate ? match.date.toDate() : new Date(match.date || '1970-01-01');
@@ -841,6 +883,7 @@ export default function MainDisplay() {
         
         // Store in ref
         centerCourtMatchesRef.current = dateMatches;
+        setCourtDayMatches(dateMatches);
         
         // Set default fixture if none exists
         if (dateMatches.length > 0 && !currentFixtureRef.current) {
@@ -879,6 +922,14 @@ export default function MainDisplay() {
     };
   }, [tournamentId, dateString, incrementFirebaseReads, updateMatchesForFixture]);
 
+  // Regular timeout on the live match drives the timeout takeover (team -> ads -> countdown)
+  const activeTimeout = getActiveTimeout(liveMatch);
+  const clearActiveTimeout = useCallback(() => {
+    if (!liveMatch?.id) return;
+    updateDoc(doc(db, 'fixtures', liveMatch.id), { timeoutInProgress: null })
+      .catch(error => console.error('Error clearing timeout in Firebase:', error));
+  }, [liveMatch?.id]);
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -888,6 +939,16 @@ export default function MainDisplay() {
       day: 'numeric'
     });
   };
+
+  const showTitleSponsor = useTitleSponsorWindow(dateString, courtDayMatches);
+  const showAllSquare = useAllSquareTrigger(liveMatch);
+  const showElectricStreak = useElectricStreakTrigger(liveMatch);
+  const showMatchPoint = useMatchPointTrigger(liveMatch);
+
+  // Title sponsor screen before the next fixture and after the day's fixtures are decided
+  if (showTitleSponsor) {
+    return <TitleSponsorScreen />;
+  }
 
   if (loading) {
     return (
@@ -944,276 +1005,340 @@ export default function MainDisplay() {
     );
   }
 
+  const introOverlay = introScene ? (
+    <LineupIntro
+      key={introScene.startedAt}
+      scene={introScene}
+      tournamentId={tournamentId}
+      onDone={() => {
+        finishedIntroRef.current = introScene.startedAt;
+        setIntroScene(null);
+      }}
+    />
+  ) : null;
+
   if (!currentFixture || !liveMatch) {
     return (
+      <>
+      {introOverlay}
       <div className="min-h-screen flex items-center justify-center bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
         <div className="text-white text-center">
           <h2 className="text-2xl font-bold mb-4">No Center Court Matches</h2>
           <p>No center court matches found for {formatDate(dateString)}</p>
         </div>
       </div>
+      </>
     );
   }
 
-  return (
-    <div className="min-h-screen text-white overflow-hidden flex flex-col bg-black bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${mainDisplayBg})`, backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      {/* Header with logos - Fixed at top */}
-      <div className="flex justify-evenly items-center px-12 py-6 flex-shrink-0">
-        {displayLogos.length > 0 ? (
-          displayLogos.map((logo, index) => (
-            <img
-              key={logo.id || index}
-              src={logo.publicId ? getOptimizedLogoUrl(logo.publicId, { width: 260, height: 104 }) : logo.url}
-              alt={logo.title || 'Sponsor Logo'}
-              className="h-20 w-auto max-w-[156px] object-contain"
-              onError={(e) => {
-                e.target.src = logo.url; // Fallback to original URL
-              }}
-            />
-          ))
-        ) : (
-          // Fallback to show a message when no logos are configured
-          <div className="text-white text-sm opacity-50">No logos configured</div>
-        )}
-      </div>
+  // Between matches, preview the next one instead of the scoreboard (ads and DRS still take over when active)
+  const isMatchActive = liveMatch.status === 'live' || liveMatch.status === 'in_progress' || liveMatch.status === 'completed';
+  if (!isMatchActive && !isDRSVideoPlaying && !showAdsMedia) {
+    return (
+      <>
+        <MatchPreview
+          tournamentId={tournamentId}
+          dateString={dateString}
+          team1Name={currentFixture.team1Name}
+          team2Name={currentFixture.team2Name}
+          team1Logo={mainTeam1Logo}
+          team2Logo={mainTeam2Logo}
+          matches={fixtureMatches}
+          nextMatch={liveMatch}
+          records={seasonRecords}
+          scale={fitScale}
+        />
+        {introOverlay}
+      </>
+    );
+  }
 
-      {/* Main content area - Expandable */}
-      <div className="flex-1 flex flex-col px-12">
-        {/* Main Live Match Display */}
-        <div className="mb-8">
-        <div className="bg-gradient-to-r from-orange-900 to-orange-800 rounded-2xl p-8 border border-orange-600 shadow-2xl relative overflow-hidden">
-          {/* Lightning animation effects */}
-          <div className="absolute inset-0 rounded-2xl border-4 border-orange-400 opacity-75 animate-pulse"></div>
-          <div
-            className="absolute inset-0 rounded-2xl border-2 border-yellow-300 opacity-60"
-            style={{
-              animation: 'lightning 1.5s ease-in-out infinite',
-              boxShadow: '0 0 20px rgba(255, 255, 0, 0.5), inset 0 0 20px rgba(255, 165, 0, 0.3)'
-            }}
-          ></div>
-          <div
-            className="absolute inset-0 rounded-2xl"
-            style={{
-              background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 0, 0.3) 50%, transparent 70%)',
-              animation: 'electricSweep 15s linear infinite'
-            }}
-          ></div>
-          
-          {/* Content wrapper to ensure it's above the animations */}
-          <div className="relative z-10">
-          {/* Match Type Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white bg-orange-700 rounded-lg py-3 px-6 inline-block">
-              {liveMatch.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : liveMatch.matchTypeLabel}
-            </h2>
+  // ---- Jumbotron design values (presentation only) ----
+  const jt = getJumbotronTheme(getActiveJumbotronTheme(logosDocData));
+  const jbPalette = jt.palette;
+  const [jbC1, jbC2, jbC3, jbC4] = jbPalette;
+  const [jbB1, jbB2, jbB3, jbB4] = jt.blobColors || [jbC1, jbC2, jbC3, jbC1];
+  const jbBlob = (key, bg, w, h, x, y, anim, blur) => (
+    <div
+      key={key}
+      style={{ position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: '50%', background: bg, filter: `blur(${blur + jt.blobBlurBoost}px)`, opacity: jt.blobOpacity, animation: anim, willChange: 'transform', mixBlendMode: 'screen' }}
+    />
+  );
+
+  const team1MatchesWon = completedMatches.filter(match => {
+    const team1Score = match.scores?.player1?.game1 || match.scores?.player1?.total || 0;
+    const team2Score = match.scores?.player2?.game1 || match.scores?.player2?.total || 0;
+    return team1Score > team2Score;
+  }).length;
+  const team2MatchesWon = completedMatches.filter(match => {
+    const team1Score = match.scores?.player1?.game1 || match.scores?.player1?.total || 0;
+    const team2Score = match.scores?.player2?.game1 || match.scores?.player2?.total || 0;
+    return team2Score > team1Score;
+  }).length;
+
+  const liveScore1 = liveMatch.scores?.player1?.game1 ||
+    liveMatch.scores?.player1?.total ||
+    liveMatch.team1Score ||
+    liveMatch.score1 ||
+    0;
+  const liveScore2 = liveMatch.scores?.player2?.game1 ||
+    liveMatch.scores?.player2?.total ||
+    liveMatch.team2Score ||
+    liveMatch.score2 ||
+    0;
+
+  const liveTeam1Players = [liveMatch.player1Team1, liveMatch.player2Team1].filter(Boolean).join(' / ');
+  const liveTeam2Players = [liveMatch.player1Team2, liveMatch.player2Team2].filter(Boolean).join(' / ');
+
+  // In Game Breaker scenario (3-3), show the 6 matches that were played before
+  const otherMatchesToShow = (() => {
+    const fixtureScore = calculateFixtureScore(completedMatches);
+    const isGameBreakerScenario = fixtureScore.team1Wins === 3 && fixtureScore.team2Wins === 3;
+
+    if (isGameBreakerScenario) {
+      // Show the 6 completed matches that were played before the Game Breaker (exclude the live Game Breaker)
+      return completedMatches
+        .filter(match => match.id !== liveMatch.id)
+        .slice(0, 6);
+    }
+    // Normal scenario: show completed + upcoming, excluding live match, max 5
+    return [...completedMatches, ...upcomingMatches]
+      .filter(match => match.id !== liveMatch.id)
+      .slice(0, 5);
+  })();
+
+  const getTeam1PlayersShort = (match) => {
+    // Handle different match types
+    if (match.player1Team1 && match.player2Team1) {
+      // Doubles - show both players
+      return `${match.player1Team1.split(' ')[0]} & ${match.player2Team1.split(' ')[0]}`;
+    } else if (match.player1Team1) {
+      // Singles - show single player
+      return match.player1Team1.split(' ')[0];
+    } else if (match.player1) {
+      // Alternative field name
+      return match.player1.split(' ')[0];
+    }
+    return 'TBD';
+  };
+
+  const getTeam2PlayersShort = (match) => {
+    // Handle different match types
+    if (match.player1Team2 && match.player2Team2) {
+      // Doubles - show both players
+      return `${match.player1Team2.split(' ')[0]} & ${match.player2Team2.split(' ')[0]}`;
+    } else if (match.player1Team2) {
+      // Singles - show single player
+      return match.player1Team2.split(' ')[0];
+    } else if (match.player2) {
+      // Alternative field name
+      return match.player2.split(' ')[0];
+    }
+    return 'TBD';
+  };
+
+  const getCardStyle = (match) => {
+    const scoreA = match.scores?.player1?.game1 || match.scores?.player1?.total || 0;
+    const scoreB = match.scores?.player2?.game1 || match.scores?.player2?.total || 0;
+    const done = match.status === 'completed';
+    const isLive = match.status === 'live' || match.status === 'in_progress';
+    const aWin = done && scoreA > scoreB;
+    const bWin = done && scoreB > scoreA;
+    const win = jt.winBg, winBorder = jt.winBorder, lose = 'rgba(0,0,0,.25)', loseBorder = 'rgba(255,255,255,.06)';
+    return {
+      scoreA,
+      scoreB,
+      status: done ? 'Final' : isLive ? 'Live' : 'Up Next',
+      badgeBg: done ? 'rgba(255,255,255,.12)' : isLive ? jbC1 : jt.upNextBadge,
+      badgeColor: done ? 'rgba(255,255,255,.8)' : '#fff',
+      glow: isLive ? `radial-gradient(ellipse at 50% 0%, ${jbC1}55, transparent 60%)` : 'none',
+      aBg: aWin ? win : bWin ? lose : 'rgba(255,255,255,.05)',
+      bBg: bWin ? win : aWin ? lose : 'rgba(255,255,255,.05)',
+      aBorder: aWin ? winBorder : loseBorder,
+      bBorder: bWin ? winBorder : loseBorder,
+      aColor: bWin ? 'rgba(255,255,255,.4)' : '#fff',
+      bColor: aWin ? 'rgba(255,255,255,.4)' : '#fff',
+    };
+  };
+
+  const jbLabel = (label) => (label === 'Dream Breaker' ? 'Game Breaker' : label);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: jt.pageBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Schibsted Grotesk', sans-serif" }}>
+      <style>{`
+        @keyframes jb-drift1{0%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}50%{transform:translate(6%,4%) rotate(-6deg) scale(1.15)}100%{transform:translate(-8%,-6%) rotate(-12deg) scale(1)}}
+        @keyframes jb-drift2{0%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}50%{transform:translate(-6%,-4%) rotate(20deg) scale(0.95)}100%{transform:translate(10%,8%) rotate(14deg) scale(1.1)}}
+        @keyframes jb-drift3{0%{transform:translate(0,0) scale(1);opacity:.9}50%{transform:translate(-4%,6%) scale(1.25);opacity:.6}100%{transform:translate(0,0) scale(1);opacity:.9}}
+        @keyframes jb-livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,45,120,.7)}50%{opacity:.6;box-shadow:0 0 0 10px rgba(255,45,120,0)}}
+        @keyframes jb-servepulse{0%,100%{box-shadow:0 0 0 0 rgba(255,210,58,.75),0 0 18px rgba(255,210,58,.8)}50%{box-shadow:0 0 0 14px rgba(255,210,58,0),0 0 18px rgba(255,210,58,.8)}}
+        @keyframes jb-sheen{0%{transform:translateX(-140%) skewX(-20deg)}100%{transform:translateX(240%) skewX(-20deg)}}
+      `}</style>
+      <JumbotronThemeStyles theme={jt.name} />
+
+      {/* Jumbotron canvas (1920x1080, scaled to fit) */}
+      <div style={{ position: 'relative', flex: 'none', width: 1920, height: 1080, transform: `scale(${fitScale})`, transformOrigin: 'center center', overflow: 'hidden', background: jt.canvasBg, color: '#fff', '--jb-serve': jt.serveDot }}>
+        <SlidingImagesOverlay
+          images={slidingImages}
+          startAfter={logosDocData.slidingImagesStartAfter || 0}
+          duration={logosDocData.slidingImagesDuration || 5}
+        />
+        {activeTimeout && (
+          <TimeoutSequenceOverlay
+            timeout={activeTimeout}
+            teamName={activeTimeout.team === 'team1' ? liveMatch.team1Name : liveMatch.team2Name}
+            teamLogo={getTeamLogo(activeTimeout.team === 'team1' ? liveMatch.team1Name : liveMatch.team2Name)}
+            images={slidingImages}
+            onComplete={clearActiveTimeout}
+          />
+        )}
+        {/* Animated backdrop */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: `radial-gradient(ellipse at 50% 100%, ${jbC4} 0%, ${jt.canvasBg} 70%)` }}>
+          {jbBlob('b1', `radial-gradient(ellipse at center, ${jbB1} 0%, transparent 65%)`, 1400, 700, -200, -150, 'jb-drift1 14s ease-in-out infinite', 70)}
+          {jbBlob('b2', `radial-gradient(ellipse at center, ${jbB2} 0%, transparent 65%)`, 1500, 800, 700, 350, 'jb-drift2 18s ease-in-out infinite', 80)}
+          {jbBlob('b3', `radial-gradient(ellipse at center, ${jbB3} 0%, transparent 60%)`, 700, 350, 1200, -100, 'jb-drift3 11s ease-in-out infinite', 60)}
+          {jbBlob('b4', `radial-gradient(ellipse at center, ${jbB4} 0%, transparent 60%)`, 900, 400, 300, 750, 'jb-drift3 16s ease-in-out infinite reverse', 70)}
+        </div>
+        <JumbotronThemeBackdrop theme={jt.name} palette={jbPalette} />
+        <div style={{ position: 'absolute', inset: 0, background: jt.vignette }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px)', mixBlendMode: 'overlay', pointerEvents: 'none' }} />
+        <JumbotronThemeForeground theme={jt.name} palette={jbPalette} />
+
+        <div style={{ position: 'relative', display: 'grid', gridTemplateRows: bottomLogos.length > 0 ? 'auto 1fr auto auto' : 'auto 1fr auto', gridTemplateColumns: 'minmax(0,1fr)', height: '100%', width: '100%', padding: '48px 72px 56px', boxSizing: 'border-box', gap: bottomLogos.length > 0 ? 28 : 36 }}>
+
+          {/* Header: sponsor logos (falls back to the Terminus CCPL logo) */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: displayLogos.length > 0 ? 'space-evenly' : 'center' }}>
+            {displayLogos.length > 0 ? (
+              displayLogos.map((logo, index) => (
+                <img
+                  key={logo.id || index}
+                  src={logo.publicId ? getOptimizedLogoUrl(logo.publicId, { width: 260, height: 104 }) : logo.url}
+                  alt={logo.title || 'Sponsor Logo'}
+                  style={{ height: 100, width: 'auto', maxWidth: 220, objectFit: 'contain', filter: jt.logoGlow }}
+                  onError={(e) => {
+                    e.target.src = logo.url; // Fallback to original URL
+                  }}
+                />
+              ))
+            ) : (
+              <img src={terminusLogo} alt="Terminus CCPL HYD" style={{ height: 120, width: 'auto', display: 'block', filter: jt.logoGlow }} />
+            )}
           </div>
 
-          {/* Teams and Score */}
-          <div className="flex items-center justify-between">
+          {/* Main scoreboard */}
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', gap: 28, padding: '0 16px', minWidth: 0, borderRadius: 32, background: 'linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02))', border: jt.scoreboardBorder, boxShadow: '0 40px 120px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.25)', backdropFilter: 'blur(14px)' }}>
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 32, overflow: 'hidden', pointerEvents: 'none' }}>
+              <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 6, background: jt.topBar }} />
+            </div>
+
             {/* Team 1 */}
-            <div className="flex items-center space-x-8 flex-1">
-              <div className="text-center">
-                {/* Team 1 Match Wins Counter */}
-                <div className="text-6xl font-bold text-white mb-4">
-                  {completedMatches.filter(match => {
-                    const team1Score = match.scores?.player1?.game1 || match.scores?.player1?.total || 0;
-                    const team2Score = match.scores?.player2?.game1 || match.scores?.player2?.total || 0;
-                    return team1Score > team2Score;
-                  }).length}
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr)', alignItems: 'center', gap: 28, paddingLeft: 16, minWidth: 0 }}>
+              <div style={{ position: 'relative', width: 220, height: 220, borderRadius: 28, padding: 4, background: jt.team1Frame, boxShadow: jt.team1FrameGlow, boxSizing: 'border-box' }}>
+                <div style={{ width: '100%', height: '100%', borderRadius: 24, overflow: 'hidden', background: jt.logoTileBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={mainTeam1Logo || paddleLogo} alt={`${currentFixture.team1Name} Logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
-                <img
-                   src={mainTeam1Logo || paddleLogo}
-                   alt={`${currentFixture.team1Name} Logo`}
-                   className="w-40 h-40 object-contain"
-                 />
               </div>
-              <div className="text-left">
-                <h3 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team1Name}</h3>
-                <div className="text-orange-200 space-y-1">
-                  {liveMatch.player1Team1 && (
-                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player1Team1}</div>
-                  )}
-                  {liveMatch.player2Team1 && (
-                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player2Team1}</div>
-                  )}
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+                <div style={{ font: "500 22px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.3em', textTransform: 'uppercase', color: jt.wonLabel }}>Matches won</div>
+                <div style={{ font: "900 30px/1 'Unbounded',sans-serif", letterSpacing: '-.05em', background: jt.team1WonText, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', filter: jt.team1WonGlow }}>{team1MatchesWon}</div>
+                <div style={{ font: "900 36px/1.05 'Unbounded',sans-serif", textTransform: 'uppercase', letterSpacing: '-.01em', textWrap: 'balance', minWidth: 0 }}>{currentFixture.team1Name}</div>
+                {liveTeam1Players && (
+                  <div style={{ font: "500 24px/1.25 'Schibsted Grotesk',sans-serif", color: 'rgba(255,255,255,.72)', textWrap: 'balance' }}>{liveTeam1Players}</div>
+                )}
               </div>
             </div>
 
-            {/* Score */}
-            <div className="px-12">
-              <div className="flex items-center justify-center space-x-8">
-                <div className="text-center relative">
-                  <span className="text-8xl font-bold text-white">
-                    {liveMatch.scores?.player1?.game1 ||
-                     liveMatch.scores?.player1?.total ||
-                     liveMatch.team1Score ||
-                     liveMatch.score1 ||
-                     0}
-                  </span>
-                  {/* Team 1 Serve Indicators */}
-                  {renderServeIndicators(liveMatch, 'team1')}
+            {/* Center game score */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 44px', borderRadius: 24, flex: 'none', background: jt.centerBg, border: jt.centerBorder, boxShadow: jt.centerGlow }}>
+              <JumbotronPillFrame theme={jt.name}>
+                <div style={{ position: 'relative', overflow: 'hidden', padding: jt.pillPadding, marginBottom: jt.pillMargin, borderRadius: jt.pillRadius, background: jt.pillBg, font: jt.pillFont, letterSpacing: jt.pillLetterSpacing, textTransform: jt.pillTransform, color: jt.pillColor, whiteSpace: 'nowrap', boxShadow: jt.pillGlow }}>
+                  {jbLabel(liveMatch.matchTypeLabel)}
+                  <span style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '35%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)', animation: 'jb-sheen 3.2s ease-in-out infinite' }} />
                 </div>
-                <span className="text-6xl font-bold text-orange-400">-</span>
-                <div className="text-center relative">
-                  <span className="text-8xl font-bold text-white">
-                    {liveMatch.scores?.player2?.game1 ||
-                     liveMatch.scores?.player2?.total ||
-                     liveMatch.team2Score ||
-                     liveMatch.score2 ||
-                     0}
-                  </span>
+              </JumbotronPillFrame>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 28, font: "900 190px/1 'Unbounded',sans-serif", letterSpacing: '-.06em', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  {/* Team 1 Serve Indicators */}
+                  <div style={{ height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {renderServeIndicators(liveMatch, 'team1')}
+                  </div>
+                  <span style={{ minWidth: '1.1ch', textAlign: 'center', textShadow: jt.scoreGlow }}>{themedScore(liveScore1, jt)}</span>
+                </div>
+                <span style={{ width: 56, height: 14, marginTop: 50, borderRadius: 7, background: jt.dash, boxShadow: jt.dashGlow }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                   {/* Team 2 Serve Indicators */}
-                  {renderServeIndicators(liveMatch, 'team2')}
+                  <div style={{ height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {renderServeIndicators(liveMatch, 'team2')}
+                  </div>
+                  <span style={{ minWidth: '1.1ch', textAlign: 'center', textShadow: jt.scoreGlow }}>{themedScore(liveScore2, jt, 0.37)}</span>
                 </div>
               </div>
             </div>
 
             {/* Team 2 */}
-            <div className="flex items-center space-x-8 flex-1 justify-end">
-              <div className="text-right">
-                <h3 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team2Name}</h3>
-                <div className="text-orange-200 space-y-1">
-                  {liveMatch.player1Team2 && (
-                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player1Team2}</div>
-                  )}
-                  {liveMatch.player2Team2 && (
-                    <div style={{ fontSize: '1.8rem', lineHeight: '3rem', fontWeight: 700 }}>{liveMatch.player2Team2}</div>
-                  )}
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', alignItems: 'center', gap: 28, paddingRight: 16, minWidth: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'right', alignItems: 'flex-end', minWidth: 0 }}>
+                <div style={{ font: "500 22px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.3em', textTransform: 'uppercase', color: jt.wonLabel }}>Matches won</div>
+                <div style={{ font: "900 30px/1 'Unbounded',sans-serif", letterSpacing: '-.05em', background: jt.team2WonText, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', filter: jt.team2WonGlow }}>{team2MatchesWon}</div>
+                <div style={{ font: "900 36px/1.05 'Unbounded',sans-serif", textTransform: 'uppercase', letterSpacing: '-.01em', textWrap: 'balance', minWidth: 0 }}>{currentFixture.team2Name}</div>
+                {liveTeam2Players && (
+                  <div style={{ font: "500 24px/1.25 'Schibsted Grotesk',sans-serif", color: 'rgba(255,255,255,.72)', textWrap: 'balance' }}>{liveTeam2Players}</div>
+                )}
               </div>
-              <div className="text-center">
-                {/* Team 2 Match Wins Counter */}
-                <div className="text-6xl font-bold text-white mb-4">
-                  {completedMatches.filter(match => {
-                    const team1Score = match.scores?.player1?.game1 || match.scores?.player1?.total || 0;
-                    const team2Score = match.scores?.player2?.game1 || match.scores?.player2?.total || 0;
-                    return team2Score > team1Score;
-                  }).length}
+              <div style={{ position: 'relative', width: 220, height: 220, borderRadius: 28, padding: 4, background: jt.team2Frame, boxShadow: jt.team2FrameGlow, boxSizing: 'border-box' }}>
+                <div style={{ width: '100%', height: '100%', borderRadius: 24, overflow: 'hidden', background: jt.logoTileBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={mainTeam2Logo || paddleLogo} alt={`${currentFixture.team2Name} Logo`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
-                <img
-                   src={mainTeam2Logo || paddleLogo}
-                   alt={`${currentFixture.team2Name} Logo`}
-                   className="w-40 h-40 object-contain"
-                 />
               </div>
             </div>
           </div>
-        </div>
-      </div>
-          </div>
 
-      {/* Other Matches in Fixture */}
-      <div className="px-12 relative z-10">
-        <div className="grid grid-cols-5 gap-6">
-          {(() => {
-            // In Game Breaker scenario (3-3), show the 6 matches that were played before
-            const fixtureScore = calculateFixtureScore(completedMatches);
-            const isGameBreakerScenario = fixtureScore.team1Wins === 3 && fixtureScore.team2Wins === 3;
-            
-            let matchesToShow;
-            if (isGameBreakerScenario) {
-              // Show the 6 completed matches that were played before the Game Breaker (exclude the live Game Breaker)
-              matchesToShow = completedMatches
-                .filter(match => match.id !== liveMatch.id)
-                .slice(0, 6);
-            } else {
-              // Normal scenario: show completed + upcoming, excluding live match, max 5
-              matchesToShow = [...completedMatches, ...upcomingMatches]
-                .filter(match => match.id !== liveMatch.id)
-                .slice(0, 5);
-            }
-            
-            return matchesToShow.map((match, index) => (
-                <div key={match.id} className="bg-orange-900 rounded-xl p-6 border border-orange-600 shadow-lg">
-                  {/* Match Type Header */}
-                  <div className="text-center mb-6">
-                    <h4 className="text-lg font-semibold text-white bg-orange-700 rounded py-3 px-4">
-                      {match.matchTypeLabel === 'Dream Breaker' ? 'Game Breaker' : match.matchTypeLabel}
-                    </h4>
+          {/* Other Matches in Fixture */}
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(5, otherMatchesToShow.length)},minmax(0,1fr))`, gap: 24, minWidth: 0 }}>
+            {otherMatchesToShow.map((match) => {
+              const s = getCardStyle(match);
+              return (
+                <div key={match.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 18, padding: '22px 26px 26px', borderRadius: 22, minWidth: 0, background: 'linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.025))', border: jt.cardBorder, boxShadow: '0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.2)', backdropFilter: 'blur(10px)', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: s.glow, pointerEvents: 'none' }} />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ font: "700 22px/1.1 'Unbounded',sans-serif", letterSpacing: '.02em', textTransform: 'uppercase', minWidth: 0, textWrap: 'balance', background: jt.cardLabel, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{jbLabel(match.matchTypeLabel)}</div>
+                    <div style={{ flex: 'none', font: "800 16px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.2em', textTransform: 'uppercase', padding: '8px 12px', borderRadius: 999, background: s.badgeBg, color: s.badgeColor, animation: s.status === 'Live' ? 'jb-livepulse 1.6s ease-in-out infinite' : 'none' }}>{s.status}</div>
                   </div>
-                  
-                  {/* Team 1 Section */}
-                  <div className="mb-4">
-                    <div className="text-left text-orange-300 text-sm mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team1Name}</div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-left">
-                        <div className="text-white text-lg font-medium">
-                          {(() => {
-                            // Handle different match types
-                            if (match.player1Team1 && match.player2Team1) {
-                              // Doubles - show both players
-                              return `${match.player1Team1.split(' ')[0]} & ${match.player2Team1.split(' ')[0]}`;
-                            } else if (match.player1Team1) {
-                              // Singles - show single player
-                              return match.player1Team1.split(' ')[0];
-                            } else if (match.player1) {
-                              // Alternative field name
-                              return match.player1.split(' ')[0];
-                            } else {
-                              return 'TBD';
-                            }
-                          })()}
-                        </div>
-                      </div>
-                      <div className="text-white text-4xl font-bold">
-                        {match.scores?.player1?.game1 || match.scores?.player1?.total || 0}
-                      </div>
+                  <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: s.aBg, border: `1px solid ${s.aBorder}` }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+                      <div style={{ font: "800 17px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.9)', textWrap: 'balance' }}>{currentFixture.team1Name}</div>
+                      <div style={{ font: "500 19px/1.25 'Schibsted Grotesk',sans-serif", color: 'rgba(255,255,255,.72)', textWrap: 'balance' }}>{getTeam1PlayersShort(match)}</div>
                     </div>
+                    <div style={{ font: "900 48px/1 'Unbounded',sans-serif", letterSpacing: '-.04em', minWidth: '2.2ch', textAlign: 'right', color: s.aColor, fontVariantNumeric: 'tabular-nums' }}>{themedScore(s.scoreA, jt, 0.74)}</div>
                   </div>
-
-                  {/* Separator Line */}
-                  <div className="border-t border-orange-600 my-4"></div>
-
-                  {/* Team 2 Section */}
-                  <div>
-                    <div className="text-left text-orange-300 text-sm mb-2" style={{ fontFamily: 'SATriumph, sans-serif' }}>{currentFixture.team2Name}</div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-left">
-                        <div className="text-white text-lg font-medium">
-                          {(() => {
-                            // Handle different match types
-                            if (match.player1Team2 && match.player2Team2) {
-                              // Doubles - show both players
-                              return `${match.player1Team2.split(' ')[0]} & ${match.player2Team2.split(' ')[0]}`;
-                            } else if (match.player1Team2) {
-                              // Singles - show single player
-                              return match.player1Team2.split(' ')[0];
-                            } else if (match.player2) {
-                              // Alternative field name
-                              return match.player2.split(' ')[0];
-                            } else {
-                              return 'TBD';
-                            }
-                          })()}
-                        </div>
-                      </div>
-                      <div className="text-white text-4xl font-bold">
-                        {match.scores?.player2?.game1 || match.scores?.player2?.total || 0}
-                      </div>
+                  <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 14, background: s.bBg, border: `1px solid ${s.bBorder}` }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+                      <div style={{ font: "800 17px/1 'Schibsted Grotesk',sans-serif", letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.9)', textWrap: 'balance' }}>{currentFixture.team2Name}</div>
+                      <div style={{ font: "500 19px/1.25 'Schibsted Grotesk',sans-serif", color: 'rgba(255,255,255,.72)', textWrap: 'balance' }}>{getTeam2PlayersShort(match)}</div>
                     </div>
+                    <div style={{ font: "900 48px/1 'Unbounded',sans-serif", letterSpacing: '-.04em', minWidth: '2.2ch', textAlign: 'right', color: s.bColor, fontVariantNumeric: 'tabular-nums' }}>{themedScore(s.scoreB, jt, 1.11)}</div>
                   </div>
                 </div>
-              ));
-          })()}
-        </div>
-      </div>
+              );
+            })}
+          </div>
 
-      {/* Bottom Logos Section - Fixed at bottom */}
-      <div className="px-12 py-6 flex-shrink-0 relative z-10">
-        <div className="flex justify-evenly items-center w-full">
-          {bottomLogos.map((logo, index) => (
-            <img
-              key={`${logo.id}-${index}`}
-              src={logo.url}
-              alt={logo.name || `Logo ${index + 1}`}
-              className="h-20 w-auto"
-              onError={(e) => {
-                console.error('Failed to load bottom logo:', logo.url);
-                e.target.style.display = 'none';
-              }}
-            />
-          ))}
+          {/* Bottom Logos Section */}
+          {bottomLogos.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-evenly', alignItems: 'center', width: '100%' }}>
+              {bottomLogos.map((logo, index) => (
+                <img
+                  key={`${logo.id}-${index}`}
+                  src={logo.url}
+                  alt={logo.name || `Logo ${index + 1}`}
+                  style={{ height: 72, width: 'auto' }}
+                  onError={(e) => {
+                    console.error('Failed to load bottom logo:', logo.url);
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1453,7 +1578,12 @@ export default function MainDisplay() {
         </div>
       )}
 
-      </div>
+      {introOverlay}
+      {/* Plays once each time the live match score is tied */}
+      {showAllSquare && <AllSquareOverlay />}
+      {/* Plays once each time a team scores 3 points in a row */}
+      {/* Match point takes priority when both fire on the same point */}
+      {showMatchPoint ? <MatchPointOverlay /> : showElectricStreak && <ElectricStreakOverlay />}
     </div>
   );
 }

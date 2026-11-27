@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, deleteDoc, deleteField, writeBatch } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { uploadAdsImage } from '../utils/cloudinary';
-import { listLogosFromCloudinary, getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
+import { getOptimizedLogoUrl } from '../utils/cloudinaryAdmin';
+import { getMatchLogoKey, matchLogosDocRef, matchLogosCollectionRef, logoLibraryCollectionRef } from '../utils/matchLogos';
 
 export default function DisplayController() {
   const { tournamentId } = useParams();
@@ -31,10 +32,19 @@ export default function DisplayController() {
   const [slidingImages, setSlidingImages] = useState([]);
   const [slidingImagesStartAfter, setSlidingImagesStartAfter] = useState(0);
   const [slidingImagesDuration, setSlidingImagesDuration] = useState(5);
-  const [slidingImagesGradientColor, setSlidingImagesGradientColor] = useState('#FF5722');
   const [loadingLogos, setLoadingLogos] = useState(false);
-  const [availableLogos, setAvailableLogos] = useState([]);
-  const [loadingAvailableLogos, setLoadingAvailableLogos] = useState(false);
+  // Number of files currently uploading per section: top, bottom, sliding
+  const [uploadingCounts, setUploadingCounts] = useState({});
+  // Raw tournament_logos doc and which logo set is being edited:
+  // 'default' (all matches) or a per-match key from getMatchLogoKey
+  const [logosDocData, setLogosDocData] = useState({});
+  // Festive skins for the main + side displays (stored on tournament_logos so both displays pick them up live)
+  const [halloweenTheme, setHalloweenTheme] = useState(false);
+  const [diwaliTheme, setDiwaliTheme] = useState(false);
+  const [childrensDayTheme, setChildrensDayTheme] = useState(false);
+  const [cinemaTheme, setCinemaTheme] = useState(false);
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [logoScope, setLogoScope] = useState('default');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -382,29 +392,30 @@ export default function DisplayController() {
     setLoadingLogos(true);
     try {
       const logosDoc = await getDoc(doc(db, 'tournament_logos', tournamentId));
-      if (logosDoc.exists()) {
-        const data = logosDoc.data();
-        const topLogos = data.displayLogos || [];
-        const bottomLogosData = data.bottomLogos || [];
-        const slidingImagesData = data.slidingImages || [];
-        // Sort by rank to maintain order
-        const sortedTopLogos = topLogos.sort((a, b) => a.rank - b.rank);
-        const sortedBottomLogos = bottomLogosData.sort((a, b) => a.rank - b.rank);
-        const sortedSlidingImages = slidingImagesData.sort((a, b) => a.rank - b.rank);
-        setDisplayLogos(sortedTopLogos);
-        setBottomLogos(sortedBottomLogos);
-        setSlidingImages(sortedSlidingImages);
-        setSlidingImagesStartAfter(data.slidingImagesStartAfter || 0);
-        setSlidingImagesDuration(data.slidingImagesDuration || 5);
-        setSlidingImagesGradientColor(data.slidingImagesGradientColor || '#FF5722');
-      } else {
-        setDisplayLogos([]);
-        setBottomLogos([]);
-        setSlidingImages([]);
-        setSlidingImagesStartAfter(0);
-        setSlidingImagesDuration(5);
-        setSlidingImagesGradientColor('#FF5722');
+      let data = logosDoc.exists() ? logosDoc.data() : {};
+      if (data.logoLibrary || data.matchLogos) {
+        await migrateLegacyLogoFields(data);
+        const { logoLibrary: _lib, matchLogos: _match, ...rest } = data;
+        data = rest;
       }
+      // The library and per-match sets live in subcollections (see utils/matchLogos)
+      const [librarySnap, matchSnap] = await Promise.all([
+        getDocs(logoLibraryCollectionRef(tournamentId)),
+        getDocs(matchLogosCollectionRef(tournamentId))
+      ]);
+      const logoLibrary = librarySnap.docs
+        .map(d => ({ ...d.data(), libId: d.id }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      const matchLogos = {};
+      matchSnap.docs.forEach(d => {
+        const { key, updatedAt: _updatedAt, ...set } = d.data();
+        matchLogos[key || decodeURIComponent(d.id)] = set;
+      });
+      data = { ...data, logoLibrary, matchLogos };
+      setLogosDocData(data);
+      applyLogoScope(data, logoScope);
+      setSlidingImagesStartAfter(data.slidingImagesStartAfter || 0);
+      setSlidingImagesDuration(data.slidingImagesDuration || 5);
     } catch (error) {
       console.error('Error loading logos:', error);
       setDisplayLogos([]);
@@ -417,20 +428,176 @@ export default function DisplayController() {
     }
   };
 
-  const loadAvailableLogos = async () => {
-    setLoadingAvailableLogos(true);
+  // Logo library: every uploaded logo is saved in tournament_logos.logoLibrary.
+  // Logos already placed on displays are included too, so older uploads show up.
+  const logoLibrary = useMemo(() => {
+    const seen = new Set();
+    const library = [];
+    const addItem = (item, saved) => {
+      if (!item?.url || seen.has(item.url)) return;
+      seen.add(item.url);
+      library.push({
+        url: item.url,
+        publicId: item.publicId || null,
+        title: item.title || item.name || item.publicId?.split('/').pop() || 'Logo',
+        saved
+      });
+    };
+    (logosDocData.logoLibrary || []).forEach(item => addItem(item, true));
+    const sets = [logosDocData, ...Object.values(logosDocData.matchLogos || {})];
+    sets.forEach(set => {
+      [...(set.displayLogos || []), ...(set.bottomLogos || []), ...(set.slidingImages || [])]
+        .forEach(item => addItem(item, false));
+    });
+    return library;
+  }, [logosDocData]);
+
+  // Firestore batches hold at most 500 writes
+  const commitInBatches = async (ops) => {
+    for (let i = 0; i < ops.length; i += 450) {
+      const batch = writeBatch(db);
+      ops.slice(i, i + 450).forEach(op => op(batch));
+      await batch.commit();
+    }
+  };
+
+  // The library and per-match sets used to live inside the main logos document, which
+  // hit Firestore's 1 MB limit. Move them into their own subcollections once.
+  const migrateLegacyLogoFields = async (data) => {
+    const ops = [];
+    const seen = new Set();
+    (data.logoLibrary || []).forEach((item, index) => {
+      if (!item?.url || seen.has(item.url)) return;
+      seen.add(item.url);
+      // Stable ids so a retried migration overwrites instead of duplicating
+      const ref = doc(logoLibraryCollectionRef(tournamentId), encodeURIComponent(item.publicId || item.url));
+      ops.push(batch => batch.set(ref, {
+        url: item.url,
+        publicId: item.publicId || null,
+        title: item.title || 'Logo',
+        order: index
+      }));
+    });
+    Object.entries(data.matchLogos || {}).forEach(([key, set]) => {
+      ops.push(batch => batch.set(matchLogosDocRef(tournamentId, key), { ...set, key }));
+    });
+    await commitInBatches(ops);
+    await updateDoc(doc(db, 'tournament_logos', tournamentId), {
+      logoLibrary: deleteField(),
+      matchLogos: deleteField()
+    });
+  };
+
+  const addToLogoLibrary = async (uploaded) => {
+    const baseOrder = Date.now();
+    const entries = uploaded.map((item, index) => ({
+      libId: doc(logoLibraryCollectionRef(tournamentId)).id,
+      url: item.url,
+      publicId: item.publicId || null,
+      title: item.title || 'Logo',
+      order: baseOrder + index
+    }));
+    setLogosDocData(prev => ({ ...prev, logoLibrary: [...(prev.logoLibrary || []), ...entries] }));
     try {
-      const logos = await listLogosFromCloudinary();
-      setAvailableLogos(logos);
+      await commitInBatches(entries.map(({ libId, ...entry }) => batch =>
+        batch.set(doc(logoLibraryCollectionRef(tournamentId), libId), entry)
+      ));
     } catch (error) {
-      console.error('Error loading available logos:', error);
-      setAvailableLogos([]);
-    } finally {
-      setLoadingAvailableLogos(false);
+      console.error('Error saving to logo library:', error);
+      alert('Error saving to logo library: ' + error.message);
+    }
+  };
+
+  const removeAllFromLogoLibrary = async () => {
+    const removed = (logosDocData.logoLibrary || []).filter(item => item.libId);
+    if (removed.length === 0) return;
+    if (!window.confirm(`Remove all ${removed.length} logos from the library? Logos already placed on displays stay on the displays.`)) return;
+    setLogosDocData(prev => ({ ...prev, logoLibrary: [] }));
+    try {
+      await commitInBatches(removed.map(item => batch =>
+        batch.delete(doc(logoLibraryCollectionRef(tournamentId), item.libId))
+      ));
+    } catch (error) {
+      console.error('Error clearing logo library:', error);
+      alert('Error clearing logo library: ' + error.message);
+      loadLogos();
+    }
+  };
+
+  const removeFromLogoLibrary = async (url) => {
+    const removed = (logosDocData.logoLibrary || []).filter(item => item.url === url);
+    setLogosDocData(prev => ({
+      ...prev,
+      logoLibrary: (prev.logoLibrary || []).filter(item => item.url !== url)
+    }));
+    try {
+      await commitInBatches(removed.filter(item => item.libId).map(item => batch =>
+        batch.delete(doc(logoLibraryCollectionRef(tournamentId), item.libId))
+      ));
+    } catch (error) {
+      console.error('Error removing from logo library:', error);
+      alert('Error removing from logo library: ' + error.message);
+    }
+  };
+
+  // Show the logo set for a scope; a match without its own set shows the defaults
+  const applyLogoScope = (data, scope) => {
+    const override = scope !== 'default' ? data?.matchLogos?.[scope] : null;
+    const source = override || data || {};
+    const byRank = (items) => [...(items || [])].sort((a, b) => a.rank - b.rank);
+    setDisplayLogos(byRank(source.displayLogos));
+    setBottomLogos(byRank(source.bottomLogos));
+    setSlidingImages(byRank(source.slidingImages));
+  };
+
+  const selectLogoScope = (scope) => {
+    setLogoScope(scope);
+    applyLogoScope(logosDocData, scope);
+  };
+
+  const resetMatchLogos = async () => {
+    if (logoScope === 'default') return;
+    if (!window.confirm('Remove the custom logos for this match? It will show the default logos again.')) return;
+    try {
+      await deleteDoc(matchLogosDocRef(tournamentId, logoScope));
+      const { [logoScope]: _removed, ...remaining } = logosDocData.matchLogos || {};
+      const updatedData = { ...logosDocData, matchLogos: remaining };
+      setLogosDocData(updatedData);
+      applyLogoScope(updatedData, logoScope);
+    } catch (error) {
+      console.error('Error resetting match logos:', error);
+      alert('Error resetting match logos: ' + error.message);
     }
   };
 
   const saveLogos = async (topLogos, bottomLogosParam, slidingImagesParam = null) => {
+    if (logoScope !== 'default') {
+      // Editing a match always saves its full set, creating the override on first change
+      const matchSet = {
+        displayLogos: topLogos,
+        bottomLogos: bottomLogosParam,
+        slidingImages: slidingImagesParam !== null ? slidingImagesParam : slidingImages
+      };
+      setLogosDocData(prev => ({ ...prev, matchLogos: { ...(prev.matchLogos || {}), [logoScope]: matchSet } }));
+      try {
+        await setDoc(matchLogosDocRef(tournamentId, logoScope), {
+          ...matchSet,
+          key: logoScope,
+          updatedAt: serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error saving match logos:', error);
+        alert('Error saving logos: ' + error.message);
+      }
+      return;
+    }
+
+    setLogosDocData(prev => ({
+      ...prev,
+      displayLogos: topLogos,
+      bottomLogos: bottomLogosParam,
+      ...(slidingImagesParam !== null ? { slidingImages: slidingImagesParam } : {})
+    }));
     try {
       const updateData = {
         tournamentId,
@@ -455,7 +622,6 @@ export default function DisplayController() {
       await setDoc(doc(db, 'tournament_logos', tournamentId), {
         slidingImagesStartAfter: slidingImagesStartAfter,
         slidingImagesDuration: slidingImagesDuration,
-        slidingImagesGradientColor: slidingImagesGradientColor,
         updatedAt: serverTimestamp()
       }, { merge: true });
     } catch (error) {
@@ -464,23 +630,45 @@ export default function DisplayController() {
     }
   };
 
-  const addLogoToDisplay = async (logoData, position = 'top') => {
-    const newLogo = {
-      id: Date.now().toString(),
+  const addLogoToDisplay = (logoData, position = 'top') => addLogosToDisplay([logoData], position);
+
+  const addLogosToDisplay = (logosData, position = 'top') => {
+    const existing = position === 'top' ? displayLogos : bottomLogos;
+    const newLogos = logosData.map((logoData, index) => ({
+      id: `${Date.now()}_${index}`,
       url: logoData.url,
       publicId: logoData.publicId,
       title: logoData.title || logoData.publicId?.split('/').pop() || 'Logo',
-      rank: position === 'top' ? displayLogos.length + 1 : bottomLogos.length + 1
-    };
+      rank: existing.length + index + 1
+    }));
 
+    const updatedLogos = [...existing, ...newLogos];
     if (position === 'top') {
-      const updatedLogos = [...displayLogos, newLogo];
       setDisplayLogos(updatedLogos);
       saveLogos(updatedLogos, bottomLogos);
     } else {
-      const updatedLogos = [...bottomLogos, newLogo];
       setBottomLogos(updatedLogos);
       saveLogos(displayLogos, updatedLogos);
+    }
+  };
+
+  // Uploads all picked files in parallel and adds the successful ones in filename order,
+  // comparing numbers numerically so "2.png" comes before "10.png"
+  const uploadImagesInBulk = async (pickedFiles, onUploaded, uploadKey) => {
+    const files = [...pickedFiles].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+    setUploadingCounts(prev => ({ ...prev, [uploadKey]: files.length }));
+    const results = await Promise.allSettled(files.map(file => uploadLogoToCloudinary(file)));
+    setUploadingCounts(prev => ({ ...prev, [uploadKey]: 0 }));
+    const uploaded = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+    if (uploaded.length > 0) {
+      onUploaded(uploaded);
+      addToLogoLibrary(uploaded);
+    }
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      alert(`${failed.length} of ${files.length} image(s) failed to upload: ${failed[0].reason?.message || 'Unknown error'}`);
     }
   };
 
@@ -522,13 +710,11 @@ export default function DisplayController() {
     const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= logos.length) return;
 
-    const updatedLogos = [...logos];
-    [updatedLogos[currentIndex], updatedLogos[newIndex]] = [updatedLogos[newIndex], updatedLogos[currentIndex]];
+    const reordered = [...logos];
+    [reordered[currentIndex], reordered[newIndex]] = [reordered[newIndex], reordered[currentIndex]];
     
     // Update ranks
-    updatedLogos.forEach((logo, index) => {
-      logo.rank = index + 1;
-    });
+    const updatedLogos = reordered.map((logo, index) => ({ ...logo, rank: index + 1 }));
 
     if (position === 'top') {
       setDisplayLogos(updatedLogos);
@@ -540,25 +726,32 @@ export default function DisplayController() {
   };
 
   // Sliding Images Management Functions
-  const addSlidingImage = async (imageData) => {
-    const newImage = {
-      id: Date.now().toString(),
+  const addSlidingImages = (imagesData) => {
+    const newImages = imagesData.map((imageData, index) => ({
+      id: `${Date.now()}_${index}`,
       url: imageData.url,
       publicId: imageData.publicId,
       name: imageData.title || imageData.publicId?.split('/').pop() || 'Image',
-      rank: slidingImages.length + 1
-    };
+      rank: slidingImages.length + index + 1
+    }));
 
-    const updatedImages = [...slidingImages, newImage];
+    const updatedImages = [...slidingImages, ...newImages];
     setSlidingImages(updatedImages);
     saveLogos(displayLogos, bottomLogos, updatedImages);
   };
+
 
   const removeSlidingImage = (imageId) => {
     const updatedImages = slidingImages.filter(image => image.id !== imageId)
       .map((image, index) => ({ ...image, rank: index + 1 }));
     setSlidingImages(updatedImages);
     saveLogos(displayLogos, bottomLogos, updatedImages);
+  };
+
+  const removeAllSlidingImages = () => {
+    if (!window.confirm(`Remove all ${slidingImages.length} sliding images? They stay in the logo library.`)) return;
+    setSlidingImages([]);
+    saveLogos(displayLogos, bottomLogos, []);
   };
 
   const updateSlidingImage = (imageId, field, value) => {
@@ -576,13 +769,11 @@ export default function DisplayController() {
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= slidingImages.length) return;
 
-    const updatedImages = [...slidingImages];
-    [updatedImages[currentIndex], updatedImages[newIndex]] = [updatedImages[newIndex], updatedImages[currentIndex]];
+    const reordered = [...slidingImages];
+    [reordered[currentIndex], reordered[newIndex]] = [reordered[newIndex], reordered[currentIndex]];
     
     // Update ranks
-    updatedImages.forEach((image, index) => {
-      image.rank = index + 1;
-    });
+    const updatedImages = reordered.map((image, index) => ({ ...image, rank: index + 1 }));
 
     setSlidingImages(updatedImages);
     saveLogos(displayLogos, bottomLogos, updatedImages);
@@ -621,13 +812,57 @@ export default function DisplayController() {
     }
   };
 
+  // Per-match logo sets belong to a date, so go back to defaults when the date changes
+  useEffect(() => {
+    setLogoScope('default');
+    applyLogoScope(logosDocData, 'default');
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!tournamentId) return;
+    getDoc(doc(db, 'tournament_logos', tournamentId))
+      .then((logosDoc) => {
+        const data = logosDoc.exists() ? logosDoc.data() : {};
+        setHalloweenTheme(!!data.halloweenTheme);
+        setDiwaliTheme(!!data.diwaliTheme);
+        setChildrensDayTheme(!!data.childrensDayTheme);
+        setCinemaTheme(!!data.cinemaTheme);
+      })
+      .catch((error) => console.error('Error loading display theme:', error));
+  }, [tournamentId]);
+
+  // Only one festive theme can be on at a time
+  const setFestiveTheme = async (theme, enabled) => {
+    const next = {
+      halloweenTheme: theme === 'halloween' && enabled,
+      diwaliTheme: theme === 'diwali' && enabled,
+      childrensDayTheme: theme === 'childrensDay' && enabled,
+      cinemaTheme: theme === 'cinema' && enabled
+    };
+    setSavingTheme(true);
+    try {
+      await setDoc(doc(db, 'tournament_logos', tournamentId), {
+        ...next,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      setHalloweenTheme(next.halloweenTheme);
+      setDiwaliTheme(next.diwaliTheme);
+      setChildrensDayTheme(next.childrensDayTheme);
+      setCinemaTheme(next.cinemaTheme);
+    } catch (error) {
+      console.error('Error updating display theme:', error);
+      alert('Error updating display theme: ' + error.message);
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
   // Load media items and logos when component mounts or tab changes
   useEffect(() => {
     if (activeTab === 'ads-videos') {
       loadMediaItems();
     } else if (activeTab === 'logos') {
       loadLogos();
-      loadAvailableLogos();
     }
   }, [activeTab, tournamentId]);
 
@@ -714,7 +949,7 @@ export default function DisplayController() {
               {/* Main Display Status */}
               <div className={`alert ${currentMainDisplayFixture ? 'alert-success' : 'alert-info'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
                   <h3 className="font-bold">Main Display (Center Court)</h3>
@@ -730,7 +965,7 @@ export default function DisplayController() {
               {/* Side Display Status */}
               <div className={`alert ${currentSideDisplayFixture ? 'alert-success' : 'alert-info'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
                   <h3 className="font-bold">Side Display (Side Courts)</h3>
@@ -740,6 +975,67 @@ export default function DisplayController() {
                       : 'No fixture selected'
                     }
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Display Theme */}
+            <div className="card bg-base-100 shadow-xl mb-8">
+              <div className="card-body gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="card-title">🎃 Halloween Theme</h3>
+                    <p className="text-sm text-base-content/70">Applies the Halloween look to the Main and Side displays</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-warning toggle-lg"
+                    checked={halloweenTheme}
+                    disabled={savingTheme}
+                    onChange={() => setFestiveTheme('halloween', !halloweenTheme)}
+                  />
+                </div>
+                <div className="divider my-0" />
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="card-title">🪔 Diwali Theme</h3>
+                    <p className="text-sm text-base-content/70">Applies the Diwali look to the Main and Side displays</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-warning toggle-lg"
+                    checked={diwaliTheme}
+                    disabled={savingTheme}
+                    onChange={() => setFestiveTheme('diwali', !diwaliTheme)}
+                  />
+                </div>
+                <div className="divider my-0" />
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="card-title">🎈 Children's Day Theme</h3>
+                    <p className="text-sm text-base-content/70">Applies the Children's Day look to the Main and Side displays</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-warning toggle-lg"
+                    checked={childrensDayTheme}
+                    disabled={savingTheme}
+                    onChange={() => setFestiveTheme('childrensDay', !childrensDayTheme)}
+                  />
+                </div>
+                <div className="divider my-0" />
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="card-title">🎬 Cinema Theme</h3>
+                    <p className="text-sm text-base-content/70">Applies the Cinema (All-Stars premiere) look to the Main and Side displays</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-warning toggle-lg"
+                    checked={cinemaTheme}
+                    disabled={savingTheme}
+                    onChange={() => setFestiveTheme('cinema', !cinemaTheme)}
+                  />
                 </div>
               </div>
             </div>
@@ -1087,6 +1383,77 @@ export default function DisplayController() {
               <p className="text-base-content/70">Manage logos for both main display and side display. Logos will appear from left to right in the order you set.</p>
             </div>
 
+            {/* Match selector: default logos or a specific match's logos */}
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h4 className="card-title text-xl">Assign Logos To</h4>
+                <p className="text-sm text-base-content/70 mb-2">
+                  Pick a date and a match to give it its own logos. Matches without their own logos show the defaults.
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {availableDates.map(date => (
+                    <button
+                      key={date}
+                      className={`btn btn-sm ${selectedDate === date ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setSelectedDate(date)}
+                    >
+                      {new Date(date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className={`btn ${logoScope === 'default' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => selectLogoScope('default')}
+                  >
+                    Default (all matches)
+                  </button>
+                  {[
+                    ...centerCourtFixtures.map(fixture => ({ fixture, court: 'Center' })),
+                    ...sideCourtFixtures.map(fixture => ({ fixture, court: 'Side' }))
+                  ].map(({ fixture, court }) => {
+                    const key = getMatchLogoKey(selectedDate, fixture);
+                    const hasCustomLogos = !!logosDocData.matchLogos?.[key];
+                    return (
+                      <button
+                        key={key}
+                        className={`btn ${logoScope === key ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => selectLogoScope(key)}
+                      >
+                        <span className="badge badge-sm badge-ghost">{court}</span>
+                        {fixture.team1Name} vs {fixture.team2Name}
+                        {hasCustomLogos && <span className="badge badge-sm badge-success">Custom</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {centerCourtFixtures.length === 0 && sideCourtFixtures.length === 0 && (
+                  <p className="text-sm text-base-content/50 mt-2">No matches on this date.</p>
+                )}
+
+                {logoScope !== 'default' && (
+                  logosDocData.matchLogos?.[logoScope] ? (
+                    <div className="alert alert-success mt-4">
+                      <span>This match has its own logos. Changes below apply only to this match.</span>
+                      <button className="btn btn-sm btn-outline" onClick={resetMatchLogos}>
+                        Reset to default logos
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="alert alert-info mt-4">
+                      <span>This match is showing the default logos. Any change below creates logos for this match only.</span>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+
             {loadingLogos ? (
               <div className="flex justify-center py-12">
                 <div className="loading loading-spinner loading-lg"></div>
@@ -1099,26 +1466,25 @@ export default function DisplayController() {
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="card-title text-xl">Top Logos</h4>
                       <div className="flex gap-2">
-                        <label className="btn btn-primary btn-sm">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <label className={`btn btn-primary btn-sm ${uploadingCounts.top ? 'btn-disabled' : ''}`}>
+                          {uploadingCounts.top ? (
+                            <div className="loading loading-spinner loading-xs mr-2"></div>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                           </svg>
-                          Upload
+                          )}
+                          {uploadingCounts.top ? `Uploading ${uploadingCounts.top}...` : 'Upload'}
                           <input
                             type="file"
                             className="hidden"
                             accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                try {
-                                  const logoData = await uploadLogoToCloudinary(file);
-                                  addLogoToDisplay(logoData, 'top');
-                                  e.target.value = ''; // Reset input
-                                } catch (error) {
-                                  alert('Error uploading logo: ' + error.message);
-                                }
-                              }
+                            multiple
+                            disabled={!!uploadingCounts.top}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              e.target.value = ''; // Reset input
+                              if (files.length > 0) uploadImagesInBulk(files, (uploaded) => addLogosToDisplay(uploaded, 'top'), 'top');
                             }}
                           />
                         </label>
@@ -1200,26 +1566,25 @@ export default function DisplayController() {
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="card-title text-xl">Bottom Logos</h4>
                       <div className="flex gap-2">
-                        <label className="btn btn-secondary btn-sm">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <label className={`btn btn-secondary btn-sm ${uploadingCounts.bottom ? 'btn-disabled' : ''}`}>
+                          {uploadingCounts.bottom ? (
+                            <div className="loading loading-spinner loading-xs mr-2"></div>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                           </svg>
-                          Upload
+                          )}
+                          {uploadingCounts.bottom ? `Uploading ${uploadingCounts.bottom}...` : 'Upload'}
                           <input
                             type="file"
                             className="hidden"
                             accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                try {
-                                  const logoData = await uploadLogoToCloudinary(file);
-                                  addLogoToDisplay(logoData, 'bottom');
-                                  e.target.value = ''; // Reset input
-                                } catch (error) {
-                                  alert('Error uploading logo: ' + error.message);
-                                }
-                              }
+                            multiple
+                            disabled={!!uploadingCounts.bottom}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              e.target.value = ''; // Reset input
+                              if (files.length > 0) uploadImagesInBulk(files, (uploaded) => addLogosToDisplay(uploaded, 'bottom'), 'bottom');
                             }}
                           />
                         </label>
@@ -1295,77 +1660,101 @@ export default function DisplayController() {
                   </div>
                 </div>
 
-                {/* Available Logos from Cloudinary */}
+                {/* Available Logos: the tournament's logo library in Firestore */}
                 <div className="card bg-base-100 shadow-xl">
                   <div className="card-body">
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="card-title text-xl">Available Logos</h4>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={loadAvailableLogos}
-                        disabled={loadingAvailableLogos}
-                      >
-                        {loadingAvailableLogos ? (
-                          <div className="loading loading-spinner loading-sm"></div>
+                      <div className="flex items-center gap-2">
+                      {logoLibrary.some(logo => logo.saved) && (
+                        <button
+                          className="btn btn-error btn-outline btn-sm"
+                          onClick={removeAllFromLogoLibrary}
+                          title="Remove every logo from the library (logos already on displays stay)"
+                        >
+                          Remove All
+                        </button>
+                      )}
+                      <label className={`btn btn-ghost btn-sm ${uploadingCounts.library ? 'btn-disabled' : ''}`}>
+                        {uploadingCounts.library ? (
+                          <div className="loading loading-spinner loading-xs"></div>
                         ) : (
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                           </svg>
                         )}
-                        Refresh
-                      </button>
+                        {uploadingCounts.library ? `Uploading ${uploadingCounts.library}...` : 'Upload to library'}
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          multiple
+                          disabled={!!uploadingCounts.library}
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            e.target.value = ''; // Reset input
+                            if (files.length > 0) uploadImagesInBulk(files, () => {}, 'library');
+                          }}
+                        />
+                      </label>
+                      </div>
                     </div>
 
-                    {loadingAvailableLogos ? (
-                      <div className="flex justify-center py-8">
-                        <div className="loading loading-spinner loading-md"></div>
-                      </div>
-                    ) : availableLogos.length === 0 ? (
+                    {logoLibrary.length === 0 ? (
                       <div className="text-center py-8">
                         <div className="text-4xl mb-2">📁</div>
-                        <p className="text-base-content/70">No logos found in Cloudinary</p>
-                        <p className="text-sm text-base-content/50 mt-2">Upload logos to the LOGOS folder in Cloudinary</p>
+                        <p className="text-base-content/70">No logos in the library yet</p>
+                        <p className="text-sm text-base-content/50 mt-2">Every logo you upload is saved here so you can reuse it for other matches</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                        {availableLogos.map((logo) => (
+                        {logoLibrary.map((logo) => (
                           <div
-                            key={logo.publicId}
+                            key={logo.url}
                             className="card bg-base-200 shadow-sm hover:shadow-md transition-shadow"
                           >
                             <div className="card-body p-3">
-                              <div className="aspect-square bg-white rounded flex items-center justify-center mb-2">
+                              <div className="aspect-square bg-white rounded flex items-center justify-center mb-2 relative">
                                 <img
-                                  src={getOptimizedLogoUrl(logo.publicId, { width: 80, height: 80 })}
-                                  alt={logo.publicId.split('/').pop()}
+                                  src={logo.url}
+                                  alt={logo.title}
                                   className="max-w-full max-h-full object-contain"
+                                  loading="lazy"
                                 />
+                                {logo.saved && (
+                                  <button
+                                    className="btn btn-xs btn-circle btn-ghost absolute top-1 right-1"
+                                    onClick={() => removeFromLogoLibrary(logo.url)}
+                                    title="Remove from library (logos already on displays stay)"
+                                  >
+                                    ×
+                                  </button>
+                                )}
                               </div>
-                              <p className="text-xs text-center truncate mb-2" title={logo.publicId.split('/').pop()}>
-                                {logo.publicId.split('/').pop()}
+                              <p className="text-xs text-center truncate mb-2" title={logo.title}>
+                                {logo.title}
                               </p>
                               <div className="flex gap-1">
                                 <button
                                   className="btn btn-primary btn-xs flex-1"
-                                  onClick={() => addLogoToDisplay({
-                                    url: logo.url,
-                                    publicId: logo.publicId,
-                                    title: logo.publicId.split('/').pop()
-                                  }, 'top')}
+                                  onClick={() => addLogoToDisplay(logo, 'top')}
                                   title="Add to top"
                                 >
                                   Top
                                 </button>
                                 <button
                                   className="btn btn-secondary btn-xs flex-1"
-                                  onClick={() => addLogoToDisplay({
-                                    url: logo.url,
-                                    publicId: logo.publicId,
-                                    title: logo.publicId.split('/').pop()
-                                  }, 'bottom')}
+                                  onClick={() => addLogoToDisplay(logo, 'bottom')}
                                   title="Add to bottom"
                                 >
                                   Bottom
+                                </button>
+                                <button
+                                  className="btn btn-accent btn-xs flex-1"
+                                  onClick={() => addSlidingImages([logo])}
+                                  title="Add to sliding images"
+                                >
+                                  Slide
                                 </button>
                               </div>
                             </div>
@@ -1384,26 +1773,30 @@ export default function DisplayController() {
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="card-title text-xl">Sliding Images</h4>
                   <div className="flex gap-2">
-                    <label className="btn btn-accent btn-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      Upload
+                    {slidingImages.length > 0 && (
+                      <button className="btn btn-error btn-outline btn-sm" onClick={removeAllSlidingImages}>
+                        Delete All
+                      </button>
+                    )}
+                    <label className={`btn btn-accent btn-sm ${uploadingCounts.sliding ? 'btn-disabled' : ''}`}>
+                      {uploadingCounts.sliding ? (
+                        <div className="loading loading-spinner loading-xs mr-2"></div>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      )}
+                      {uploadingCounts.sliding ? `Uploading ${uploadingCounts.sliding}...` : 'Upload'}
                       <input
                         type="file"
                         className="hidden"
                         accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            try {
-                              const imageData = await uploadLogoToCloudinary(file);
-                              addSlidingImage(imageData);
-                              e.target.value = ''; // Reset input
-                            } catch (error) {
-                              alert('Error uploading image: ' + error.message);
-                            }
-                          }
+                        multiple
+                        disabled={!!uploadingCounts.sliding}
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          e.target.value = ''; // Reset input
+                          if (files.length > 0) uploadImagesInBulk(files, addSlidingImages, 'sliding');
                         }}
                       />
                     </label>
@@ -1413,7 +1806,7 @@ export default function DisplayController() {
                 {/* Global Timing Settings */}
                 <div className="bg-base-300 rounded-lg p-4 mb-6">
                   <h5 className="font-semibold text-sm mb-4">Timing Settings (Applied to All Images)</h5>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="form-control">
                       <label className="label py-1">
                         <span className="label-text">Start after (seconds)</span>
@@ -1440,25 +1833,6 @@ export default function DisplayController() {
                         onBlur={saveSlidingImagesTiming}
                       />
                     </div>
-                    <div className="form-control">
-                      <label className="label py-1">
-                        <span className="label-text">Gradient Color</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="color"
-                          className="input input-bordered input-sm flex-1 h-10 p-1 cursor-pointer"
-                          value={slidingImagesGradientColor}
-                          onChange={(e) => setSlidingImagesGradientColor(e.target.value)}
-                          onBlur={saveSlidingImagesTiming}
-                        />
-                        <div
-                          className="w-10 h-10 rounded border border-base-content/20"
-                          style={{ backgroundColor: slidingImagesGradientColor }}
-                          title="Color preview"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -1466,7 +1840,7 @@ export default function DisplayController() {
                   <div className="text-center py-8">
                     <div className="text-4xl mb-2">🖼️</div>
                     <p className="text-base-content/70">No sliding images added</p>
-                    <p className="text-sm text-base-content/50 mt-2">Upload images to create a sliding carousel</p>
+                    <p className="text-sm text-base-content/50 mt-2">Upload images to create a sliding carousel (you can select several at once)</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1499,20 +1873,6 @@ export default function DisplayController() {
                             />
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              className="input input-bordered input-sm h-9 w-12 p-1 cursor-pointer"
-                              value={image.gradientColor || '#FF5722'}
-                              onChange={(e) => updateSlidingImage(image.id, 'gradientColor', e.target.value)}
-                              title="Background gradient color for this image"
-                            />
-                            <div
-                              className="w-8 h-8 rounded border border-base-content/20"
-                              style={{ backgroundColor: image.gradientColor || '#FF5722' }}
-                              title="Color preview"
-                            />
-                          </div>
                           
                           <div className="flex gap-1">
                             <button
@@ -1550,8 +1910,8 @@ export default function DisplayController() {
             <div className="bg-info/10 border border-info/20 rounded-lg p-6">
               <h4 className="font-semibold text-info mb-3">How to use Logo Management:</h4>
               <ul className="text-sm space-y-2 text-base-content/80">
-                <li>• <strong>Upload Logo:</strong> Click "Upload Logo" to add new logos to Cloudinary and your display</li>
-                <li>• <strong>Add from Available:</strong> Click on any logo from the "Available Logos" section to add it to your display</li>
+                <li>• <strong>Upload Logo:</strong> Click "Upload" to add new logos to Cloudinary and your display. You can select several files at once</li>
+                <li>• <strong>Add from Available:</strong> Every uploaded logo is saved in "Available Logos". Click Top, Bottom or Slide to reuse it</li>
                 <li>• <strong>Reorder:</strong> Use the ← → buttons to move logos left or right</li>
                 <li>• <strong>Edit Title:</strong> Click on the title field to edit the logo name</li>
                 <li>• <strong>Remove:</strong> Click the × button to remove a logo from display</li>

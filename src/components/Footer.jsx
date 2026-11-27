@@ -75,6 +75,11 @@ export default function Footer() {
                   Teams
                 </Link>
               </li>
+              <li>
+                <Link to="/careers" className="text-gray-300 hover:text-white transition-colors">
+                  Careers
+                </Link>
+              </li>
             </ul>
           </div>
 
